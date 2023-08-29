@@ -1,0 +1,6 @@
+name: SGCraftLink
+version: '${project.version}'
+main: xyz.destiall.sgcraftlink.SGCraftLinkWaterfall
+softDepends:
+  - LuckPerms
+  - LiteBans

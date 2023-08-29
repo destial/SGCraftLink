@@ -1,0 +1,49 @@
+token: "insert-token-here"
+command-prefix: "-"
+disable-nick-change: false
+invite-url: "https://discord.gg/invite-url"
+
+link-role-id: "997428084938649650"
+role-map:
+  staff: "677454813684039690"
+  pig: "996533141231644833"
+  chimera: "996533928808697886"
+  baron: "996545683752501381"
+  skeleton: "996533039746265168"
+  vampire: "996533917781872702"
+  vicount: "996545681651146822"
+  serpent: "996532843926786169"
+  basilisk: "996533900488749158"
+  count: "996545676605395086"
+  wyvern: "996532784791306240"
+  valkyrie: "996534063189995530"
+  unicorn: "996534063189995530"
+  marquis: "996545679075852388"
+  dragon: "996532618218700830"
+  griffin: "996533921468653608"
+  lord: "996545673627435119"
+  leviathan: "996532429181435994"
+  phoenix: "996533925163831346"
+  duke: "996545671240876103"
+
+playtime-role-map:
+  artemis:
+    length: 365
+    messages: 100
+    id: "996544993386844270"
+  guardian:
+    length: 720
+    messages: 500
+    id: "996544997434343434"
+  og:
+    length: 1095
+    messages: 1000
+    id: "999763382280388611"
+
+logged-commands-channel: "792291139201925130"
+
+logged-commands:
+  - "lp"
+  - "/wand"
+  - "lpb"
+  - "punish"

@@ -1,0 +1,39 @@
+name: SGCraftLink
+version: '${project.version}'
+main: xyz.destiall.sgcraftlink.SGCraftLinkSpigot
+api-version: 1.13
+authors: [ destiall ]
+website: https://www.destial.xyz
+load: POSTWORLD
+folia-supported: true
+softdepend:
+  - LuckPerms
+  - PlaceholderAPI
+  - ProtocolLib
+  - dynmap
+  - PiggyBank
+  - TryMe
+  - CMI
+commands:
+  sgcreload:
+    permission: sgc.reload
+  lastloc:
+    permission: lastloc.set
+  egg:
+    permission: easter.hunt
+  chatbubble:
+    permission: chatbubble.toggle
+  redeemables:
+    permission: redeemables.admin
+  schedulecmd:
+    permission: scheduledcmd.admin
+  sgcwake:
+    permission: sgc.wake
+  casino:
+    permission: sgc.casino
+  reputation:
+    permission: sgc.reputation
+    aliases:
+      - rep
+      - rating
+      - rate

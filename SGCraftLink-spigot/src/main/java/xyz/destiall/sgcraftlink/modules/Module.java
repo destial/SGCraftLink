@@ -1,0 +1,52 @@
+package xyz.destiall.sgcraftlink.modules;
+
+import org.bukkit.configuration.file.YamlConfiguration;
+import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
+
+import java.io.File;
+
+public abstract class Module {
+    protected final SGCraftLinkSpigot plugin;
+    protected YamlConfiguration config;
+    protected File configFile;
+
+    public Module(SGCraftLinkSpigot plugin, String configName) {
+        this.plugin = plugin;
+
+        if (configName == null)
+            return;
+
+        this.config = new YamlConfiguration();
+        configFile = new File(plugin.getDataFolder(), configName);
+        if (!configFile.exists()) {
+            loadDefaultConfig();
+            save();
+        } else {
+            load();
+        }
+    }
+
+    public void save() {
+        try {
+            config.save(configFile);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void load() {
+        try {
+            config.load(configFile);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public SGCraftLinkSpigot getPlugin() {
+        return plugin;
+    }
+
+    public abstract void loadDefaultConfig();
+
+    public abstract void disable();
+}

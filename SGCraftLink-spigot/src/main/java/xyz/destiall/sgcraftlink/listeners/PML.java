@@ -1,0 +1,108 @@
+package xyz.destiall.sgcraftlink.listeners;
+
+import com.google.common.io.ByteArrayDataInput;
+import com.google.common.io.ByteStreams;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.messaging.PluginMessageListener;
+import org.jetbrains.annotations.NotNull;
+import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
+import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
+import xyz.destiall.sgcraftlink.modules.BirthdayModule;
+import xyz.destiall.sgcraftlink.modules.CMIModule;
+import xyz.destiall.sgcraftlink.modules.LuckPermsModule;
+
+public class PML implements PluginMessageListener {
+    private final SGCraftLinkSpigot plugin;
+
+    public PML(SGCraftLinkSpigot plugin) {
+        this.plugin = plugin;
+    }
+
+    @Override
+    public void onPluginMessageReceived(@NotNull String channel, @NotNull Player player, byte[] message) {
+        ByteArrayDataInput input = ByteStreams.newDataInput(message);
+        String type = input.readUTF();
+        switch (type) {
+            case SGCraftLinkCommon.GET_RANKS:
+                logPM(type, channel, player);
+                plugin.getModule(LuckPermsModule.class).sendRanks(player);
+                break;
+            case SGCraftLinkCommon.GET_FIRSTJOIN:
+                logPM(type, channel, player);
+                plugin.sendFirstJoin(player);
+                break;
+            case SGCraftLinkCommon.JAIL: {
+                logPM(type, channel, player);
+                String name = input.readUTF().replace("*", "_");
+                String duration = input.readUTF();
+                String reason = input.readUTF().replace("_", " ");
+                plugin.executeServerCommand("cmi jail " + name + " " + duration + " r:" + reason);
+                break;
+            }
+            case SGCraftLinkCommon.CLEARINV: {
+                logPM(type, channel, player);
+                String name = input.readUTF().replace("*", "_");
+                plugin.executeServerCommand("cmi clear " + name);
+                break;
+            }
+            case SGCraftLinkCommon.XCATCHCLEAR: {
+                logPM(type, channel, player);
+                String name = input.readUTF().replace("*", "_");
+                plugin.executeServerCommand("xcatch clear " + name);
+                break;
+            }
+            case SGCraftLinkCommon.PROMOTE: {
+                logPM(type, channel, player);
+                String name = input.readUTF().replace("*", "_");
+                String track = input.readUTF();
+                plugin.executeServerCommand("lp user " + name + " promote " + track);
+                break;
+            }
+            case SGCraftLinkCommon.DEMOTE: {
+                logPM(type, channel, player);
+                String name = input.readUTF().replace("*", "_");
+                String track = input.readUTF();
+                plugin.executeServerCommand("lp user " + name + " demote " + track);
+                break;
+            }
+            case SGCraftLinkCommon.GET_JAIL: {
+                logPM(type, channel, player);
+                CMIModule cmi = plugin.getModule(CMIModule.class);
+                if (cmi == null)
+                    break;
+
+                CMIModule.JailResult result = cmi.getJailInfo(player);
+                if (result == null) {
+                    plugin.sendJail(player, "null", 0, 0);
+                    break;
+                }
+
+                plugin.sendJail(player, result);
+                break;
+            }
+            case SGCraftLinkCommon.BIRTHDAY: {
+                logPM(type, channel, player);
+                BirthdayModule bday = plugin.getModule(BirthdayModule.class);
+                if (bday == null)
+                    break;
+
+                String name = input.readUTF().replace("*", "_");
+                boolean celebrated = Boolean.parseBoolean(input.readUTF());
+
+                Player online = plugin.getServer().getPlayer(name);
+                if (online != null) {
+                    bday.celebrate(online, celebrated);
+                } else {
+                    bday.addBirthday(name, celebrated);
+                }
+
+                break;
+            }
+            default: break;
+        }
+    }
+
+    private void logPM(String type, String channel, Player player) {
+        plugin.getLogger().info(channel + ": Received plugin message type " + type + " from " + player.getName());
+    }
+}
