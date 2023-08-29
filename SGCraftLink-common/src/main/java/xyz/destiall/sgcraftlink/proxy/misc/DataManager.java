@@ -10,6 +10,7 @@ import xyz.destiall.sgcraftlink.providers.PluginProvider;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 public final class DataManager {
     private final PluginProvider plugin;
@@ -25,48 +26,92 @@ public final class DataManager {
         config = plugin.getConfigProvider().createConfig("api-config.yml");
         serverPorts = new HashMap<>();
 
-        int port = config.getConfig().getInt("listen-port", 1015);
+        int port = config.getConfig().getInt("listen-port", 1035);
 
-        express.get("/player", (request, response) -> {
-            JSONObject body = new JSONObject(request.body());
-            String type = body.getString("data-type");
+        express.post("/", (request, response) -> {
+            JSONObject json = new JSONObject(request.ctx().body());
+            plugin.getLoggerProvider().info("Received data " + json);
 
-            int status = 200;
-            switch (type) {
-                case SGCraftLinkCommon.DATA_BIRTHDAY: {
-                    long date = body.getLong("birthday");
+            if (!json.has("data-type")) {
+                response.sendStatus(405);
+                return;
+            }
+
+            String datatype = json.getString("data-type").toUpperCase();
+            switch (datatype) {
+                case SGCraftLinkCommon.DATA_SERVER_REGISTER: {
+                    String server = json.getString("server");
+                    int serverport = json.getInt("port");
+                    registerServer(server, serverport);
+                    response.sendStatus(200);
                     break;
                 }
-
+                case SGCraftLinkCommon.DATA_SERVER_UNREGISTER: {
+                    String server = json.getString("server");
+                    serverPorts.remove(server);
+                    response.sendStatus(200);
+                    break;
+                }
+                case SGCraftLinkCommon.DATA_EXECUTE_COMMAND: {
+                    String command = json.getString("command");
+                    plugin.dispatchCommand(command);
+                    response.sendStatus(200);
+                    break;
+                }
                 default: {
-                    status = 500;
+                    plugin.getLoggerProvider().warning("Received data " + datatype + " but have no implementation!");
+                    response.sendStatus(200);
                     break;
                 }
             }
-
-            response.sendStatus(status);
         });
 
+        try {
+            httpClient.start();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         express.listen(port);
+    }
+
+    public void shutdown() {
+        try {
+            httpClient.stop();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        serverPorts.clear();
+
+        express.stop();
     }
 
     public void registerServer(String server, int port) {
         serverPorts.put(server, port);
     }
 
-    public boolean sendData(String type, String server, Map<Object, Object> map) {
+    public boolean sendData(String type, String server, Map<?, ?> map, Consumer<Boolean> result) {
         Integer port = serverPorts.get(server);
         if (port == null) {
             return false;
         }
         JSONObject object = new JSONObject(map);
+        object.put("data-type", type);
 
         plugin.getScheduler().schedule(() -> {
+            int status = 404;
             try {
-                httpClient.newRequest("http://localhost").port(port).method("POST").content(new JSONContentProvider(object)).send();
-                plugin.getLoggerProvider().info("Sending data to " + server);
+                status = httpClient.newRequest("http://localhost").port(port).method("POST").content(new JSONContentProvider(object)).send().getStatus();
+                plugin.getLoggerProvider().info("Sending " + object + " to " + server);
             } catch (Exception e) {
                 plugin.getLoggerProvider().error(e.getMessage());
+            }
+
+            if (result != null) {
+                if (status == 200) {
+                    result.accept(true);
+                    return;
+                }
+                result.accept(false);
             }
         }, 0L, TimeUnit.MILLISECONDS);
 

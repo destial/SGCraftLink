@@ -21,6 +21,7 @@ import xyz.destiall.sgcraftlink.modules.BirthdayModule;
 import xyz.destiall.sgcraftlink.modules.CMIModule;
 import xyz.destiall.sgcraftlink.modules.Casino;
 import xyz.destiall.sgcraftlink.modules.ChatBubble;
+import xyz.destiall.sgcraftlink.modules.DataModule;
 import xyz.destiall.sgcraftlink.modules.HeadHunt;
 import xyz.destiall.sgcraftlink.modules.LastLocation;
 import xyz.destiall.sgcraftlink.modules.LuckPermsModule;
@@ -121,6 +122,12 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             modules.add(new BirthdayModule(this));
         } catch (Exception e) {
             getLogger().warning("This version cannot run Birthdays!");
+        }
+        try {
+            testPaperOr1_8Above();
+            modules.add(new DataModule(this));
+        } catch (Exception e) {
+            getLogger().warning("This version cannot run Data Communication!");
         }
 
         modules.add(new PlayerListener(this));

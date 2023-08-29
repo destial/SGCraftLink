@@ -7,12 +7,15 @@ import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
+import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
 import xyz.destiall.sgcraftlink.proxy.litebans.LitebansDatabase;
 import xyz.destiall.sgcraftlink.proxy.litebans.Punishment;
 
 import java.awt.*;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -76,6 +79,20 @@ public class DiscordCommandListener extends ListenerAdapter {
                 }
                 plugin.dispatchCommand(cmd);
                 e.getChannel().sendMessage("Whitelisted " + ip).queue();
+            } else if (command.startsWith("changepw") && args.length > 1) {
+                String name = args[1];
+                String cmd = "authme changepass " + name + " changepassword";
+                Map<String, String> data = new HashMap<>();
+                data.put("command", cmd);
+                if (!plugin.getDiscordProvider().getDataManager().sendData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, "lobby", data, (res) -> {
+                    if (res) {
+                        e.getChannel().sendMessage("Changed password of " + name + " to ||changepassword||").queue();
+                        return;
+                    }
+                    e.getChannel().sendMessage("Unable to change password of " + name).queue();
+                })) {
+                    e.getChannel().sendMessage("Changing of passwords is not available at this time!").queue();
+                }
             }
         }
     }

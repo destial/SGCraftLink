@@ -17,5 +17,9 @@ public class SGCraftLinkCommon {
     public static final String BIRTHDAY = "SGCBirthday";
 
 
+    public static final String DATA_SERVER_REGISTER = "SGC_DATA_SERVER_REGISTER";
+    public static final String DATA_SERVER_UNREGISTER = "SGC_DATA_SERVER_UNREGISTER";
     public static final String DATA_BIRTHDAY = "SGC_DATA_BIRTHDAY";
+    public static final String DATA_CHATS = "SGC_DATA_CHATS";
+    public static final String DATA_EXECUTE_COMMAND = "SGC_DATA_EXECUTE_COMMAND";
 }
