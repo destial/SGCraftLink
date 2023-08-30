@@ -1,5 +1,10 @@
 package xyz.destiall.sgcraftlink;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+
 public class SGCraftLinkCommon {
     public static final String CHANNEL = "sgc:link";
 
@@ -22,4 +27,25 @@ public class SGCraftLinkCommon {
     public static final String DATA_BIRTHDAY = "SGC_DATA_BIRTHDAY";
     public static final String DATA_CHATS = "SGC_DATA_CHATS";
     public static final String DATA_EXECUTE_COMMAND = "SGC_DATA_EXECUTE_COMMAND";
+
+    public static String convertStreamToString(InputStream is) {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        StringBuilder sb = new StringBuilder();
+
+        String line;
+        try {
+            while ((line = reader.readLine()) != null) {
+                sb.append(line).append("\n");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                is.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return sb.toString();
+    }
 }

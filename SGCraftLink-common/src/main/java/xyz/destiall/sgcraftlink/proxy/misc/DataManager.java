@@ -1,12 +1,16 @@
 package xyz.destiall.sgcraftlink.proxy.misc;
 
 import express.Express;
+import express.utils.Status;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.json.JSONObject;
 import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.providers.ConfigProvider;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -23,17 +27,18 @@ public final class DataManager {
         this.plugin = plugin;
         express = new Express();
         httpClient = new HttpClient();
+
         config = plugin.getConfigProvider().createConfig("api-config.yml");
         serverPorts = new HashMap<>();
 
         int port = config.getConfig().getInt("listen-port", 1035);
-
         express.post("/", (request, response) -> {
-            JSONObject json = new JSONObject(request.ctx().body());
-            plugin.getLoggerProvider().info("Received data " + json);
+            String body = SGCraftLinkCommon.convertStreamToString(request.getBody());
+            plugin.getLoggerProvider().info("Received data " + body);
+            JSONObject json = new JSONObject(body);
 
             if (!json.has("data-type")) {
-                response.sendStatus(405);
+                response.sendStatus(Status._405);
                 return;
             }
 
@@ -43,24 +48,24 @@ public final class DataManager {
                     String server = json.getString("server");
                     int serverport = json.getInt("port");
                     registerServer(server, serverport);
-                    response.sendStatus(200);
+                    response.sendStatus(Status._200);
                     break;
                 }
                 case SGCraftLinkCommon.DATA_SERVER_UNREGISTER: {
                     String server = json.getString("server");
                     serverPorts.remove(server);
-                    response.sendStatus(200);
+                    response.sendStatus(Status._200);
                     break;
                 }
                 case SGCraftLinkCommon.DATA_EXECUTE_COMMAND: {
                     String command = json.getString("command");
                     plugin.dispatchCommand(command);
-                    response.sendStatus(200);
+                    response.sendStatus(Status._200);
                     break;
                 }
                 default: {
                     plugin.getLoggerProvider().warning("Received data " + datatype + " but have no implementation!");
-                    response.sendStatus(200);
+                    response.sendStatus(Status._200);
                     break;
                 }
             }
@@ -85,11 +90,16 @@ public final class DataManager {
         express.stop();
     }
 
+    public Collection<String> getServers() {
+        return serverPorts.keySet();
+    }
+
     public void registerServer(String server, int port) {
+        plugin.getLoggerProvider().info("Registered server " + server + " with port " + port);
         serverPorts.put(server, port);
     }
 
-    public boolean sendData(String type, String server, Map<?, ?> map, Consumer<Boolean> result) {
+    public boolean sendData(String type, String server, Map<?, ?> map, Consumer<Pair<Integer, String>> result) {
         Integer port = serverPorts.get(server);
         if (port == null) {
             return false;
@@ -99,19 +109,24 @@ public final class DataManager {
 
         plugin.getScheduler().schedule(() -> {
             int status = 404;
+            String content = "";
             try {
-                status = httpClient.newRequest("http://localhost").port(port).method("POST").content(new JSONContentProvider(object)).send().getStatus();
                 plugin.getLoggerProvider().info("Sending " + object + " to " + server);
+                Request req = httpClient.newRequest("http://" + config.getConfig().getString("ip", "192.168.1.99")).port(port).method("POST").content(new JSONContentProvider(object));
+                ContentResponse res = req.send();
+                status = res.getStatus();
+                content = res.getContentAsString();
+                plugin.getLoggerProvider().info("Sent " + object + " to " + server);
             } catch (Exception e) {
                 plugin.getLoggerProvider().error(e.getMessage());
             }
 
             if (result != null) {
                 if (status == 200) {
-                    result.accept(true);
+                    result.accept(new Pair<>(status, content));
                     return;
                 }
-                result.accept(false);
+                result.accept(new Pair<>(status, null));
             }
         }, 0L, TimeUnit.MILLISECONDS);
 

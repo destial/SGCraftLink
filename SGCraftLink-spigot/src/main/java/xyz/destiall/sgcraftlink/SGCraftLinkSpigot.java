@@ -11,6 +11,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
+import xyz.destiall.sgcraftlink.hooks.CoreProtectHook;
 import xyz.destiall.sgcraftlink.hooks.DiscordSRVHook;
 import xyz.destiall.sgcraftlink.hooks.DynmapHook;
 import xyz.destiall.sgcraftlink.hooks.PAPIHook;
@@ -127,6 +128,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             testPaperOr1_8Above();
             modules.add(new DataModule(this));
         } catch (Exception e) {
+            e.printStackTrace();
             getLogger().warning("This version cannot run Data Communication!");
         }
 
@@ -157,13 +159,13 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             }
         }
 
-        if (getServer().getPluginManager().getPlugin("TryMe") != null) {
+        /**if (getServer().getPluginManager().getPlugin("TryMe") != null) {
             try {
-                //modules.add(new TryMeModule(this));
+                modules.add(new TryMeModule(this));
             } catch (Exception e) {
                 getLogger().warning("This version cannot run TryMeModule!");
             }
-        }
+        }**/
 
         if (getServer().getPluginManager().getPlugin("PiggyBank") != null) {
             try {
@@ -200,7 +202,16 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
                 testPaperOr1_8Above();
                 modules.add(new DiscordSRVHook(this));
             } catch (Exception e) {
-                getLogger().warning("This version cannot run DiscordSRV!");
+                getLogger().warning("This version cannot run DiscordSRV Hook!");
+            }
+        }
+
+        if (getServer().getPluginManager().getPlugin("CoreProtect") != null) {
+            try {
+                testPaperOr1_8Above();
+                modules.add(new CoreProtectHook(this));
+            } catch (Exception e) {
+                getLogger().warning("This version cannot run CoreProtect Hook!");
             }
         }
 
@@ -237,9 +248,6 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
     }
 
     public void disable() {
-        scheduler.cancelTasks();
-        HandlerList.unregisterAll(this);
-
         if (papiHook != null) {
             papiHook.unregister();
             papiHook = null;
@@ -249,6 +257,8 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             module.disable();
         }
 
+        HandlerList.unregisterAll(this);
+        scheduler.cancelTasks();
         modules.clear();
     }
 

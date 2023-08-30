@@ -1,5 +1,6 @@
 package xyz.destiall.sgcraftlink.proxy.listeners;
 
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
@@ -10,8 +11,15 @@ import org.jetbrains.annotations.NotNull;
 import xyz.destiall.sgcraftlink.providers.ColorProvider;
 import xyz.destiall.sgcraftlink.providers.PlayerProvider;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
+import xyz.destiall.sgcraftlink.proxy.litebans.LitebansDatabase;
+import xyz.destiall.sgcraftlink.proxy.litebans.Punishment;
 
+import java.awt.*;
+import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
+
+import static xyz.destiall.sgcraftlink.proxy.listeners.DiscordCommandListener.sendChatHistory;
 
 public class ReportButtonListener extends ListenerAdapter {
     private final PluginProvider plugin;
@@ -52,38 +60,70 @@ public class ReportButtonListener extends ListenerAdapter {
         }
 
         PlayerProvider player = plugin.getPlayer(reporter);
-        if (id.equals("sgc-report-accepted")) {
-            event.reply("Report acknowledged!").setEphemeral(true).queue();
-            event.getMessage()
-                    .editMessage(user.getAsMention() + " will look into this")
-                    .setActionRows(event.getMessage().getActionRows().stream().map(ActionRow::asDisabled).collect(Collectors.toList()))
-                    .queue();
-            if (player != null) {
-                player.sendMessage(ColorProvider.of("&6&l[REPORT]&e " + staff + " has &aacknowledged&e your report!"));
+        switch (id) {
+            case "sgc-report-accepted": {
+                event.reply("Report acknowledged!").setEphemeral(true).queue();
+                event.getMessage()
+                        .editMessage(user.getAsMention() + " will look into this")
+                        .setActionRows(event.getMessage().getActionRows().stream().map(ActionRow::asDisabled).collect(Collectors.toList()))
+                        .queue();
+                if (player != null) {
+                    player.sendMessage(ColorProvider.of("&6&l[REPORT]&e " + staff + " has &aacknowledged&e your report!"));
+                }
+                User reporterUser = plugin.getLinkProvider().getUser(reporter);
+                if (reporterUser != null) {
+                    String finalStaff = staff;
+                    reporterUser.openPrivateChannel().queue(pm -> {
+                        pm.sendMessage(finalStaff + " has acknowledged your report!").queue();
+                    });
+                }
+                break;
             }
-            User reporterUser = plugin.getLinkProvider().getUser(reporter);
-            if (reporterUser != null) {
-                String finalStaff = staff;
-                reporterUser.openPrivateChannel().queue(pm -> {
-                    pm.sendMessage(finalStaff + " has acknowledged your report!").queue();
-                });
+            case "sgc-report-denied": {
+                event.reply("Report denied!").setEphemeral(true).queue();
+                event.getMessage()
+                        .editMessage(user.getAsMention() + " denied this")
+                        .setActionRows(event.getMessage().getActionRows().stream().map(ActionRow::asDisabled).collect(Collectors.toList()))
+                        .queue();
+                if (player != null) {
+                    player.sendMessage(ColorProvider.of("&6&l[REPORT]&e " + staff + " has &cdenied&e your report!"));
+                }
+                User reporterUser = plugin.getLinkProvider().getUser(reporter);
+                if (reporterUser != null) {
+                    String finalStaff = staff;
+                    reporterUser.openPrivateChannel().queue(pm -> {
+                        pm.sendMessage(finalStaff + " has denied your report!").queue();
+                    });
+                }
+                break;
             }
-        } else if (id.equals("sgc-report-denied")) {
-            event.reply("Report denied!").setEphemeral(true).queue();
-            event.getMessage()
-                    .editMessage(user.getAsMention() + " denied this")
-                    .setActionRows(event.getMessage().getActionRows().stream().map(ActionRow::asDisabled).collect(Collectors.toList()))
-                    .queue();
-            if (player != null) {
-                player.sendMessage(ColorProvider.of("&6&l[REPORT]&e " + staff + " has &cdenied&e your report!"));
+            case "sgc-report-history":
+                UUID uuid = LitebansDatabase.getUUID(embed.getTitle());
+                if (uuid == null) {
+                    event.reply("User not found!").setEphemeral(true).queue();
+                    return;
+                }
+
+                List<Punishment> history = LitebansDatabase.getHistory(uuid.toString());
+                EmbedBuilder builder = new EmbedBuilder();
+                builder.setTitle("History of " + LitebansDatabase.getPlayerName(uuid.toString()));
+                builder.setFooter("Will only show latest 24 history");
+                builder.setColor(Color.CYAN);
+                int i = 0;
+                for (Punishment p : history) {
+                    ++i;
+                    if (i >= 24) break;
+                    builder.addField(p.getType().name() + " (" + p.getDuration() + ") " + (p.isActive() ? "Active" : "Inactive"), p.getReason() + " *(" + p.getExecutor() + ")*", false);
+                }
+
+                event.replyEmbeds(builder.build()).queue();
+                break;
+            case "sgc-report-chathistory": {
+                int limit = 50;
+                sendChatHistory(plugin, event.getMember(), embed.getTitle(), event.getChannel(), limit);
+                break;
             }
-            User reporterUser = plugin.getLinkProvider().getUser(reporter);
-            if (reporterUser != null) {
-                String finalStaff = staff;
-                reporterUser.openPrivateChannel().queue(pm -> {
-                    pm.sendMessage(finalStaff + " has denied your report!").queue();
-                });
-            }
+            default: break;
         }
     }
 }

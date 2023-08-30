@@ -59,7 +59,7 @@ public class Redeemables extends Module implements Listener, CommandExecutor, Ta
                 color("&c1 Day")
         ));
         meta.addEnchant(Enchantment.ARROW_INFINITE, 1, true);
-        meta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ITEM_SPECIFICS);
+        meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
         exarchItem.setItemMeta(meta);
         Redeemable exarch = new Redeemable("exarch", exarchItem, Collections.singletonList("lp user {player} parent addtemp exarch 1d"), true);
         redeemables.add(exarch);
@@ -72,7 +72,7 @@ public class Redeemables extends Module implements Listener, CommandExecutor, Ta
                 color("&c1 Day")
         ));
         meta.addEnchant(Enchantment.ARROW_INFINITE, 1, true);
-        meta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ITEM_SPECIFICS);
+        meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
         bishopItem.setItemMeta(meta);
         Redeemable bishop = new Redeemable("bishop", bishopItem, Collections.singletonList("lp user {player} parent addtemp bishop 1d"), true);
         redeemables.add(bishop);
@@ -85,7 +85,7 @@ public class Redeemables extends Module implements Listener, CommandExecutor, Ta
                 color("&c1 Day")
         ));
         meta.addEnchant(Enchantment.ARROW_INFINITE, 1, true);
-        meta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ITEM_SPECIFICS);
+        meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
         patriarchItem.setItemMeta(meta);
         Redeemable patriarch = new Redeemable("patriarch", patriarchItem, Collections.singletonList("lp user {player} parent addtemp patriarch 1d"), true);
         redeemables.add(patriarch);

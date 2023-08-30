@@ -1,13 +1,22 @@
 package xyz.destiall.sgcraftlink.modules;
 
 import express.Express;
+import express.utils.MediaType;
+import express.utils.Status;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
+import xyz.destiall.sgcraftlink.hooks.CoreProtectHook;
 import xyz.destiall.sgcraftlink.items.JSONContentProvider;
+import xyz.destiall.sgcraftlink.items.Pair;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -20,28 +29,74 @@ public class DataModule extends Module {
         express = new Express();
         httpClient = new HttpClient();
         express.post("/", (request, response) -> {
-            JSONObject json = new JSONObject(request.ctx().body());
-            plugin.getLogger().info("Received data " + json);
+            try {
+                String body = SGCraftLinkCommon.convertStreamToString(request.getBody());
+                plugin.getLogger().info("Received data " + body);
+                JSONObject json = new JSONObject(body);
 
-            if (!json.has("data-type")) {
-                response.sendStatus(405);
-                return;
-            }
-
-            String datatype = json.getString("data-type").toUpperCase();
-
-            switch (datatype) {
-                case SGCraftLinkCommon.DATA_EXECUTE_COMMAND: {
-                    String command = json.getString("command");
-                    plugin.executeServerCommand(command);
-                    response.sendStatus(200);
-                    break;
+                if (!json.has("data-type")) {
+                    plugin.getLogger().warning("Request does not have any data-type!");
+                    response.sendStatus(Status._405);
+                    return;
                 }
-                default: {
-                    plugin.getLogger().warning("Received data " + datatype + " but have no implementation!");
-                    response.sendStatus(200);
-                    break;
+
+                String datatype = json.getString("data-type").toUpperCase();
+
+                switch (datatype) {
+                    case SGCraftLinkCommon.DATA_EXECUTE_COMMAND: {
+                        String command = json.getString("command");
+                        plugin.executeServerCommand(command);
+                        response.sendStatus(Status._200);
+                        break;
+                    }
+                    case SGCraftLinkCommon.DATA_CHATS: {
+                        String player = json.getString("player");
+                        int limit = json.getInt("limit");
+
+                        CoreProtectHook hook = plugin.getModule(CoreProtectHook.class);
+                        JSONArray array = new JSONArray();
+                        JSONObject res = new JSONObject();
+                        if (hook == null) {
+                            res.put("messages", array);
+                            plugin.getLogger().warning("CoreProtect Hook not found!");
+                            plugin.getLogger().info("Sending back to proxy");
+                            response.setContentType(MediaType._str);
+                            response.setStatus(Status._200).send(res.toString());
+                            break;
+                        }
+
+                        List<Pair<Long, String>> messages = hook.getChats(player, limit);
+                        if (messages == null) {
+                            res.put("messages", array);
+                            plugin.getLogger().warning("No messages found!");
+                            plugin.getLogger().info("Sending back to proxy");
+                            response.setContentType(MediaType._str);
+                            response.setStatus(Status._200).send(res.toString());
+                            break;
+                        }
+
+                        for (int i = 0; i < messages.size() && i < limit; i++) {
+                            Pair<Long, String> m = messages.get(i);
+                            JSONObject obj = new JSONObject();
+                            obj.put("time", m.getKey());
+                            obj.put("msg", m.getValue());
+                            array.put(obj);
+                        }
+
+                        res.put("messages", array);
+                        plugin.getLogger().info("Sending back " + array.length() + " messages to proxy");
+                        response.setContentType(MediaType._str);
+                        response.setStatus(Status._200).send(res.toString());
+                        break;
+                    }
+                    default: {
+                        plugin.getLogger().warning("Received data " + datatype + " but have no implementation!");
+                        response.sendStatus(Status._201);
+                        break;
+                    }
                 }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         });
 
@@ -60,35 +115,43 @@ public class DataModule extends Module {
 
     private void tryRegisterServer(Map<String, Object> data) {
         sendProxyData(SGCraftLinkCommon.DATA_SERVER_REGISTER, data, (result) -> {
-            if (!result) {
+            if (result.getKey() != 200) {
+                plugin.getLogger().warning("Failed! Trying to register server with proxy again...");
                 plugin.getScheduler().runTaskLaterAsync(() -> tryRegisterServer(data), 20L * 60L);
+                return;
             }
+            plugin.getLogger().info("Registered server with proxy");
         });
     }
 
-    public boolean sendProxyData(String type, Map<?, ?> map, Consumer<Boolean> result) {
+    public void sendProxyData(String type, Map<?, ?> map, Consumer<Pair<Integer, String>> result) {
         JSONObject object = new JSONObject(map);
         object.put("data-type", type);
 
         plugin.getScheduler().runTaskAsync(() -> {
             int status = 404;
+            String content = null;
             try {
-                status = httpClient.newRequest("http://localhost").port(config.getInt("proxy-port", 1035)).method("POST").content(new JSONContentProvider(object)).send().getStatus();
                 plugin.getLogger().info("Sending " + object + " to proxy");
+                Request req = httpClient.newRequest("http://" + config.getString("proxy-ip", "192.168.1.99")).port(config.getInt("proxy-port", 1035)).method("POST").content(new JSONContentProvider(object));
+                ContentResponse res = req.send();
+                status = res.getStatus();
+                content = res.getContentAsString();
+                plugin.getLogger().info("Sent to proxy");
             } catch (Exception e) {
                 plugin.getLogger().severe(e.getMessage());
             }
 
+            plugin.getLogger().info("Received status " + status);
+
             if (result != null) {
                 if (status == 200) {
-                    result.accept(true);
+                    result.accept(new Pair<>(status, content));
                     return;
                 }
-                result.accept(false);
+                result.accept(new Pair<>(status, null));
             }
         });
-
-        return true;
     }
 
     @Override
@@ -96,19 +159,16 @@ public class DataModule extends Module {
         config.set("server-name", "lobby");
         config.set("port", 1034);
         config.set("proxy-port", 1035);
+        config.set("proxy-ip", "192.168.1.99");
     }
 
     @Override
     public void disable() {
-        Map<String, String> data = new HashMap<>();
-        data.put("server", config.getString("server-name", "lobby"));
-        sendProxyData(SGCraftLinkCommon.DATA_SERVER_UNREGISTER, data, (result) -> {
-            try {
-                httpClient.stop();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
+        try {
+            httpClient.stop();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         express.stop();
     }

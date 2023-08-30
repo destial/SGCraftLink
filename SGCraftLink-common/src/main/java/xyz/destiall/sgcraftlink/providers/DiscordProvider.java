@@ -28,6 +28,7 @@ import xyz.destiall.sgcraftlink.proxy.misc.DataManager;
 import javax.security.auth.login.LoginException;
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -202,7 +203,9 @@ public class DiscordProvider {
 
         ActionRow row = ActionRow.of(
                 Button.primary("sgc-report-accepted", "Look Into"),
-                Button.danger("sgc-report-denied", "Delete"));
+                Button.danger("sgc-report-denied", "Delete"),
+                Button.secondary("sgc-report-history", "History"),
+                Button.secondary("sgc-report-chathistory", "Chat History"));
 
         channel.sendMessageEmbeds(builder.build()).setActionRows(row).queue();
     }
