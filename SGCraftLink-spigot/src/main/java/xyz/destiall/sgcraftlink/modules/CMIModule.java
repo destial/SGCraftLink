@@ -2,6 +2,7 @@ package xyz.destiall.sgcraftlink.modules;
 
 import com.Zrips.CMI.CMI;
 import com.Zrips.CMI.Containers.CMIUser;
+import com.Zrips.CMI.events.CMIAfkEnterEvent;
 import com.Zrips.CMI.events.CMIAfkLeaveEvent;
 import com.Zrips.CMI.events.CMIPlayerJailEvent;
 import org.bukkit.command.Command;
@@ -10,13 +11,22 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerBedEnterEvent;
 import org.bukkit.event.player.PlayerBedLeaveEvent;
 import org.jetbrains.annotations.NotNull;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import static xyz.destiall.sgcraftlink.SGCraftLinkSpigot.color;
 
 public class CMIModule extends Module implements Listener, CommandExecutor {
+    private final Map<Player, Long> afkTime = new ConcurrentHashMap<>();
+    private final Map<Player, List<Long>> repetitveAfk = new ConcurrentHashMap<>();
+
     public CMIModule(SGCraftLinkSpigot plugin) {
         super(plugin, null);
 
@@ -40,10 +50,47 @@ public class CMIModule extends Module implements Listener, CommandExecutor {
         plugin.sendJail(e.getUser().getPlayer(), reason, until, duration);
     }
 
+    @EventHandler
+    public void onAFKEnter(CMIAfkEnterEvent e) {
+        afkTime.put(e.getPlayer(), System.currentTimeMillis());
+    }
+
+    @EventHandler
+    public void onAFKLeave(CMIAfkLeaveEvent e) {
+        long afkEnterTime = afkTime.getOrDefault(e.getPlayer(), Long.MIN_VALUE);
+        if (afkEnterTime == Long.MIN_VALUE)
+            return;
+
+        long duration = System.currentTimeMillis() - afkEnterTime;
+        repetitveAfk.putIfAbsent(e.getPlayer(), new ArrayList<>());
+        List<Long> repetitive = repetitveAfk.get(e.getPlayer());
+        repetitive.add(duration);
+
+        if (repetitive.size() < 3)
+            return;
+
+        double average = repetitive.stream().mapToDouble(a -> a).average().getAsDouble();
+        double longest = repetitive.stream().mapToDouble(a -> a).max().getAsDouble();
+        double lowest = repetitive.stream().mapToDouble(a -> a).min().getAsDouble();
+
+        if (longest - average <= 1000d && average - lowest <= 1000d) {
+            plugin.executeServerCommand("spawn " + e.getPlayer().getName());
+            e.getPlayer().sendMessage(color("&cYou were detected as auto anti-AFK!"));
+        }
+
+        repetitive.clear();
+    }
+
     @EventHandler(ignoreCancelled = true)
     public void onBedLeave(PlayerBedLeaveEvent e) {
-        CMIAfkLeaveEvent event = new CMIAfkLeaveEvent(e.getPlayer());
-        plugin.getServer().getPluginManager().callEvent(event);
+        CMIUser user = CMI.getInstance().getPlayerManager().getUser(e.getPlayer());
+        user.setAfk(false);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onBedLeave(PlayerBedEnterEvent e) {
+        CMIUser user = CMI.getInstance().getPlayerManager().getUser(e.getPlayer());
+        user.setAfk(false);
     }
 
     public JailResult getJailInfo(Player player) {

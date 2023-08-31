@@ -119,7 +119,7 @@ public class ChatBubble extends Module implements Listener, CommandExecutor {
             String text = ChatColor.stripColor(message);
             List<String> lines = new ArrayList<>();
 
-            while (text.length() > 0) {
+            while (!text.isEmpty()) {
                 if (text.length() > max) {
                     String part = text.substring(0, max);
                     int firstSpace = part.lastIndexOf(" ");
@@ -201,7 +201,7 @@ public class ChatBubble extends Module implements Listener, CommandExecutor {
                     ChatBubblePacket.remove(bubbles);
                     bubbles.clear();
                     playerBubbles.lines.remove(this);
-                    if (playerBubbles.lines.size() == 0) {
+                    if (playerBubbles.lines.isEmpty()) {
                         Chat c = chatBubbles.remove(player);
                         if (c != null) {
                             c.clear();
