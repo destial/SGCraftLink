@@ -56,9 +56,9 @@
     </build>
 
     <modules>
-        <module>sgcraftlink-common</module>
-        <module>sgcraftlink-spigot</module>
-        <module>sgcraftlink-waterfall</module>
-        <module>sgcraftlink-velocity</module>
+        <module>SGCraftLink-common</module>
+        <module>SGCraftLink-spigot</module>
+        <module>SGCraftLink-waterfall</module>
+        <module>SGCraftLink-velocity</module>
     </modules>
 </project>

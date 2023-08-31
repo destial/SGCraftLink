@@ -33,7 +33,6 @@ import xyz.destiall.sgcraftlink.modules.ReputationModule;
 import xyz.destiall.sgcraftlink.modules.ScheduledCommands;
 import xyz.destiall.sgcraftlink.modules.Tags;
 import xyz.destiall.sgcraftlink.modules.Triggers;
-import xyz.destiall.sgcraftlink.modules.TryMeModule;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -159,13 +158,11 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             }
         }
 
-        /**if (getServer().getPluginManager().getPlugin("TryMe") != null) {
-            try {
-                modules.add(new TryMeModule(this));
-            } catch (Exception e) {
-                getLogger().warning("This version cannot run TryMeModule!");
-            }
-        }**/
+        /**
+         * if (getServer().getPluginManager().getPlugin("TryMe") != null) { try {
+         * modules.add(new TryMeModule(this)); } catch (Exception e) {
+         * getLogger().warning("This version cannot run TryMeModule!"); } }
+         **/
 
         if (getServer().getPluginManager().getPlugin("PiggyBank") != null) {
             try {
@@ -178,7 +175,8 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         saveDefaultConfig();
 
         if (getServer().getPluginManager().getPlugin("LuckPerms") != null) {
-            RegisteredServiceProvider<LuckPerms> provider = getServer().getServicesManager().getRegistration(LuckPerms.class);
+            RegisteredServiceProvider<LuckPerms> provider = getServer().getServicesManager()
+                    .getRegistration(LuckPerms.class);
             if (provider != null) {
                 try {
                     modules.add(new LuckPermsModule(this, provider.getProvider()));
@@ -263,7 +261,8 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label,
+            @NotNull String[] args) {
         disable();
         reloadConfig();
         enable();
@@ -311,7 +310,8 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
 
     public void sendFirstJoin(Player player) {
         long time = player.getFirstPlayed();
-        try (ByteArrayOutputStream stream = new ByteArrayOutputStream(); DataOutputStream out = new DataOutputStream(stream)) {
+        try (ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                DataOutputStream out = new DataOutputStream(stream)) {
             out.writeUTF(SGCraftLinkCommon.SET_FIRSTJOIN);
             out.writeUTF(player.getName());
             out.writeLong(time);
@@ -329,7 +329,8 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         if (reason == null)
             return;
 
-        try (ByteArrayOutputStream stream = new ByteArrayOutputStream(); DataOutputStream out = new DataOutputStream(stream)) {
+        try (ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                DataOutputStream out = new DataOutputStream(stream)) {
             out.writeUTF(SGCraftLinkCommon.SET_JAIL);
             out.writeUTF(player.getName());
             out.writeUTF(reason.replace(" ", "*"));
@@ -347,7 +348,8 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
     public static String color(String s) {
         Matcher matcher = hexPattern.matcher(s);
         while (matcher.find()) {
-            final net.md_5.bungee.api.ChatColor hexColor = net.md_5.bungee.api.ChatColor.of(matcher.group().substring(1, matcher.group().length() - 1));
+            final net.md_5.bungee.api.ChatColor hexColor = net.md_5.bungee.api.ChatColor
+                    .of(matcher.group().substring(1, matcher.group().length() - 1));
             final String before = s.substring(0, matcher.start());
             final String after = s.substring(matcher.end());
             s = before + hexColor + after;
@@ -355,7 +357,8 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         }
         matcher = hexBracketPattern.matcher(s);
         while (matcher.find()) {
-            final net.md_5.bungee.api.ChatColor hexColor = net.md_5.bungee.api.ChatColor.of(matcher.group().substring(1, matcher.group().length() - 1));
+            final net.md_5.bungee.api.ChatColor hexColor = net.md_5.bungee.api.ChatColor
+                    .of(matcher.group().substring(1, matcher.group().length() - 1));
             final String before = s.substring(0, matcher.start());
             final String after = s.substring(matcher.end());
             s = before + hexColor + after;

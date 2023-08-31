@@ -1,7 +1,6 @@
 package xyz.destiall.sgcraftlink.items;
 
 import com.Zrips.CMI.Modules.Economy.Economy;
-import me.Zrips.TryMe.commands.list.stop;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -45,11 +44,8 @@ public class CasinoSlot {
     }
 
     public CasinoSlot(Casino casino, int id, ConfigurationSection config) {
-        this(casino,
-             id,
-             config.getLocation("center").getBlock(),
-             BlockFace.valueOf(config.getString("left")),
-             BlockFace.valueOf(config.getString("right")));
+        this(casino, id, config.getLocation("center").getBlock(), BlockFace.valueOf(config.getString("left")),
+                BlockFace.valueOf(config.getString("right")));
     }
 
     public Configuration toConfig() {
@@ -181,7 +177,8 @@ public class CasinoSlot {
                 Casino.CasinoBank bank = new Casino.CasinoBank(casino, player);
                 bank.deposit((int) total);
             }
-            player.sendMessage(color("&aYou have won " + (casino.isVault() ? total : (int) total) + " " + casino.getCurrencyName() + "!"));
+            player.sendMessage(color("&aYou have won " + (casino.isVault() ? total : (int) total) + " "
+                    + casino.getCurrencyName() + "!"));
             player.playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_TWINKLE, 1f, 1f);
             player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f);
             return;
