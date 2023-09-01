@@ -74,7 +74,7 @@ public class CMIModule extends Module implements Listener, CommandExecutor {
         double lowest = repetitive.stream().mapToDouble(a -> a).min().getAsDouble();
 
         if (longest - average <= 1000d && average - lowest <= 1000d) {
-            plugin.executeServerCommand("spawn " + e.getPlayer().getName());
+            plugin.dispatchCommand("spawn " + e.getPlayer().getName());
             e.getPlayer().sendMessage(color("&cYou were detected as auto anti-AFK!"));
         }
 

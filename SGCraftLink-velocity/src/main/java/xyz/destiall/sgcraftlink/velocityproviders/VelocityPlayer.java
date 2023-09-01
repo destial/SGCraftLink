@@ -2,10 +2,8 @@ package xyz.destiall.sgcraftlink.velocityproviders;
 
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ServerConnection;
-import com.velocitypowered.api.proxy.messages.LegacyChannelIdentifier;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TranslatableComponent;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import xyz.destiall.sgcraftlink.providers.ColorProvider;
 import xyz.destiall.sgcraftlink.providers.PlayerProvider;

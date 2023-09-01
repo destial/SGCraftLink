@@ -62,7 +62,7 @@ public class ScheduledCommands extends Module implements CommandExecutor {
             @Override
             public void run() {
                 for (String command : cmd.commands) {
-                    plugin.executeServerCommand(command);
+                    plugin.dispatchCommand(command);
                 }
                 config.set(String.valueOf(cmd.date.getTime()), null);
                 scheduledCommands.remove(cmd);

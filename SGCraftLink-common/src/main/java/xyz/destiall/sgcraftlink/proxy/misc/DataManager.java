@@ -5,6 +5,7 @@ import express.utils.Status;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.providers.ConfigProvider;
@@ -21,7 +22,7 @@ public final class DataManager {
     private final Express express;
     private final ConfigProvider<?> config;
     private final HttpClient httpClient;
-    private final Map<String, Integer> serverPorts;
+    private final Map<String, Pair<Integer, String>> registeredServers;
 
     public DataManager(PluginProvider plugin) {
         this.plugin = plugin;
@@ -29,45 +30,64 @@ public final class DataManager {
         httpClient = new HttpClient();
 
         config = plugin.getConfigProvider().createConfig("api-config.yml");
-        serverPorts = new HashMap<>();
+        registeredServers = new HashMap<>();
 
         int port = config.getConfig().getInt("listen-port", 1035);
         express.post("/", (request, response) -> {
-            String body = SGCraftLinkCommon.convertStreamToString(request.getBody());
-            plugin.getLoggerProvider().info("Received data " + body);
-            JSONObject json = new JSONObject(body);
+            try {
+                String body = SGCraftLinkCommon.convertStreamToString(request.getBody());
+                plugin.getLoggerProvider().info("Received data " + body);
+                JSONObject json = new JSONObject(body);
 
-            if (!json.has("data-type")) {
-                response.sendStatus(Status._405);
-                return;
-            }
+                if (!json.has("data-type")) {
+                    response.sendStatus(Status._405);
+                    return;
+                }
 
-            String datatype = json.getString("data-type").toUpperCase();
-            switch (datatype) {
-                case SGCraftLinkCommon.DATA_SERVER_REGISTER: {
-                    String server = json.getString("server");
-                    int serverport = json.getInt("port");
-                    registerServer(server, serverport);
-                    response.sendStatus(Status._200);
-                    break;
+                String datatype = json.getString("data-type").toUpperCase();
+
+                String server = json.getString("server");
+                if (!datatype.equalsIgnoreCase(SGCraftLinkCommon.DATA_SERVER_REGISTER)) {
+                    String auth = registeredServers.get(server).getValue();
+                    plugin.getLoggerProvider().info("Headers: [" + String.join(",", request.getHeader("X-Authorization")) + "]");
+                    if (!request.getHeader("X-Authorization").contains(auth)) {
+                        response.sendStatus(Status._403);
+                        return;
+                    }
                 }
-                case SGCraftLinkCommon.DATA_SERVER_UNREGISTER: {
-                    String server = json.getString("server");
-                    serverPorts.remove(server);
-                    response.sendStatus(Status._200);
-                    break;
+
+                switch (datatype) {
+                    case SGCraftLinkCommon.DATA_SERVER_REGISTER: {
+                        int serverport = json.getInt("port");
+                        String auth = json.getString("auth");
+                        plugin.getLoggerProvider().info("Registered server " + server + " with port " + serverport);
+                        registeredServers.put(server, new Pair<>(serverport, auth));
+                        response.sendStatus(Status._200);
+                        break;
+                    }
+                    case SGCraftLinkCommon.DATA_SERVER_UNREGISTER: {
+                        plugin.getLoggerProvider().info("Unregistered server " + server);
+                        registeredServers.remove(server);
+                        response.sendStatus(Status._200);
+                        break;
+                    }
+                    case SGCraftLinkCommon.DATA_EXECUTE_COMMAND: {
+                        JSONArray commands = json.getJSONArray("commands");
+                        for (int i = 0; i < commands.length(); i++) {
+                            String command = commands.getString(i);
+                            plugin.dispatchCommand(command);
+                        }
+                        response.sendStatus(Status._200);
+                        break;
+                    }
+                    default: {
+                        plugin.getLoggerProvider().warning("Received data " + datatype + " but have no implementation!");
+                        response.sendStatus(Status._200);
+                        break;
+                    }
                 }
-                case SGCraftLinkCommon.DATA_EXECUTE_COMMAND: {
-                    String command = json.getString("command");
-                    plugin.dispatchCommand(command);
-                    response.sendStatus(Status._200);
-                    break;
-                }
-                default: {
-                    plugin.getLoggerProvider().warning("Received data " + datatype + " but have no implementation!");
-                    response.sendStatus(Status._200);
-                    break;
-                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         });
 
@@ -85,23 +105,18 @@ public final class DataManager {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        serverPorts.clear();
+        registeredServers.clear();
 
         express.stop();
     }
 
     public Collection<String> getServers() {
-        return serverPorts.keySet();
-    }
-
-    public void registerServer(String server, int port) {
-        plugin.getLoggerProvider().info("Registered server " + server + " with port " + port);
-        serverPorts.put(server, port);
+        return registeredServers.keySet();
     }
 
     public boolean sendData(String type, String server, Map<?, ?> map, Consumer<Pair<Integer, String>> result) {
-        Integer port = serverPorts.get(server);
-        if (port == null) {
+        Pair<Integer, String> registration = registeredServers.get(server);
+        if (registration == null) {
             return false;
         }
         JSONObject object = new JSONObject(map);
@@ -112,7 +127,8 @@ public final class DataManager {
             String content = "";
             try {
                 plugin.getLoggerProvider().info("Sending " + object + " to " + server);
-                Request req = httpClient.newRequest("http://" + config.getConfig().getString("ip", "192.168.1.99")).port(port).method("POST").content(new JSONContentProvider(object));
+                Request req = httpClient.newRequest("http://" + config.getConfig().getString("ip", "192.168.1.99")).port(registration.getKey()).method("POST").content(new JSONContentProvider(object));
+                req.header("X-Authorization", registration.getValue());
                 ContentResponse res = req.send();
                 status = res.getStatus();
                 content = res.getContentAsString();
@@ -120,6 +136,8 @@ public final class DataManager {
             } catch (Exception e) {
                 plugin.getLoggerProvider().error(e.getMessage());
             }
+
+            plugin.getLoggerProvider().info("Received status " + status);
 
             if (result != null) {
                 if (status == 200) {

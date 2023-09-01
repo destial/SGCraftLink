@@ -31,40 +31,6 @@ public class PML implements PluginMessageListener {
                 logPM(type, channel, player);
                 plugin.sendFirstJoin(player);
                 break;
-            case SGCraftLinkCommon.JAIL: {
-                logPM(type, channel, player);
-                String name = input.readUTF().replace("*", "_");
-                String duration = input.readUTF();
-                String reason = input.readUTF().replace("_", " ");
-                plugin.executeServerCommand("cmi jail " + name + " " + duration + " r:" + reason);
-                break;
-            }
-            case SGCraftLinkCommon.CLEARINV: {
-                logPM(type, channel, player);
-                String name = input.readUTF().replace("*", "_");
-                plugin.executeServerCommand("cmi clear " + name);
-                break;
-            }
-            case SGCraftLinkCommon.XCATCHCLEAR: {
-                logPM(type, channel, player);
-                String name = input.readUTF().replace("*", "_");
-                plugin.executeServerCommand("xcatch clear " + name);
-                break;
-            }
-            case SGCraftLinkCommon.PROMOTE: {
-                logPM(type, channel, player);
-                String name = input.readUTF().replace("*", "_");
-                String track = input.readUTF();
-                plugin.executeServerCommand("lp user " + name + " promote " + track);
-                break;
-            }
-            case SGCraftLinkCommon.DEMOTE: {
-                logPM(type, channel, player);
-                String name = input.readUTF().replace("*", "_");
-                String track = input.readUTF();
-                plugin.executeServerCommand("lp user " + name + " demote " + track);
-                break;
-            }
             case SGCraftLinkCommon.GET_JAIL: {
                 logPM(type, channel, player);
                 CMIModule cmi = plugin.getModule(CMIModule.class);

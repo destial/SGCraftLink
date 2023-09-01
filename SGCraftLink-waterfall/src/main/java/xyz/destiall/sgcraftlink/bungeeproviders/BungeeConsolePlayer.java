@@ -3,8 +3,8 @@ package xyz.destiall.sgcraftlink.bungeeproviders;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.chat.TextComponent;
 import xyz.destiall.sgcraftlink.providers.ColorProvider;
-import xyz.destiall.sgcraftlink.providers.component.ComponentProvider;
 import xyz.destiall.sgcraftlink.providers.PlayerProvider;
+import xyz.destiall.sgcraftlink.providers.component.ComponentProvider;
 
 import java.util.Arrays;
 import java.util.UUID;

@@ -8,10 +8,8 @@ import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static xyz.destiall.sgcraftlink.SGCraftLinkSpigot.color;
 
@@ -67,7 +65,7 @@ public class BirthdayModule extends Module implements Listener {
 
         if (!celebrated) {
             for (String command : commands) {
-                plugin.executeServerCommand(command.replace("{player}", player.getName()));
+                plugin.dispatchCommand(command.replace("{player}", player.getName()));
             }
         }
     }

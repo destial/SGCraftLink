@@ -7,13 +7,10 @@ import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
 import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateBoostTimeEvent;
 import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateNicknameEvent;
-import net.dv8tion.jda.api.events.guild.update.GuildUpdateBoostCountEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.luckperms.api.LuckPermsProvider;
 import net.luckperms.api.event.EventSubscription;
 import net.luckperms.api.event.node.NodeAddEvent;
-import net.luckperms.api.model.data.DataType;
 import net.luckperms.api.node.Node;
 import net.luckperms.api.node.NodeEqualityPredicate;
 import net.luckperms.api.node.types.InheritanceNode;
@@ -138,24 +135,24 @@ public class LinkListener extends ListenerAdapter {
 
             String name = plugin.getLinkProvider().getUsername(user);
             if (name != null) {
-                message.getChannel().sendMessage("You are already linked to " + name).queue();
+                message.reply("You are already linked to " + name).queue();
                 return;
             }
             try {
                 int code = Integer.parseInt(content);
                 name = plugin.getLinkProvider().getName(code);
                 if (name == null) {
-                    message.getChannel().sendMessage("That is not a valid code!").queue();
+                    message.reply("That is not a valid code!").queue();
                     return;
                 }
                 if (plugin.getLinkProvider().link(name, user)) {
-                    message.getChannel().sendMessage("You have linked your account to " + name).queue();
+                    message.reply("You have linked your account to " + name).queue();
                     plugin.getLinkProvider().invalidate(code);
                 } else {
-                    message.getChannel().sendMessage("Player " + name + " is not online!").queue();
+                    message.reply("Player " + name + " is not online!").queue();
                 }
             } catch (Exception e) {
-                message.getChannel().sendMessage("That is not a valid code!").queue();
+                message.reply("That is not a valid code!").queue();
             }
         }
     }

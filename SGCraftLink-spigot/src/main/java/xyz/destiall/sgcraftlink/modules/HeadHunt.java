@@ -299,7 +299,7 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
                     loc.getChunk().load(true);
                 }
 
-                plugin.executeServerCommand(player, "setblock " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ() + " " + blockData + " replace", false);
+                plugin.dispatchCommand(player, "setblock " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ() + " " + blockData + " replace", false);
             }
             return true;
         }
@@ -369,7 +369,7 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
                 return;
             }
 
-            plugin.executeServerCommand(player, "setblock " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ() + " " + blockData + " replace", false);
+            plugin.dispatchCommand(player, "setblock " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ() + " " + blockData + " replace", false);
             player.sendMessage(color("&aPlaced an egg on " + loc.getBlockX() + ", " + loc.getBlockY() + ", " + loc.getBlockZ()));
             hunts.add(loc);
         }, loc);

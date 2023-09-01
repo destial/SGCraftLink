@@ -30,15 +30,21 @@ public class ReportButtonListener extends ListenerAdapter {
 
     @Override
     public void onButtonInteraction(@NotNull ButtonInteractionEvent event) {
-        if (!event.isFromGuild() && !event.getMessage().getAuthor().getId().equals(event.getJDA().getSelfUser().getId()))
+        if (!event.isFromGuild() && !event.getMessage().getAuthor().getId().equals(event.getJDA().getSelfUser().getId())) {
+            super.onButtonInteraction(event);
             return;
+        }
 
         String id = event.getButton().getId();
-        if (id == null)
+        if (id == null) {
+            super.onButtonInteraction(event);
             return;
+        }
 
-        if (!event.getChannel().getId().equals("1097754814223487037"))
+        if (!event.getChannel().getId().equals("1097754814223487037")) {
+            super.onButtonInteraction(event);
             return;
+        }
 
         MessageEmbed embed = event.getMessage().getEmbeds().get(0);
         MessageEmbed.Footer footer = embed.getFooter();
@@ -120,10 +126,17 @@ public class ReportButtonListener extends ListenerAdapter {
                 break;
             case "sgc-report-chathistory": {
                 int limit = 50;
-                sendChatHistory(plugin, event.getMember(), embed.getTitle(), event.getChannel(), limit);
+                event.deferReply().queue(r -> {
+                    sendChatHistory(plugin, event.getMember(), embed.getTitle(), limit, (consumer) ->
+                        r.editOriginalEmbeds(consumer).queue()
+                    );
+                });
                 break;
             }
-            default: break;
+            default: {
+                super.onButtonInteraction(event);
+                break;
+            }
         }
     }
 }

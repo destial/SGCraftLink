@@ -19,8 +19,8 @@ import net.luckperms.api.node.types.InheritanceNode;
 import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.proxy.listeners.AppealListener;
 import xyz.destiall.sgcraftlink.proxy.listeners.ConsoleCommandListener;
-import xyz.destiall.sgcraftlink.proxy.listeners.LinkListener;
 import xyz.destiall.sgcraftlink.proxy.listeners.DiscordCommandListener;
+import xyz.destiall.sgcraftlink.proxy.listeners.LinkListener;
 import xyz.destiall.sgcraftlink.proxy.listeners.ReportButtonListener;
 import xyz.destiall.sgcraftlink.proxy.listeners.StaffAppListener;
 import xyz.destiall.sgcraftlink.proxy.misc.DataManager;
@@ -28,7 +28,6 @@ import xyz.destiall.sgcraftlink.proxy.misc.DataManager;
 import javax.security.auth.login.LoginException;
 import java.awt.*;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -49,6 +48,7 @@ public class DiscordProvider {
     protected ChannelLoggingHandler consoleLogger;
     protected TextChannel consoleChannel;
     protected StaffAppListener staffApp;
+    protected DiscordCommandListener dcl;
     protected LinkListener linkListener;
     protected DataManager dataManager;
 
@@ -56,13 +56,14 @@ public class DiscordProvider {
         this.plugin = plugin;
         ConfigProvider<?> configManager = plugin.getConfigProvider();
         try {
+            dcl = new DiscordCommandListener(plugin);
             jda = JDABuilder.createDefault(configManager.getString("token"))
                     .enableIntents(EnumSet.allOf(GatewayIntent.class))
                     .enableCache(CacheFlag.MEMBER_OVERRIDES, CacheFlag.ROLE_TAGS)
                     .setMemberCachePolicy(MemberCachePolicy.ALL)
                     .build();
             jda.addEventListener(
-                    new DiscordCommandListener(plugin),
+                    dcl,
                     linkListener = new LinkListener(plugin),
                     new AppealListener(plugin),
                     staffApp = new StaffAppListener(plugin),
@@ -75,6 +76,8 @@ public class DiscordProvider {
                     plugin.getLoggerProvider().info("Loaded all members in " + guild.getName())
                 );
             }
+
+            dcl.registerCommands(jda);
         } catch (LoginException | InterruptedException e) {
             jda = null;
             e.printStackTrace();
@@ -217,7 +220,8 @@ public class DiscordProvider {
             consoleLogger = null;
         }
 
-        jda.shutdownNow();
+        dcl.unregisterCommands();
+        jda.shutdown();
         jda = null;
         linkListener.getSub().close();
         dataManager.shutdown();

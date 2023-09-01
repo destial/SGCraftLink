@@ -14,13 +14,24 @@ import xyz.destiall.sgcraftlink.hooks.CoreProtectHook;
 import xyz.destiall.sgcraftlink.items.JSONContentProvider;
 import xyz.destiall.sgcraftlink.items.Pair;
 
-import java.util.ArrayList;
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
 public class DataModule extends Module {
+    private static final SecureRandom secureRandom = new SecureRandom(); //threadsafe
+    private static final Base64.Encoder base64Encoder = Base64.getUrlEncoder(); //threadsafe
+
+    public static String generateNewToken() {
+        byte[] randomBytes = new byte[24];
+        secureRandom.nextBytes(randomBytes);
+        return base64Encoder.encodeToString(randomBytes);
+    }
+
+
     private final Express express;
     private final HttpClient httpClient;
 
@@ -42,10 +53,22 @@ public class DataModule extends Module {
 
                 String datatype = json.getString("data-type").toUpperCase();
 
+                if (!datatype.equalsIgnoreCase(SGCraftLinkCommon.DATA_SERVER_REGISTER)) {
+                    String auth = config.getString("authentication-key");
+                    List<String> headers = request.getHeader("X-Authorization");
+                    if (headers.isEmpty() || !headers.get(0).equals(auth)) {
+                        response.sendStatus(Status._403);
+                        return;
+                    }
+                }
+
                 switch (datatype) {
                     case SGCraftLinkCommon.DATA_EXECUTE_COMMAND: {
-                        String command = json.getString("command");
-                        plugin.executeServerCommand(command);
+                        JSONArray commands = json.getJSONArray("commands");
+                        for (int i = 0; i < commands.length(); i++) {
+                            String command = commands.getString(i);
+                            plugin.dispatchCommand(command);
+                        }
                         response.sendStatus(Status._200);
                         break;
                     }
@@ -107,9 +130,18 @@ public class DataModule extends Module {
         }
         express.listen(config.getInt("port"));
 
+        String authToken;
+        if (config.contains("authentication-key")) {
+            authToken = config.getString("authentication-key");
+        } else {
+            authToken = generateNewToken();
+            config.set("authentication-key", authToken);
+            save();
+        }
+
         Map<String, Object> data = new HashMap<>();
-        data.put("server", config.getString("server-name", "lobby"));
         data.put("port", config.getInt("port", 1034));
+        data.put("auth", authToken);
         tryRegisterServer(data);
     }
 
@@ -127,6 +159,7 @@ public class DataModule extends Module {
     public void sendProxyData(String type, Map<?, ?> map, Consumer<Pair<Integer, String>> result) {
         JSONObject object = new JSONObject(map);
         object.put("data-type", type);
+        object.put("server", config.getString("server-name", "lobby"));
 
         plugin.getScheduler().runTaskAsync(() -> {
             int status = 404;
@@ -134,6 +167,7 @@ public class DataModule extends Module {
             try {
                 plugin.getLogger().info("Sending " + object + " to proxy");
                 Request req = httpClient.newRequest("http://" + config.getString("proxy-ip", "192.168.1.99")).port(config.getInt("proxy-port", 1035)).method("POST").content(new JSONContentProvider(object));
+                req.header("X-Authorization", config.getString("authentication-key"));
                 ContentResponse res = req.send();
                 status = res.getStatus();
                 content = res.getContentAsString();
@@ -160,6 +194,7 @@ public class DataModule extends Module {
         config.set("port", 1034);
         config.set("proxy-port", 1035);
         config.set("proxy-ip", "192.168.1.99");
+        config.set("authentication-key", generateNewToken());
     }
 
     @Override

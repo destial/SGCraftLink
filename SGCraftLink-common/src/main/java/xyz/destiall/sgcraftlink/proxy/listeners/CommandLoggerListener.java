@@ -6,7 +6,7 @@ import xyz.destiall.sgcraftlink.providers.ColorProvider;
 import xyz.destiall.sgcraftlink.providers.PlayerProvider;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
 
-import java.awt.Color;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;

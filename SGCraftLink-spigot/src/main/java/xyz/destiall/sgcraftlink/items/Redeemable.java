@@ -51,9 +51,9 @@ public class Redeemable {
                 String cmd = command.replace("{player}", player.getName());
 
                 if (executeAsServer) {
-                    SGCraftLinkSpigot.getPlugin(SGCraftLinkSpigot.class).executeServerCommand(cmd, false);
+                    SGCraftLinkSpigot.getPlugin(SGCraftLinkSpigot.class).dispatchCommand(cmd, false);
                 } else {
-                    SGCraftLinkSpigot.getPlugin(SGCraftLinkSpigot.class).executeServerCommand(player, cmd, false);
+                    SGCraftLinkSpigot.getPlugin(SGCraftLinkSpigot.class).dispatchCommand(player, cmd, false);
                 }
             }
 

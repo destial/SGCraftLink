@@ -13,11 +13,13 @@ import net.dv8tion.jda.api.interactions.components.buttons.ButtonStyle;
 import net.dv8tion.jda.api.utils.MiscUtil;
 import net.dv8tion.jda.internal.interactions.component.ButtonImpl;
 import org.jetbrains.annotations.NotNull;
+import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
 import xyz.destiall.sgcraftlink.proxy.litebans.LitebansDatabase;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -124,20 +126,28 @@ public class AppealListener extends ListenerAdapter {
 
     @Override
     public void onButtonInteraction(@NotNull ButtonInteractionEvent event) {
-        if (!event.isFromGuild() && !event.getMessage().getAuthor().getId().equals(event.getJDA().getSelfUser().getId()))
+        if (!event.isFromGuild() && !event.getMessage().getAuthor().getId().equals(event.getJDA().getSelfUser().getId())) {
+            super.onButtonInteraction(event);
             return;
+        }
 
         String id = event.getButton().getId();
-        if (id == null)
+        if (id == null) {
+            super.onButtonInteraction(event);
             return;
+        }
 
-        if (!event.getChannel().getId().equals("1082233423537639475"))
+        if (!event.getChannel().getId().equals("1082233423537639475")) {
+            super.onButtonInteraction(event);
             return;
+        }
 
         String[] args = id.split("-");
 
-        if (args.length != 4)
+        if (args.length != 4) {
+            super.onButtonInteraction(event);
             return;
+        }
 
         String username = args[1];
         String userId = args[2];
@@ -186,8 +196,16 @@ public class AppealListener extends ListenerAdapter {
                     String period = args[0].replace("jail", "").trim();
                     int hours = Integer.parseInt(period.replace("h", ""));
                     plugin.dispatchCommand("unban " + username + " --sender=" + executor + " Appeal Accepted");
-                    plugin.getPluginMessager().jail(server, hours, username, "Appeal Accepted");
-                    plugin.getPluginMessager().clearInv(server, username);
+                    Map<String, Object> data = SGCraftLinkCommon.createCommandsData(
+                            "cmi jail " + username + " " + period + " r:Appeal Accepted",
+                            "cmi clear " + username,
+                            "xcatch clear " + username
+                    );
+                    plugin.getDiscordProvider().getDataManager().sendData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, server, data, (result) -> {
+                        if (result.getKey() == 200) {
+                            plugin.getLoggerProvider().info("Jailed and cleared " + username);
+                        }
+                    });
                     if (pm != null) {
                         pm.sendMessage("Your appeal has been accepted. You have been unbanned but your inventory has been cleared and you have been jailed for " + hours + " hours on " + server + " by " + executor).queue();
                     }

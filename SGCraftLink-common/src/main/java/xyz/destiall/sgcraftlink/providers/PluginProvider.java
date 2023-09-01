@@ -2,6 +2,7 @@ package xyz.destiall.sgcraftlink.providers;
 
 import xyz.destiall.sgcraftlink.proxy.luckperms.LuckPermsManager;
 import xyz.destiall.sgcraftlink.proxy.misc.BirthdayManager;
+import xyz.destiall.sgcraftlink.proxy.misc.DataManager;
 
 import java.io.File;
 import java.util.Collection;
@@ -19,6 +20,10 @@ public interface PluginProvider {
     BirthdayManager getBirthdayManager();
 
     LoggerProvider getLoggerProvider();
+
+    default DataManager getDataManager() {
+        return getDiscordProvider().getDataManager();
+    }
 
     PlayerProvider getPlayer(String name);
     PlayerProvider getPlayer(UUID uuid);

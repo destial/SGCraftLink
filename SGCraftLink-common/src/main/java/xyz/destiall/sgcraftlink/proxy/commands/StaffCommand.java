@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -72,10 +73,20 @@ public class StaffCommand implements CommandProvider, TabProvider {
                     try {
                         LuckPermsTrackResult b = plugin.getLuckPermsManager().promote(player, track).get();
                         plugin.getLuckPermsManager().getApi().getUserManager().saveUser(b.user);
-                        plugin.getPluginMessager().promoteOrDemote(SGCraftLinkCommon.PROMOTE, track, playerName);
-                        ComponentProvider<?> message = ComponentProvider.of("Promoted " + player.getName() + " to " + b.group);
-                        message.setColor(ColorProvider.ChatColor.GREEN);
-                        sender.sendMessageComponent(message);
+                        Map<String, Object> data = SGCraftLinkCommon.createCommandsData("lp user " + playerName + " promote " + track);
+                        for (String server : plugin.getDataManager().getServers()) {
+                            plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, server, data, result -> {
+                                ComponentProvider<?> message;
+                                if (result.getKey() == 200) {
+                                    message = ComponentProvider.of("Promoted " + player.getName() + " to " + b.group);
+                                    message.setColor(ColorProvider.ChatColor.GREEN);
+                                } else {
+                                    message = ComponentProvider.of("Unable to promote " + player.getName() + " to " + b.group);
+                                    message.setColor(ColorProvider.ChatColor.RED);
+                                }
+                                sender.sendMessageComponent(message);
+                            });
+                        }
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -86,26 +97,52 @@ public class StaffCommand implements CommandProvider, TabProvider {
                     try {
                         LuckPermsTrackResult b = plugin.getLuckPermsManager().demote(player, track).get();
                         plugin.getLuckPermsManager().getApi().getUserManager().saveUser(b.user);
-                        plugin.getPluginMessager().promoteOrDemote(SGCraftLinkCommon.DEMOTE, track, playerName);
-                        ComponentProvider<?> message = ComponentProvider.of("Demoted " + player.getName() + " to " + b.group);
-                        message.setColor(ColorProvider.ChatColor.GREEN);
-                        sender.sendMessageComponent(message);
+                        Map<String, Object> data = SGCraftLinkCommon.createCommandsData("lp user " + playerName + " demote " + track);
+                        for (String server : plugin.getDataManager().getServers()) {
+                            plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, server, data, result -> {
+                                ComponentProvider<?> message;
+                                if (result.getKey() == 200) {
+                                    message = ComponentProvider.of("Demoted " + player.getName() + " to " + b.group);
+                                    message.setColor(ColorProvider.ChatColor.GREEN);
+                                } else {
+                                    message = ComponentProvider.of("Unable to demote " + player.getName() + " to " + b.group);
+                                    message.setColor(ColorProvider.ChatColor.RED);
+                                }
+                                sender.sendMessageComponent(message);
+                            });
+                        }
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
             } else if (type.equalsIgnoreCase("clearinv")) {
                 String server = args[2];
-                plugin.getPluginMessager().clearInv(server, playerName);
-                ComponentProvider<?> message = ComponentProvider.of("Cleared inventory in server " + server + " for " + playerName);
-                message.setColor(ColorProvider.ChatColor.GREEN);
-                sender.sendMessageComponent(message);
+                Map<String, Object> data = SGCraftLinkCommon.createCommandsData("cmi clear " + playerName);
+                plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, server.toLowerCase(), data, result -> {
+                    ComponentProvider<?> message;
+                    if (result.getKey() == 200) {
+                        message = ComponentProvider.of("Cleared inventory in server " + server + " for " + playerName);
+                        message.setColor(ColorProvider.ChatColor.GREEN);
+                    } else {
+                        message = ComponentProvider.of("Unable to clear inventory in server " + server + " for " + playerName);
+                        message.setColor(ColorProvider.ChatColor.RED);
+                    }
+                    sender.sendMessageComponent(message);
+                });
             } else if (type.equalsIgnoreCase("xcatch")) {
                 String server = args[2];
-                plugin.getPluginMessager().xCatchClear(server, playerName);
-                ComponentProvider<?> message = ComponentProvider.of("Cleared xray logs in server " + server + " for " + playerName);
-                message.setColor(ColorProvider.ChatColor.GREEN);
-                sender.sendMessageComponent(message);
+                Map<String, Object> data = SGCraftLinkCommon.createCommandsData("xcatch clear " + playerName);
+                plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, server.toLowerCase(), data, result -> {
+                    ComponentProvider<?> message;
+                    if (result.getKey() == 200) {
+                        message = ComponentProvider.of("Cleared xray logs in server " + server + " for " + playerName);
+                        message.setColor(ColorProvider.ChatColor.GREEN);
+                    } else {
+                        message = ComponentProvider.of("Unable to clear xray logs in server " + server + " for " + playerName);
+                        message.setColor(ColorProvider.ChatColor.RED);
+                    }
+                    sender.sendMessageComponent(message);
+                });
             }
         }
     }

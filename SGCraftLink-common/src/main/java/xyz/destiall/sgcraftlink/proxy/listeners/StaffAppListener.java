@@ -13,7 +13,6 @@ import net.dv8tion.jda.api.interactions.components.ItemComponent;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.interactions.components.buttons.ButtonStyle;
 import net.dv8tion.jda.api.utils.MiscUtil;
-import net.dv8tion.jda.internal.interactions.component.ButtonImpl;
 import org.jetbrains.annotations.NotNull;
 import xyz.destiall.sgcraftlink.providers.PlayerProvider;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
@@ -201,18 +200,20 @@ public class StaffAppListener extends ListenerAdapter {
                 return;
             }
 
-            event.deferReply().queue();
-            PrivateChannel finalPm = pm;
-            plugin.getLuckPermsManager().promote(player, track).whenComplete((res, err) -> {
-                if (err != null) {
-                    err.printStackTrace();
-                    return;
-                }
+            final PrivateChannel finalPm = pm;
+            String finalTrack = track;
+            event.deferReply().queue(r -> {
+                plugin.getLuckPermsManager().promote(player, finalTrack).whenComplete((res, err) -> {
+                    if (err != null) {
+                        err.printStackTrace();
+                        return;
+                    }
 
-                event.reply(username + " has been promoted to " + res.group).queue();
-                if (finalPm != null) {
-                    finalPm.sendMessage("Your application has been accepted! You have been promoted to " + res.group).queue();
-                }
+                    r.editOriginal(username + " has been promoted to " + res.group).queue();
+                    if (finalPm != null) {
+                        finalPm.sendMessage("Your application has been accepted! You have been promoted to " + res.group).queue();
+                    }
+                });
             });
         } else if (type.equalsIgnoreCase("deny")) {
             event.reply("Rejected " + username).queue();

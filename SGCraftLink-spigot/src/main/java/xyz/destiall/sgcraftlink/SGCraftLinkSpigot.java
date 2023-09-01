@@ -284,15 +284,15 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         return scheduler;
     }
 
-    public void executeServerCommand(String command) {
-        executeServerCommand(getServer().getConsoleSender(), command, true);
+    public void dispatchCommand(String command) {
+        dispatchCommand(getServer().getConsoleSender(), command, true);
     }
 
-    public void executeServerCommand(String command, boolean replace) {
-        executeServerCommand(getServer().getConsoleSender(), command, replace);
+    public void dispatchCommand(String command, boolean replace) {
+        dispatchCommand(getServer().getConsoleSender(), command, replace);
     }
 
-    public void executeServerCommand(CommandSender player, String command, boolean replace) {
+    public void dispatchCommand(CommandSender player, String command, boolean replace) {
         final String cmd = replace ? command.replace("_", " ") : command;
         scheduler.runTask(() -> {
             getLogger().info("Executing command " + cmd);
@@ -300,7 +300,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         });
     }
 
-    public void executeServerCommand(Player player, String command, boolean replace) {
+    public void dispatchCommand(Player player, String command, boolean replace) {
         final String cmd = replace ? command.replace("_", " ") : command;
         scheduler.runTask(() -> {
             getLogger().info("Executing command " + cmd);
