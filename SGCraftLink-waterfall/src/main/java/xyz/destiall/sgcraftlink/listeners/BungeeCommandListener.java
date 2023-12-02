@@ -3,6 +3,7 @@ package xyz.destiall.sgcraftlink.listeners;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.event.ChatEvent;
 import net.md_5.bungee.api.event.TabCompleteEvent;
+import net.md_5.bungee.api.event.TabCompleteResponseEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.event.EventHandler;
 import xyz.destiall.sgcraftlink.SGCraftLinkWaterfall;
@@ -27,6 +28,16 @@ public class BungeeCommandListener extends CommandLoggerListener implements List
 
     @EventHandler
     public void onTabEvent(TabCompleteEvent e) {
+        if (!(e.getSender() instanceof ProxiedPlayer))
+            return;
+
+        ProxiedPlayer player = (ProxiedPlayer) e.getSender();
+        BungeePlayer bungeePlayer = new BungeePlayer(player);
+        e.getSuggestions().removeIf(s -> parseCommand(bungeePlayer, s, true));
+    }
+
+    @EventHandler
+    public void onTabResponseEvent(TabCompleteResponseEvent e) {
         if (!(e.getSender() instanceof ProxiedPlayer))
             return;
 

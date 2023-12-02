@@ -221,7 +221,7 @@ public final class Scheduler {
             if (isCancellingAll)
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
-            return new Task(this, plugin.getServer().getGlobalRegionScheduler().runAtFixedRate(plugin, task -> runnable.run(), delay, period));
+            return new Task(this, plugin.getServer().getGlobalRegionScheduler().runAtFixedRate(plugin, task -> runnable.run(), delay <= 0L ? 1L : delay, period));
         }
 
         return new Task(this, plugin.getServer().getScheduler().runTaskTimer(plugin, runnable, delay, period));
@@ -239,7 +239,7 @@ public final class Scheduler {
             if (isCancellingAll)
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
-            return new Task(this, plugin.getServer().getGlobalRegionScheduler().runAtFixedRate(plugin, task -> runnable.run(), delay, period));
+            return new Task(this, plugin.getServer().getGlobalRegionScheduler().runAtFixedRate(plugin, task -> runnable.run(), delay <= 0L ? 1L : delay, period));
         }
 
         return new Task(this, plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, runnable, delay, period));
@@ -258,7 +258,7 @@ public final class Scheduler {
             if (isCancellingAll)
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
-            return new Task(this, plugin.getServer().getRegionScheduler().runAtFixedRate(plugin, location, task -> runnable.run(), delay, period));
+            return new Task(this, plugin.getServer().getRegionScheduler().runAtFixedRate(plugin, location, task -> runnable.run(), delay <= 0L ? 1L : delay, period));
         }
 
         return new Task(this, plugin.getServer().getScheduler().runTaskTimer(plugin, runnable, delay, period));
@@ -277,7 +277,7 @@ public final class Scheduler {
             if (isCancellingAll)
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
-            return new Task(this, plugin.getServer().getRegionScheduler().runAtFixedRate(plugin, location, task -> runnable.run(), delay, period));
+            return new Task(this, plugin.getServer().getRegionScheduler().runAtFixedRate(plugin, location, task -> runnable.run(), delay <= 0L ? 1L : delay, period));
         }
 
         return new Task(this, plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, runnable, delay, period));
@@ -296,7 +296,7 @@ public final class Scheduler {
             if (isCancellingAll)
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
-            return new Task(this, plugin.getServer().getRegionScheduler().runAtFixedRate(plugin, chunk.getWorld(), chunk.getX(), chunk.getZ(), task -> runnable.run(), delay, period));
+            return new Task(this, plugin.getServer().getRegionScheduler().runAtFixedRate(plugin, chunk.getWorld(), chunk.getX(), chunk.getZ(), task -> runnable.run(), delay <= 0L ? 1L : delay, period));
         }
 
         return new Task(this, plugin.getServer().getScheduler().runTaskTimer(plugin, runnable, delay, period));
@@ -315,7 +315,7 @@ public final class Scheduler {
             if (isCancellingAll)
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
-            return new Task(this, plugin.getServer().getRegionScheduler().runAtFixedRate(plugin, chunk.getWorld(), chunk.getX(), chunk.getZ(), task -> runnable.run(), delay, period));
+            return new Task(this, plugin.getServer().getRegionScheduler().runAtFixedRate(plugin, chunk.getWorld(), chunk.getX(), chunk.getZ(), task -> runnable.run(), delay <= 0L ? 1L : delay, period));
         }
 
         return new Task(this, plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, runnable, delay, period));
@@ -334,7 +334,7 @@ public final class Scheduler {
             if (isCancellingAll)
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
-            return new Task(this, entity.getScheduler().runAtFixedRate(plugin, task -> runnable.run(), null, delay, period));
+            return new Task(this, entity.getScheduler().runAtFixedRate(plugin, task -> runnable.run(), null, delay <= 0L ? 1L : delay, period));
         }
 
         return new Task(this, plugin.getServer().getScheduler().runTaskTimer(plugin, runnable, delay, period));
@@ -353,7 +353,7 @@ public final class Scheduler {
             if (isCancellingAll)
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
-            return new Task(this, entity.getScheduler().runAtFixedRate(plugin, task -> runnable.run(), null, delay, period));
+            return new Task(this, entity.getScheduler().runAtFixedRate(plugin, task -> runnable.run(), null, delay <= 0L ? 1L : delay, period));
         }
 
         return new Task(this, plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, runnable, delay, period));
@@ -373,7 +373,7 @@ public final class Scheduler {
             return new Task(this, plugin.getServer().getGlobalRegionScheduler().runDelayed(plugin, task -> {
                 runnable.run();
                 this.foliaTasks.removeIf(t -> t.foliaTask == task);
-            }, delay));
+            }, delay <= 0L ? 1L : delay));
         }
 
         return new Task(this, plugin.getServer().getScheduler().runTaskLater(plugin, runnable, delay));
@@ -393,7 +393,7 @@ public final class Scheduler {
             return new Task(this, plugin.getServer().getGlobalRegionScheduler().runDelayed(plugin, task -> {
                 runnable.run();
                 this.foliaTasks.removeIf(t -> t.foliaTask == task);
-            }, delay));
+            }, delay <= 0L ? 1L : delay));
         }
 
         return new Task(this, plugin.getServer().getScheduler().runTaskLaterAsynchronously(plugin, runnable, delay));
@@ -414,7 +414,7 @@ public final class Scheduler {
             return new Task(this, plugin.getServer().getRegionScheduler().runDelayed(plugin, location, task -> {
                 runnable.run();
                 this.foliaTasks.removeIf(t -> t.foliaTask == task);
-            }, delay));
+            }, delay <= 0L ? 1L : delay));
         }
 
         return new Task(this, plugin.getServer().getScheduler().runTaskLater(plugin, runnable, delay));
@@ -435,7 +435,7 @@ public final class Scheduler {
             return new Task(this, plugin.getServer().getRegionScheduler().runDelayed(plugin, location, task -> {
                 runnable.run();
                 this.foliaTasks.removeIf(t -> t.foliaTask == task);
-            }, delay));
+            }, delay <= 0L ? 1L : delay));
         }
 
         return new Task(this, plugin.getServer().getScheduler().runTaskLaterAsynchronously(plugin, runnable, delay));
@@ -456,7 +456,7 @@ public final class Scheduler {
             return new Task(this, plugin.getServer().getRegionScheduler().runDelayed(plugin, chunk.getWorld(), chunk.getX(), chunk.getZ(), task -> {
                 runnable.run();
                 this.foliaTasks.removeIf(t -> t.foliaTask == task);
-            }, delay));
+            }, delay <= 0L ? 1L : delay));
         }
 
         return new Task(this, plugin.getServer().getScheduler().runTaskLater(plugin, runnable, delay));
@@ -477,7 +477,7 @@ public final class Scheduler {
             return new Task(this, plugin.getServer().getRegionScheduler().runDelayed(plugin, chunk.getWorld(), chunk.getX(), chunk.getZ(), task -> {
                 runnable.run();
                 this.foliaTasks.removeIf(t -> t.foliaTask == task);
-            }, delay));
+            }, delay <= 0L ? 1L : delay));
         }
 
         return new Task(this, plugin.getServer().getScheduler().runTaskLaterAsynchronously(plugin, runnable, delay));
@@ -498,7 +498,7 @@ public final class Scheduler {
             return new Task(this, entity.getScheduler().runDelayed(plugin, task -> {
                 runnable.run();
                 this.foliaTasks.removeIf(t -> t.foliaTask == task);
-            }, null, delay));
+            }, null, delay <= 0L ? 1L : delay));
         }
 
         return new Task(this, plugin.getServer().getScheduler().runTaskLater(plugin, runnable, delay));
@@ -519,7 +519,7 @@ public final class Scheduler {
             return new Task(this, entity.getScheduler().runDelayed(plugin, task -> {
                 runnable.run();
                 this.foliaTasks.removeIf(t -> t.foliaTask == task);
-            }, null, delay));
+            }, null, delay <= 0L ? 1L : delay));
         }
 
         return new Task(this, plugin.getServer().getScheduler().runTaskLaterAsynchronously(plugin, runnable, delay));
@@ -624,7 +624,7 @@ public final class Scheduler {
     }
 
     /// Wrapper for the BukkitRunnable
-    public static abstract class Run implements Runnable {
+    public static abstract class TaskRunnable implements Runnable {
         private Task task;
         public synchronized void cancel() throws IllegalStateException {
             if (task == null)

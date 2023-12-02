@@ -21,6 +21,7 @@ public abstract class CommandLoggerListener {
     protected boolean parseCommand(PlayerProvider player, String message, boolean tab) {
         message = message.replaceFirst("/", "");
         List<String> command = new ArrayList<>(Arrays.asList(message.split(" ")));
+        String cmd = command.get(0).toLowerCase();
 
         //Ethical reasons :)
         List<String> unloggedCommands = new ArrayList<>();
@@ -30,7 +31,7 @@ public abstract class CommandLoggerListener {
         unloggedCommands.add("changepassword");
         unloggedCommands.add("changepass");
         for (String check : unloggedCommands) {
-            if (command.get(0).toLowerCase().startsWith(check)) {
+            if (cmd.startsWith(check)) {
                 return false;
             }
         }
@@ -38,7 +39,7 @@ public abstract class CommandLoggerListener {
         List<String> consoleOnlyCommands = plugin.getConfigProvider().getConfig().getStringList("console-only-commands");
         if (consoleOnlyCommands != null && !consoleOnlyCommands.isEmpty()) {
             for (String check : consoleOnlyCommands) {
-                if (command.get(0).equalsIgnoreCase(check)) {
+                if ((check.endsWith(":") && cmd.startsWith(check.toLowerCase())) || cmd.equalsIgnoreCase(check)) {
                     if (!tab) {
                         player.sendMessage(ColorProvider.of("&cYou do not have permission to use this command!"));
                     }
@@ -46,6 +47,9 @@ public abstract class CommandLoggerListener {
                 }
             }
         }
+
+        if (tab)
+            return false;
 
         if (plugin.getDiscordProvider() == null)
             return false;
@@ -55,7 +59,7 @@ public abstract class CommandLoggerListener {
             return false;
 
         for (String check : plugin.getConfigProvider().getConfig().getStringList("logged-commands")) {
-            if (command.get(0).toLowerCase().startsWith(check.toLowerCase())) {
+            if (cmd.startsWith(check.toLowerCase())) {
                 EmbedBuilder builder = new EmbedBuilder();
                 builder.setColor(Color.MAGENTA);
                 builder.setAuthor(player.getName());

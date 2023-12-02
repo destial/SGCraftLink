@@ -46,7 +46,7 @@ public class ChatBubble extends Module implements Listener, CommandExecutor {
 
     private class Chat {
         private Scheduler.Task teleport;
-        private Map<Scheduler.Run, List<ChatBubblePacket>> lines;
+        private Map<Scheduler.TaskRunnable, List<ChatBubblePacket>> lines;
 
         private Chat(Player player) {
             init(player);
@@ -181,7 +181,7 @@ public class ChatBubble extends Module implements Listener, CommandExecutor {
 
             Chat playerBubbles = chatBubbles.getOrDefault(player, chatBubbles.putIfAbsent(player, new Chat(player)));
             int current = lines.size();
-            for (Map.Entry<Scheduler.Run, List<ChatBubblePacket>> entry : playerBubbles.lines.entrySet()) {
+            for (Map.Entry<Scheduler.TaskRunnable, List<ChatBubblePacket>> entry : playerBubbles.lines.entrySet()) {
                 if ((current += entry.getValue().size()) > maxLines) {
                     entry.getKey().cancel();
                     continue;
@@ -191,7 +191,7 @@ public class ChatBubble extends Module implements Listener, CommandExecutor {
                 }
             }
 
-            Scheduler.Run runnable = new Scheduler.Run() {
+            Scheduler.TaskRunnable runnable = new Scheduler.TaskRunnable() {
                 @Override
                 public void run() {
                     remove();
