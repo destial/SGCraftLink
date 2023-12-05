@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.util.UUID;
 
 public abstract class PlayerProvider {
+    protected User luckpermsUser;
     public abstract void sendData(String channel, byte[] data);
 
     public abstract String getName();
@@ -48,17 +49,21 @@ public abstract class PlayerProvider {
 
         LuckPerms api = LuckPermsProvider.get();
         UserManager manager = api.getUserManager();
-        User user = manager.getUser(getUUID());
-        if (user == null) {
+        if (luckpermsUser != null && manager.isLoaded(getUUID())) {
+            return luckpermsUser;
+        }
+
+        luckpermsUser = manager.getUser(getUUID());
+        if (luckpermsUser == null) {
             try {
-                user = manager.loadUser(getUUID()).get();
+                luckpermsUser = manager.loadUser(getUUID()).get();
             } catch (Exception e) {
                 e.printStackTrace();
                 return null;
             }
         }
 
-        return user;
+        return luckpermsUser;
     }
 
     public String getPrefix() {

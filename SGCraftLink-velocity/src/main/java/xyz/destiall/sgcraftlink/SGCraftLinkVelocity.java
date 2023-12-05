@@ -25,8 +25,10 @@ import xyz.destiall.sgcraftlink.providers.PluginProvider;
 import xyz.destiall.sgcraftlink.proxy.commands.BirthdayCommand;
 import xyz.destiall.sgcraftlink.proxy.commands.DiscordCommand;
 import xyz.destiall.sgcraftlink.proxy.commands.StaffCommand;
+import xyz.destiall.sgcraftlink.proxy.commands.TempVoteCommand;
 import xyz.destiall.sgcraftlink.proxy.luckperms.LuckPermsManager;
 import xyz.destiall.sgcraftlink.proxy.misc.BirthdayManager;
+import xyz.destiall.sgcraftlink.proxy.misc.DataManager;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityClickEvent;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityColor;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityHoverEvent;
@@ -63,6 +65,7 @@ public class SGCraftLinkVelocity implements PluginProvider {
     private VelocityPluginMessager pluginMessager;
     private LuckPermsManager luckPermsManager;
     private BirthdayManager birthdayManager;
+    private DataManager dataManager;
 
     private List<VelocityCommand> commands;
 
@@ -140,6 +143,11 @@ public class SGCraftLinkVelocity implements PluginProvider {
     }
 
     @Override
+    public DataManager getDataManager() {
+        return dataManager;
+    }
+
+    @Override
     public VelocityPlayer getPlayer(String name) {
         Player player = server.getPlayer(name).orElse(null);
         return player != null ? new VelocityPlayer(player) : null;
@@ -183,12 +191,22 @@ public class SGCraftLinkVelocity implements PluginProvider {
     @Override
     public void enable() {
         try {
-            luckPermsManager = new LuckPermsManager(this);
+            pluginMessager = new VelocityPluginMessager(this);
         } catch (Exception e) {
             e.printStackTrace();
         }
         try {
             configManager = new VelocityConfigProvider(this, "config.yml");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            dataManager = new DataManager(this);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            luckPermsManager = new LuckPermsManager(this);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -208,11 +226,6 @@ public class SGCraftLinkVelocity implements PluginProvider {
             e.printStackTrace();
         }
         try {
-            pluginMessager = new VelocityPluginMessager(this);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        try {
             birthdayManager = new BirthdayManager(this);
         } catch (Exception e) {
             e.printStackTrace();
@@ -227,5 +240,6 @@ public class SGCraftLinkVelocity implements PluginProvider {
         commands.add(new VelocityCommand(this, "discord", new DiscordCommand(this)));
         commands.add(new VelocityCommand(this, "sgc", new StaffCommand(this)));
         commands.add(new VelocityCommand(this, "birthday", new BirthdayCommand(this)));
+        commands.add(new VelocityCommand(this, "vote", new TempVoteCommand(this)));
     }
 }

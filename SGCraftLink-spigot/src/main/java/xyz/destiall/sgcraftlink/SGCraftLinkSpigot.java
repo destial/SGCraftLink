@@ -124,7 +124,6 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             getLogger().warning("This version cannot run Birthdays!");
         }
         try {
-            testPaperOr1_8Above();
             modules.add(new DataModule(this));
         } catch (Exception e) {
             e.printStackTrace();

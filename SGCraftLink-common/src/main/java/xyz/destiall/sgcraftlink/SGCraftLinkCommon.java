@@ -17,18 +17,71 @@ public class SGCraftLinkCommon {
     public static final String SET_FIRSTJOIN = "SGCSetJoined";
     public static final String SET_JAIL = "SGCSetJail";
     public static final String GET_JAIL = "SGCGetJail";
-    public static final String BIRTHDAY = "SGCBirthday";
 
     public static final String DATA_SERVER_REGISTER = "SGC_DATA_SERVER_REGISTER";
     public static final String DATA_SERVER_UNREGISTER = "SGC_DATA_SERVER_UNREGISTER";
     public static final String DATA_CHATS = "SGC_DATA_CHATS";
     public static final String DATA_EXECUTE_COMMAND = "SGC_DATA_EXECUTE_COMMAND";
-    public static final String DATA_RANKS = "SGC_DATA_RANKS";
+    public static final String DATA_GET_HEADHUNT = "SGC_DATA_GET_HEADHUNT";
+    public static final String DATA_START_HEADHUNT = "SGC_DATA_START_HEADHUNT";
+    public static final String DATA_END_HEADHUNT = "SGC_DATA_END_HEADHUNT";
+    public static final String DATA_CLEAR_SCORE_HEADHUNT = "SGC_DATA_CLEAR_HEADHUNT";
+    public static final String DATA_REMOVE_HEAD_HEADHUNT = "SGC_DATA_REMOVE_HEADHUNT";
+    public static final String DATA_BIRTHDAY = "SGC_DATA_BIRTHDAY";
+    public static final String DATA_LUCKPERMS_SERVICE = "SGC_LUCKPERMS_SERVICE";
 
     public static Map<String, Object> createCommandsData(String... commands) {
         Map<String, Object> data = new HashMap<>();
         data.put("commands", Arrays.asList(commands));
         return data;
+    }
+
+    public static String relativeDate(long end) {
+        long start = System.currentTimeMillis();
+        // Calculate time difference
+        // in milliseconds
+        long difference_In_Time = end - start;
+
+        String format = "";
+
+
+        long difference_In_Days
+                = (difference_In_Time
+                / (1000L * 60 * 60 * 24))
+                % 365;
+
+        if (difference_In_Days > 0) {
+            format += difference_In_Days + " days ";
+        }
+
+        long difference_In_Hours
+                = (difference_In_Time
+                / (1000L * 60 * 60))
+                % 24;
+
+        if (difference_In_Hours > 0) {
+            format += difference_In_Hours + " hours ";
+        }
+
+        long difference_In_Minutes
+                = (difference_In_Time
+                / (1000L * 60))
+                % 60;
+
+        if (difference_In_Minutes > 0) {
+            format += difference_In_Minutes + " mins ";
+        }
+
+        long difference_In_Seconds
+                = (difference_In_Time
+                / 1000L)
+                % 60;
+
+        if (difference_In_Seconds > 0) {
+            format += difference_In_Seconds + " s";
+        }
+
+        return format.trim();
     }
 
     public static String convertStreamToString(InputStream is) {

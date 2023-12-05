@@ -3,23 +3,27 @@ package xyz.destiall.sgcraftlink.modules;
 import express.Express;
 import express.utils.MediaType;
 import express.utils.Status;
-import org.eclipse.jetty.client.HttpClient;
+import net.luckperms.api.messenger.IncomingMessageConsumer;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.entity.Player;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.hooks.CoreProtectHook;
-import xyz.destiall.sgcraftlink.items.JSONContentProvider;
 import xyz.destiall.sgcraftlink.items.Pair;
+import xyz.destiall.sgcraftlink.utils.HTTPManager;
 
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
 
 public class DataModule extends Module {
     private static final SecureRandom secureRandom = new SecureRandom(); //threadsafe
@@ -31,23 +35,25 @@ public class DataModule extends Module {
         return base64Encoder.encodeToString(randomBytes);
     }
 
-
     private final Express express;
-    private final HttpClient httpClient;
+    private final HTTPManager manager;
+
+    private final List<LuckPermsModule.BackendRestMessenger> messengers;
 
     public DataModule(SGCraftLinkSpigot plugin) {
         super(plugin, "comms.yml");
         express = new Express();
-        httpClient = new HttpClient();
+        manager = new HTTPManager();
+        messengers = new ArrayList<>();
         express.post("/", (request, response) -> {
             try {
-                String body = SGCraftLinkCommon.convertStreamToString(request.getBody());
-                plugin.getLogger().info("Received data " + body);
+                String body = SGCraftLinkCommon.convertStreamToString(request.getBody()).trim();
+                plugin.getLogger().warning("Received data " + body);
                 JSONObject json = new JSONObject(body);
 
                 if (!json.has("data-type")) {
                     plugin.getLogger().warning("Request does not have any data-type!");
-                    response.sendStatus(Status._405);
+                    response.sendStatus(Status._500);
                     return;
                 }
 
@@ -56,6 +62,7 @@ public class DataModule extends Module {
                 if (!datatype.equalsIgnoreCase(SGCraftLinkCommon.DATA_SERVER_REGISTER)) {
                     String auth = config.getString("authentication-key");
                     List<String> headers = request.getHeader("X-Authorization");
+                    plugin.getLogger().warning("Headers: " + String.join(",", headers));
                     if (headers.isEmpty() || !headers.get(0).equals(auth)) {
                         response.sendStatus(Status._403);
                         return;
@@ -112,6 +119,104 @@ public class DataModule extends Module {
                         response.setStatus(Status._200).send(res.toString());
                         break;
                     }
+                    case SGCraftLinkCommon.DATA_GET_HEADHUNT: {
+                        JSONObject res = new JSONObject();
+                        HeadHunt hunt = plugin.getModule(HeadHunt.class);
+                        if (hunt == null) {
+                            response.setStatus(Status._201).send(res.toString());
+                            break;
+                        }
+
+                        res.put("remaining", hunt.getRemaining());
+                        JSONObject players = new JSONObject();
+                        for (Map.Entry<String, Integer> score : hunt.getScore().entrySet()) {
+                            players.put(score.getKey(), score.getValue());
+                        }
+                        res.put("score", players);
+                        response.setStatus(Status._200).send(res.toString());
+                        break;
+                    }
+                    case SGCraftLinkCommon.DATA_START_HEADHUNT: {
+                        HeadHunt hunt = plugin.getModule(HeadHunt.class);
+                        if (hunt == null) {
+                            response.sendStatus(Status._201);
+                            break;
+                        }
+                        hunt.setCheckOtherServers(true);
+                        response.sendStatus(Status._200);
+                        break;
+                    }
+                    case SGCraftLinkCommon.DATA_END_HEADHUNT: {
+                        HeadHunt hunt = plugin.getModule(HeadHunt.class);
+                        if (hunt == null) {
+                            response.sendStatus(Status._201);
+                            break;
+                        }
+                        hunt.setCheckOtherServers(false);
+                        hunt.announceWinner();
+                        response.sendStatus(Status._200);
+                        break;
+                    }
+                    case SGCraftLinkCommon.DATA_CLEAR_SCORE_HEADHUNT: {
+                        HeadHunt hunt = plugin.getModule(HeadHunt.class);
+                        if (hunt == null) {
+                            response.setStatus(Status._201);
+                            break;
+                        }
+
+                        hunt.getScore().clear();
+                        hunt.getOtherServersScore().clear();
+                        response.sendStatus(Status._200);
+                        break;
+                    }
+                    case SGCraftLinkCommon.DATA_REMOVE_HEAD_HEADHUNT: {
+                        HeadHunt hunt = plugin.getModule(HeadHunt.class);
+                        if (hunt == null) {
+                            response.setStatus(Status._201);
+                            break;
+                        }
+
+                        for (Location loc : hunt.getHunts()) {
+                            loc.getBlock().setType(Material.AIR);
+                        }
+
+                        hunt.getHunts().clear();
+                        response.sendStatus(Status._200);
+                        break;
+                    }
+                    case SGCraftLinkCommon.DATA_BIRTHDAY: {
+                        BirthdayModule bday = plugin.getModule(BirthdayModule.class);
+                        if (bday == null) {
+                            response.sendStatus(Status._201);
+                            break;
+                        }
+
+                        String name = json.getString("name");
+                        boolean celebrated = json.getBoolean("celebrated");
+
+                        Player online = plugin.getServer().getPlayer(name);
+                        if (online != null) {
+                            bday.celebrate(online, celebrated);
+                        } else {
+                            bday.addBirthday(name, celebrated);
+                        }
+                        response.sendStatus(Status._200);
+                        break;
+                    }
+                    case SGCraftLinkCommon.DATA_SERVER_UNREGISTER: {
+                        plugin.getLogger().warning("Proxy has unregistered this server! This is probably due to a proxy plugin reload!");
+                        plugin.getLogger().warning("We will try to register this server again!");
+                        registerServer();
+                        response.sendStatus(Status._200);
+                        break;
+                    }
+                    case SGCraftLinkCommon.DATA_LUCKPERMS_SERVICE: {
+                        for (LuckPermsModule.BackendRestMessenger messenger : messengers) {
+                            messenger.handleIncomingMessage(json);
+                        }
+                        response.sendStatus(Status._200);
+                        break;
+                    }
                     default: {
                         plugin.getLogger().warning("Received data " + datatype + " but have no implementation!");
                         response.sendStatus(Status._201);
@@ -120,16 +225,15 @@ public class DataModule extends Module {
                 }
             } catch (Exception e) {
                 e.printStackTrace();
+                response.sendStatus(Status._201);
             }
         });
-
-        try {
-            httpClient.start();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
         express.listen(config.getInt("port"));
 
+        registerServer();
+    }
+
+    private void registerServer() {
         String authToken;
         if (config.contains("authentication-key")) {
             authToken = config.getString("authentication-key");
@@ -146,8 +250,8 @@ public class DataModule extends Module {
     }
 
     private void tryRegisterServer(Map<String, Object> data) {
-        sendProxyData(SGCraftLinkCommon.DATA_SERVER_REGISTER, data, (result) -> {
-            if (result.getKey() != 200) {
+        sendProxyData(SGCraftLinkCommon.DATA_SERVER_REGISTER, data, (status, content) -> {
+            if (status != 200) {
                 plugin.getLogger().warning("Failed! Trying to register server with proxy again...");
                 plugin.getScheduler().runTaskLaterAsync(() -> tryRegisterServer(data), 20L * 60L);
                 return;
@@ -156,36 +260,33 @@ public class DataModule extends Module {
         });
     }
 
-    public void sendProxyData(String type, Map<?, ?> map, Consumer<Pair<Integer, String>> result) {
+    public void sendProxyData(String type, Map<?, ?> map, BiConsumer<Integer, String> result) {
         JSONObject object = new JSONObject(map);
         object.put("data-type", type);
         object.put("server", config.getString("server-name", "lobby"));
-
-        plugin.getScheduler().runTaskAsync(() -> {
-            int status = 404;
-            String content = null;
+        Map<String, String> headers = HTTPManager.headers("X-Authorization", config.getString("authentication-key"));
+        plugin.getScheduler().runTaskLaterAsync(() -> {
             try {
-                plugin.getLogger().info("Sending " + object + " to proxy");
-                Request req = httpClient.newRequest("http://" + config.getString("proxy-ip", "192.168.1.99")).port(config.getInt("proxy-port", 1035)).method("POST").content(new JSONContentProvider(object));
-                req.header("X-Authorization", config.getString("authentication-key"));
-                ContentResponse res = req.send();
-                status = res.getStatus();
-                content = res.getContentAsString();
-                plugin.getLogger().info("Sent to proxy");
+                plugin.getLogger().warning("Sending " + type + " to proxy");
+                CompletableFuture<ContentResponse> response = manager.fetch("http://" + config.getString("proxy-ip", "192.168.1.99"), config.getInt("proxy-port", 1035), HTTPManager.Method.POST, headers, object);
+                response.whenComplete((res, err) -> {
+                    if (err != null) {
+                        plugin.getLogger().warning("Responded back with 404");
+                        plugin.getLogger().severe(err.getLocalizedMessage());
+                        result.accept(404, null);
+                        return;
+                    }
+                    String content = res.getContentAsString().trim();
+                    content = content.isEmpty() ? "{}" : content;
+                    plugin.getLogger().warning("Responded back with " + res.getStatus());
+                    int status = res.getStatus();
+                    result.accept(status, content);
+                });
             } catch (Exception e) {
-                plugin.getLogger().severe(e.getMessage());
+                e.printStackTrace();
+                result.accept(404, null);
             }
-
-            plugin.getLogger().info("Received status " + status);
-
-            if (result != null) {
-                if (status == 200) {
-                    result.accept(new Pair<>(status, content));
-                    return;
-                }
-                result.accept(new Pair<>(status, null));
-            }
-        });
+        }, 1L);
     }
 
     @Override
@@ -200,11 +301,19 @@ public class DataModule extends Module {
     @Override
     public void disable() {
         try {
-            httpClient.stop();
+            manager.shutdown();
         } catch (Exception e) {
             e.printStackTrace();
         }
 
         express.stop();
+    }
+
+    public String getServer() {
+        return config.getString("server-name", "lobby");
+    }
+
+    public List<LuckPermsModule.BackendRestMessenger> getMessengers() {
+        return messengers;
     }
 }

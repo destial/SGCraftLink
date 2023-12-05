@@ -23,7 +23,6 @@ import xyz.destiall.sgcraftlink.proxy.listeners.DiscordCommandListener;
 import xyz.destiall.sgcraftlink.proxy.listeners.LinkListener;
 import xyz.destiall.sgcraftlink.proxy.listeners.ReportButtonListener;
 import xyz.destiall.sgcraftlink.proxy.listeners.StaffAppListener;
-import xyz.destiall.sgcraftlink.proxy.misc.DataManager;
 
 import javax.security.auth.login.LoginException;
 import java.awt.*;
@@ -50,7 +49,6 @@ public class DiscordProvider {
     protected StaffAppListener staffApp;
     protected DiscordCommandListener dcl;
     protected LinkListener linkListener;
-    protected DataManager dataManager;
 
     public DiscordProvider(PluginProvider plugin) {
         this.plugin = plugin;
@@ -86,12 +84,6 @@ public class DiscordProvider {
         setup(configManager);
 
         hookConsole();
-
-        setupDataManager();
-    }
-
-    public void setupDataManager() {
-        dataManager = new DataManager(plugin);
     }
 
     public void hookConsole() {
@@ -127,10 +119,6 @@ public class DiscordProvider {
 
     public TextChannel getConsoleChannel() {
         return consoleChannel;
-    }
-
-    public DataManager getDataManager() {
-        return dataManager;
     }
 
     public void setup(ConfigProvider<?> configManager) {
@@ -224,7 +212,6 @@ public class DiscordProvider {
         jda.shutdown();
         jda = null;
         linkListener.getSub().close();
-        dataManager.shutdown();
     }
 
     public JDA getJda() {

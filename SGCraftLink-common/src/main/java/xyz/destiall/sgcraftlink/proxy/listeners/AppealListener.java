@@ -191,7 +191,6 @@ public class AppealListener extends ListenerAdapter {
                     if (pm != null) {
                         pm.sendMessage("Your appeal has been accepted. You have been temporarily banned for " + period.replace("d", "") + " days by " + executor).queue();
                     }
-                    break;
                 } else if (args[0].startsWith("jail")) {
                     String period = args[0].replace("jail", "").trim();
                     int hours = Integer.parseInt(period.replace("h", ""));
@@ -201,16 +200,16 @@ public class AppealListener extends ListenerAdapter {
                             "cmi clear " + username,
                             "xcatch clear " + username
                     );
-                    plugin.getDiscordProvider().getDataManager().sendData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, server, data, (result) -> {
-                        if (result.getKey() == 200) {
+                    plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, server, data, (status, content) -> {
+                        if (status == 200) {
                             plugin.getLoggerProvider().info("Jailed and cleared " + username);
                         }
                     });
                     if (pm != null) {
                         pm.sendMessage("Your appeal has been accepted. You have been unbanned but your inventory has been cleared and you have been jailed for " + hours + " hours on " + server + " by " + executor).queue();
                     }
-                    break;
                 }
+                break;
             }
         }
 
@@ -219,6 +218,6 @@ public class AppealListener extends ListenerAdapter {
             .setActionRows(event.getMessage().getActionRows().stream().map(ActionRow::asDisabled).collect(Collectors.toList()))
             .queue();
 
-        event.getInteraction().reply("Response: " + args[0]).setEphemeral(true).queue();
+        event.reply("Response: " + args[0]).setEphemeral(true).queue();
     }
 }

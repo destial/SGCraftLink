@@ -38,8 +38,11 @@ public class CoreProtectHook extends Module {
 
         List<Pair<Long, String>> data = new ArrayList<>();
         try (Connection connection = Database.getConnection(false, 100)) {
-            PreparedStatement statement = connection.prepareStatement("SELECT time,message FROM " + ConfigHandler.prefix + "chat WHERE user=(SELECT id FROM " + ConfigHandler.prefix + "user WHERE user=?) ORDER BY time DESC LIMIT " + limit);
+
+            PreparedStatement statement = connection.prepareStatement("SELECT time,message FROM " + ConfigHandler.prefix + "chat WHERE user=(SELECT id FROM " + ConfigHandler.prefix + "user WHERE user=?) AND time < ? ORDER BY time DESC LIMIT ?");
             statement.setString(1, player);
+            statement.setLong(2, System.currentTimeMillis());
+            statement.setInt(3, limit);
 
             ResultSet resultSet = statement.executeQuery();
 

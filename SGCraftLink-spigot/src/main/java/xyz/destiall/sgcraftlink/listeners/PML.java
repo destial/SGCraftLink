@@ -7,7 +7,6 @@ import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.jetbrains.annotations.NotNull;
 import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
-import xyz.destiall.sgcraftlink.modules.BirthdayModule;
 import xyz.destiall.sgcraftlink.modules.CMIModule;
 import xyz.destiall.sgcraftlink.modules.LuckPermsModule;
 
@@ -44,24 +43,6 @@ public class PML implements PluginMessageListener {
                 }
 
                 plugin.sendJail(player, result);
-                break;
-            }
-            case SGCraftLinkCommon.BIRTHDAY: {
-                logPM(type, channel, player);
-                BirthdayModule bday = plugin.getModule(BirthdayModule.class);
-                if (bday == null)
-                    break;
-
-                String name = input.readUTF().replace("*", "_");
-                boolean celebrated = Boolean.parseBoolean(input.readUTF());
-
-                Player online = plugin.getServer().getPlayer(name);
-                if (online != null) {
-                    bday.celebrate(online, celebrated);
-                } else {
-                    bday.addBirthday(name, celebrated);
-                }
-
                 break;
             }
             default: break;

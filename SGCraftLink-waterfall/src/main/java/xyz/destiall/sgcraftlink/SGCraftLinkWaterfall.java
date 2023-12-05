@@ -24,8 +24,10 @@ import xyz.destiall.sgcraftlink.providers.PluginProvider;
 import xyz.destiall.sgcraftlink.proxy.commands.BirthdayCommand;
 import xyz.destiall.sgcraftlink.proxy.commands.DiscordCommand;
 import xyz.destiall.sgcraftlink.proxy.commands.StaffCommand;
+import xyz.destiall.sgcraftlink.proxy.commands.TempVoteCommand;
 import xyz.destiall.sgcraftlink.proxy.luckperms.LuckPermsManager;
 import xyz.destiall.sgcraftlink.proxy.misc.BirthdayManager;
+import xyz.destiall.sgcraftlink.proxy.misc.DataManager;
 
 import java.util.Collection;
 import java.util.UUID;
@@ -41,6 +43,7 @@ public final class SGCraftLinkWaterfall extends Plugin implements PluginProvider
     private BungeeLogger logger;
     private LuckPermsManager luckPermsManager;
     private BirthdayManager birthdayManager;
+    private DataManager dataManager;
 
     @Override
     public void onEnable() {
@@ -77,12 +80,27 @@ public final class SGCraftLinkWaterfall extends Plugin implements PluginProvider
     @Override
     public void enable() {
         try {
-            luckPermsManager = new LuckPermsManager(this);
+            logger = new BungeeLogger(getLogger());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            pluginMessager = new BungeePluginMessager(this);
         } catch (Exception e) {
             e.printStackTrace();
         }
         try {
             configManager = new BungeeConfigProvider(this, "config.yml");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            dataManager = new DataManager(this);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            luckPermsManager = new LuckPermsManager(this);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -102,16 +120,6 @@ public final class SGCraftLinkWaterfall extends Plugin implements PluginProvider
             e.printStackTrace();
         }
         try {
-            pluginMessager = new BungeePluginMessager(this);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        try {
-            logger = new BungeeLogger(getLogger());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        try {
             birthdayManager = new BirthdayManager(this);
         } catch (Exception e) {
             e.printStackTrace();
@@ -125,6 +133,7 @@ public final class SGCraftLinkWaterfall extends Plugin implements PluginProvider
         getProxy().getPluginManager().registerCommand(this, new BungeeCommand(this, "discord", new DiscordCommand(this)));
         getProxy().getPluginManager().registerCommand(this, new BungeeCommand(this, "sgc", new StaffCommand(this)));
         getProxy().getPluginManager().registerCommand(this, new BungeeCommand(this, "birthday", new BirthdayCommand(this)));
+        getProxy().getPluginManager().registerCommand(this, new BungeeCommand(this, "vote", new TempVoteCommand(this)));
     }
 
     @Override
@@ -187,5 +196,10 @@ public final class SGCraftLinkWaterfall extends Plugin implements PluginProvider
     @Override
     public BungeeLogger getLoggerProvider() {
         return logger;
+    }
+
+    @Override
+    public DataManager getDataManager() {
+        return dataManager;
     }
 }

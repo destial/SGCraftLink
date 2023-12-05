@@ -41,7 +41,7 @@ public class VelocityConfigProvider extends ConfigProvider<VelocityConfiguration
                     ByteStreams.copy(is, os);
                 }
             } catch (IOException e) {
-                plugin.getLoggerProvider().error("Unable to create configuration file " + name);
+                plugin.getLoggerProvider().error("Unable to load configuration file " + name);
             }
         }
 

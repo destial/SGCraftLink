@@ -6,7 +6,7 @@ import org.json.JSONObject;
 import java.nio.charset.StandardCharsets;
 
 public class JSONContentProvider extends BytesContentProvider {
-    protected JSONContentProvider(JSONObject object) {
+    public JSONContentProvider(JSONObject object) {
         super("application/json", new byte[][]{object.toString().getBytes(StandardCharsets.UTF_8)});
     }
 }

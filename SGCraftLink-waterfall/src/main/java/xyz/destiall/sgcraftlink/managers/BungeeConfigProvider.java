@@ -16,10 +16,12 @@ import java.nio.file.Files;
 public class BungeeConfigProvider extends ConfigProvider<BungeeConfiguration> {
     private final SGCraftLinkWaterfall plugin;
     private BungeeConfiguration config;
+    private ConfigurationProvider provider;
 
     public BungeeConfigProvider(SGCraftLinkWaterfall plugin, String name) {
         super(name);
         this.plugin = plugin;
+        provider = ConfigurationProvider.getProvider(YamlConfiguration.class);
         create();
     }
 
@@ -42,12 +44,12 @@ public class BungeeConfigProvider extends ConfigProvider<BungeeConfiguration> {
                     ByteStreams.copy(is, os);
                 }
             } catch (IOException e) {
-                plugin.getLoggerProvider().error("Unable to create configuration file " + name);
+                plugin.getLoggerProvider().error("Unable to load configuration file " + name);
             }
         }
 
         try {
-            config = new BungeeConfiguration(ConfigurationProvider.getProvider(YamlConfiguration.class).load(configFile));
+            config = new BungeeConfiguration(provider.load(configFile));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -76,7 +78,7 @@ public class BungeeConfigProvider extends ConfigProvider<BungeeConfiguration> {
     @Override
     public void save() {
         try {
-            ConfigurationProvider.getProvider(YamlConfiguration.class).save(config.getBase(), new File(getDataFolder(), name));
+            provider.save(config.getBase(), new File(getDataFolder(), name));
         } catch (Exception e) {
             e.printStackTrace();
         }

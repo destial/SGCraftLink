@@ -21,9 +21,7 @@ public interface PluginProvider {
 
     LoggerProvider getLoggerProvider();
 
-    default DataManager getDataManager() {
-        return getDiscordProvider().getDataManager();
-    }
+    DataManager getDataManager();
 
     PlayerProvider getPlayer(String name);
     PlayerProvider getPlayer(UUID uuid);
@@ -47,6 +45,11 @@ public interface PluginProvider {
         }
         try {
             getDiscordProvider().shutdown();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            getDataManager().shutdown().get();
         } catch (Exception e) {
             e.printStackTrace();
         }

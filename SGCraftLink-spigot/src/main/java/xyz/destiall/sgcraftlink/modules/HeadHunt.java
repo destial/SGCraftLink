@@ -34,23 +34,29 @@ import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
+import org.json.JSONObject;
+import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class HeadHunt extends Module implements Listener, CommandExecutor {
     private final Set<Location> hunts = new HashSet<>();
     private final Map<String, Integer> players = new ConcurrentHashMap<>();
+    private final Map<String, Integer> otherServerPlayers = new ConcurrentHashMap<>();
     private final List<BlockPlaceEvent> internalEvents = new ArrayList<>();
     private ItemStack head = new ItemStack(Material.SKELETON_SKULL);
     private String blockData;
+    private boolean checkOtherServers = true;
 
     public HeadHunt(SGCraftLinkSpigot plugin) {
         super(plugin, "hunt.yml");
@@ -101,15 +107,59 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
 
         plugin.getScheduler().runTaskTimer(() -> {
             Location random = hunts.stream().findAny().orElse(null);
-            if (random == null)
+            if (random == null) {
+                if (checkOtherServers) {
+                    DataModule module = plugin.getModule(DataModule.class);
+                    if (module == null)
+                        return;
+
+                    module.sendProxyData(SGCraftLinkCommon.DATA_GET_HEADHUNT, new HashMap<>(), (status, content) -> {
+                        if (status == 200) {
+                            if (content.isEmpty()) {
+                                return;
+                            }
+                            JSONObject obj = new JSONObject(content);
+
+                            JSONObject score = obj.getJSONObject("score");
+                            for (String player : score.keySet()) {
+                                otherServerPlayers.put(player, score.getInt(player));
+                            }
+
+                            if (obj.getInt("total") != 0) {
+                                plugin.getServer().getOnlinePlayers().forEach(player -> {
+                                    player.sendMessage(color("&eThere are still more eggs in other servers!"));
+                                    JSONObject servers = obj.getJSONObject("servers");
+                                    for (String server : obj.keySet()) {
+                                        player.sendMessage(color("&e" + server + ": " + servers.getInt(server) + " left"));
+                                    }
+                                });
+                            } else {
+                                checkOtherServers = false;
+                            }
+                        }
+                    });
+                }
                 return;
+            }
 
             plugin.getServer().getOnlinePlayers().forEach(player -> {
                 player.sendMessage(color("&eThere might be an egg at " + random.getBlockX() + " " + random.getBlockZ()));
             });
-        }, 0L, 20L * 60L * 15L);
+        }, 20L * 10, 20L * 60L * 15L);
 
         plugin.getCommand("egg").setExecutor(this);
+    }
+
+    public Set<Location> getHunts() {
+        return hunts;
+    }
+
+    public Map<String, Integer> getScore() {
+        return players;
+    }
+
+    public Map<String, Integer> getOtherServersScore() {
+        return otherServerPlayers;
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -125,15 +175,30 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
         } else {
             e.getPlayer().sendMessage(color("&cThat is already an egg location!"));
         }
+
+        if (hunts.size() == 1) {
+            DataModule module = plugin.getModule(DataModule.class);
+            if (module == null)
+                return;
+
+            module.sendProxyData(SGCraftLinkCommon.DATA_START_HEADHUNT, new HashMap<>(), (s, c) -> {});
+        }
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent e) {
         Location location = e.getBlock().getLocation();
 
-        if (hunts.remove(location)) {
+        if (hunts.contains(location)) {
             if (e.getPlayer().hasPermission("easter.hunt")) {
                 e.getPlayer().sendMessage(color("&eYou removed an egg!"));
+                hunts.remove(location);
+
+                DataModule module = plugin.getModule(DataModule.class);
+                if (module == null)
+                    return;
+
+                module.sendProxyData(SGCraftLinkCommon.DATA_END_HEADHUNT, new HashMap<>(), (s, c) -> {});
                 return;
             }
             e.getPlayer().sendMessage(color("&cRight click this egg to claim it!"));
@@ -154,21 +219,41 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
             int amount = players.getOrDefault(e.getPlayer().getName(), 0);
             amount++;
             players.put(e.getPlayer().getName(), amount);
-            e.getPlayer().sendMessage(color("&eYou have claimed this egg!\n&eYou claimed " + amount + " eggs! There are " + hunts.size() + " more to go!"));
+            e.getPlayer().sendMessage(color("&eYou have claimed this egg!\n&eYou claimed " + amount + " eggs!" + (!hunts.isEmpty() ? " There are " + hunts.size() + " more to go!" : "")));
             plugin.getServer().getOnlinePlayers().forEach(player -> {
                 if (player == e.getPlayer())
                     return;
 
-                player.sendMessage(color("&e" + e.getPlayer().getName() + " has claimed an egg! There are " + hunts.size() + " more to go!"));
+                player.sendMessage(color("&e" + e.getPlayer().getName() + " has claimed an egg!" + (!hunts.isEmpty() ? " There are " + hunts.size() + " more to go!" : "")));
+                if (checkOtherServers && hunts.isEmpty()) {
+                    player.sendMessage(color("&aAll eggs in this server have been collected! Check out the other servers to see if there are any eggs!"));
+                }
             });
+
             block.setType(Material.AIR);
             block.getWorld().spawnParticle(Particle.TOTEM, block.getLocation(), 1);
 
-            if (hunts.size() == 0) {
-                announceWinner();
-                plugin.getLogger().info("All the eggs have been collected!");
-            }
+            getAllRemaining().whenComplete((remaining, err) -> {
+                if (remaining == 0) {
+                    announceWinner();
+                    plugin.getLogger().info("All the eggs have been collected!");
+
+                    DataModule module = plugin.getModule(DataModule.class);
+                    if (module == null)
+                        return;
+
+                    module.sendProxyData(SGCraftLinkCommon.DATA_END_HEADHUNT, new HashMap<>(), (s, c) -> {});
+                }
+            });
         }
+    }
+
+    public boolean isCheckOtherServers() {
+        return checkOtherServers;
+    }
+
+    public void setCheckOtherServers(boolean checkOtherServers) {
+        this.checkOtherServers = checkOtherServers;
     }
 
     public void save() {
@@ -210,11 +295,19 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
     }
 
     public int getAmount(String name) {
-        return players.getOrDefault(name, 0);
+        Map<String, Integer> merged = new HashMap<>(players);
+        for (Map.Entry<String, Integer> other : otherServerPlayers.entrySet()) {
+            merged.merge(other.getKey(), other.getValue(), Integer::sum);
+        }
+        return merged.getOrDefault(name, 0);
     }
 
     public Map.Entry<String, Integer> getAmountRank(int rank) {
-        List<Map.Entry<String, Integer>> sorted = players.entrySet().stream().sorted((a, b) -> b.getValue() - a.getValue()).collect(Collectors.toList());
+        Map<String, Integer> merged = new HashMap<>(players);
+        for (Map.Entry<String, Integer> other : otherServerPlayers.entrySet()) {
+            merged.merge(other.getKey(), other.getValue(), Integer::sum);
+        }
+        List<Map.Entry<String, Integer>> sorted = merged.entrySet().stream().sorted((a, b) -> b.getValue() - a.getValue()).collect(Collectors.toList());
         int index = rank - 1;
         if (index >= sorted.size() || index < 0) {
             return null;
@@ -222,13 +315,55 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
         return sorted.get(index);
     }
 
+    public CompletableFuture<Integer> getAllRemaining() {
+        CompletableFuture<Integer> future = new CompletableFuture<>();
+        DataModule module = plugin.getModule(DataModule.class);
+        if (module == null || !isCheckOtherServers()) {
+            future.complete(getRemaining());
+            return future;
+        }
+        module.sendProxyData(SGCraftLinkCommon.DATA_GET_HEADHUNT, new HashMap<>(), (status, content) -> {
+            if (status == 200) {
+                JSONObject obj = new JSONObject(content);
+                int total = obj.getInt("total") + getRemaining();
+                future.complete(total);
+                return;
+            }
+            future.complete(getRemaining());
+        });
+        return future;
+    }
+
     public int getRemaining() {
         return hunts.size();
     }
 
-    private void announceWinner() {
+    public void announceWinner() {
         plugin.getServer().getOnlinePlayers().forEach(player -> {
             player.sendMessage(color("&eAll the eggs have been collected!"));
+        });
+
+        DataModule module = plugin.getModule(DataModule.class);
+        if (module == null)
+            return;
+
+        module.sendProxyData(SGCraftLinkCommon.DATA_GET_HEADHUNT, new HashMap<>(), (status, content) -> {
+            if (status == 200) {
+                if (content.isEmpty()) {
+                    return;
+                }
+                JSONObject obj = new JSONObject(content);
+                JSONObject score = obj.getJSONObject("score");
+                for (String player : score.keySet()) {
+                    otherServerPlayers.put(player, score.getInt(player));
+                }
+
+                Map.Entry<String, Integer> first = getAmountRank(1);
+
+                plugin.getServer().getOnlinePlayers().forEach(player -> {
+                    player.sendMessage(color("&eThe winner is " + first.getKey() + " with " + first.getValue() + " collected!"));
+                });
+            }
         });
     }
 
@@ -276,12 +411,24 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
                 tryPlaceEgg(finalCenter, finalRadius, player);
             }
 
-            return false;
+            DataModule module = plugin.getModule(DataModule.class);
+            if (module == null)
+                return true;
+
+            module.sendProxyData(SGCraftLinkCommon.DATA_START_HEADHUNT, new HashMap<>(), (s, c) -> {});
+            return true;
         }
 
         if (args[0].equalsIgnoreCase("clear")) {
             players.clear();
+            otherServerPlayers.clear();
             player.sendMessage(color("&aCleared all player egg data!"));
+
+            DataModule module = plugin.getModule(DataModule.class);
+            if (module == null)
+                return true;
+
+            module.sendProxyData(SGCraftLinkCommon.DATA_CLEAR_SCORE_HEADHUNT, new HashMap<>(), (s, c) -> {});
             return true;
         }
 
@@ -291,6 +438,13 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
             }
 
             hunts.clear();
+
+            DataModule module = plugin.getModule(DataModule.class);
+            if (module == null)
+                return true;
+
+            module.sendProxyData(SGCraftLinkCommon.DATA_REMOVE_HEAD_HEADHUNT, new HashMap<>(), (s, c) -> {});
+            return true;
         }
 
         if (args[0].equalsIgnoreCase("fix")) {

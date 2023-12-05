@@ -124,21 +124,21 @@ public class DiscordCommandListener extends ListenerAdapter {
             case "changepw": {
                 String playerName = e.getOption("player", OptionMapping::getAsString);
                 String password = e.getOption("password", (map) -> map == null ? "changepassword" : map.getAsString());
-                e.deferReply(true).queue(r -> {
+                e.deferReply(true).queue(r ->
                     sendChangePW(plugin, playerName, password, (consumer) ->
                         r.editOriginalEmbeds(consumer.build()).queue()
-                    );
-                });
+                    )
+                );
                 break;
             }
             case "chathistory": {
                 String name = e.getOption("player", OptionMapping::getAsString);
                 Integer limit = e.getOption("limit", (fallback) -> 50);
-                e.deferReply().queue(r -> {
+                e.deferReply().queue(r ->
                     sendChatHistory(plugin, e.getMember(), name, limit == null ? 50 : limit, (consumer) ->
                         r.editOriginalEmbeds(consumer).queue()
-                    );
-                });
+                    )
+                );
                 break;
             }
             default: {
@@ -208,8 +208,8 @@ public class DiscordCommandListener extends ListenerAdapter {
             return;
         }
         Map<String, Object> data = SGCraftLinkCommon.createCommandsData("authme password " + playerName + " " + pw);
-        if (!plugin.getDiscordProvider().getDataManager().sendData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, "lobby", data, (res) -> {
-            if (res.getKey() == 200) {
+        if (!plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, "lobby", data, (status, content) -> {
+            if (status == 200) {
                 consumer.accept(new EmbedBuilder().setTitle("Changed password of " + playerName + " to ||" + pw + "||").setColor(Color.GREEN));
                 return;
             }
@@ -313,12 +313,12 @@ public class DiscordCommandListener extends ListenerAdapter {
         data.put("player", playerName);
         data.put("limit", limit);
         AtomicInteger test = new AtomicInteger(0);
-        Collection<String> servers = plugin.getDiscordProvider().getDataManager().getServers();
+        Collection<String> servers = plugin.getDataManager().getServers();
         List<MessageEmbed> embeds = new ArrayList<>();
         for (String server : servers) {
-            plugin.getDiscordProvider().getDataManager().sendData(SGCraftLinkCommon.DATA_CHATS, server, data, (result) -> {
-                if (result.getKey() == 200) {
-                    JSONObject obj = new JSONObject(result.getValue());
+            plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_CHATS, server, data, (status, content) -> {
+                if (status == 200) {
+                    JSONObject obj = new JSONObject(content);
                     JSONArray array = obj.getJSONArray("messages");
                     for (int i = 0; i < array.length(); i++) {
                         JSONObject msg = array.getJSONObject(i);

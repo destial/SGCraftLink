@@ -24,7 +24,10 @@ public final class Scheduler {
             Class.forName("io.papermc.paper.threadedregions.scheduler.RegionScheduler");
             foliaTasks = new CopyOnWriteArrayList<>();
             folia = true;
-        } catch (ClassNotFoundException ignored) {}
+            plugin.getLogger().warning("Using Folia scheduler!");
+        } catch (ClassNotFoundException ignored) {
+            plugin.getLogger().warning("Using Spigot scheduler!");
+        }
     }
 
     /**

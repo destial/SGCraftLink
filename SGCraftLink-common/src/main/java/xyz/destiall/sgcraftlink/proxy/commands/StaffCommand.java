@@ -75,9 +75,9 @@ public class StaffCommand implements CommandProvider, TabProvider {
                         plugin.getLuckPermsManager().getApi().getUserManager().saveUser(b.user);
                         Map<String, Object> data = SGCraftLinkCommon.createCommandsData("lp user " + playerName + " promote " + track);
                         for (String server : plugin.getDataManager().getServers()) {
-                            plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, server, data, result -> {
+                            plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, server, data, (status, content) -> {
                                 ComponentProvider<?> message;
-                                if (result.getKey() == 200) {
+                                if (status == 200) {
                                     message = ComponentProvider.of("Promoted " + player.getName() + " to " + b.group);
                                     message.setColor(ColorProvider.ChatColor.GREEN);
                                 } else {
@@ -99,9 +99,9 @@ public class StaffCommand implements CommandProvider, TabProvider {
                         plugin.getLuckPermsManager().getApi().getUserManager().saveUser(b.user);
                         Map<String, Object> data = SGCraftLinkCommon.createCommandsData("lp user " + playerName + " demote " + track);
                         for (String server : plugin.getDataManager().getServers()) {
-                            plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, server, data, result -> {
+                            plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, server, data, (status, content) -> {
                                 ComponentProvider<?> message;
-                                if (result.getKey() == 200) {
+                                if (status == 200) {
                                     message = ComponentProvider.of("Demoted " + player.getName() + " to " + b.group);
                                     message.setColor(ColorProvider.ChatColor.GREEN);
                                 } else {
@@ -118,9 +118,9 @@ public class StaffCommand implements CommandProvider, TabProvider {
             } else if (type.equalsIgnoreCase("clearinv")) {
                 String server = args[2];
                 Map<String, Object> data = SGCraftLinkCommon.createCommandsData("cmi clear " + playerName);
-                plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, server.toLowerCase(), data, result -> {
+                plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, server.toLowerCase(), data, (status, content) -> {
                     ComponentProvider<?> message;
-                    if (result.getKey() == 200) {
+                    if (status == 200) {
                         message = ComponentProvider.of("Cleared inventory in server " + server + " for " + playerName);
                         message.setColor(ColorProvider.ChatColor.GREEN);
                     } else {
@@ -132,9 +132,9 @@ public class StaffCommand implements CommandProvider, TabProvider {
             } else if (type.equalsIgnoreCase("xcatch")) {
                 String server = args[2];
                 Map<String, Object> data = SGCraftLinkCommon.createCommandsData("xcatch clear " + playerName);
-                plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, server.toLowerCase(), data, result -> {
+                plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, server.toLowerCase(), data, (status, content) -> {
                     ComponentProvider<?> message;
-                    if (result.getKey() == 200) {
+                    if (status == 200) {
                         message = ComponentProvider.of("Cleared xray logs in server " + server + " for " + playerName);
                         message.setColor(ColorProvider.ChatColor.GREEN);
                     } else {
