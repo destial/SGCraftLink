@@ -4,6 +4,7 @@ import github.scarsz.discordsrv.DiscordSRV;
 import github.scarsz.discordsrv.api.Subscribe;
 import github.scarsz.discordsrv.api.events.DiscordGuildMessageReceivedEvent;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Message;
+import github.scarsz.discordsrv.dependencies.jda.api.entities.TextChannel;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -41,6 +42,10 @@ public class DiscordSRVHook extends Module {
             player.playSound(player.getLocation(), Sound.ENTITY_ARROW_HIT_PLAYER, 1.5f, 1);
             player.spigot().sendMessage(message);
         });
+    }
+
+    public TextChannel getTextChannel(String id) {
+        return DiscordSRV.getPlugin().getJda().getTextChannelById(id);
     }
 
     private TextComponent format(Message message, String s) {

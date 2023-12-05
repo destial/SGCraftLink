@@ -3,7 +3,6 @@ package xyz.destiall.sgcraftlink.modules;
 import express.Express;
 import express.utils.MediaType;
 import express.utils.Status;
-import net.luckperms.api.messenger.IncomingMessageConsumer;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -48,7 +47,6 @@ public class DataModule extends Module {
         express.post("/", (request, response) -> {
             try {
                 String body = SGCraftLinkCommon.convertStreamToString(request.getBody()).trim();
-                plugin.getLogger().warning("Received data " + body);
                 JSONObject json = new JSONObject(body);
 
                 if (!json.has("data-type")) {
@@ -58,12 +56,11 @@ public class DataModule extends Module {
                 }
 
                 String datatype = json.getString("data-type").toUpperCase();
+                plugin.getLogger().warning("Received data " + datatype);
 
                 if (!datatype.equalsIgnoreCase(SGCraftLinkCommon.DATA_SERVER_REGISTER)) {
                     String auth = config.getString("authentication-key");
-                    List<String> headers = request.getHeader("X-Authorization");
-                    plugin.getLogger().warning("Headers: " + String.join(",", headers));
-                    if (headers.isEmpty() || !headers.get(0).equals(auth)) {
+                    if (!request.getHeader("X-Authorization").contains(auth)) {
                         response.sendStatus(Status._403);
                         return;
                     }
@@ -249,6 +246,21 @@ public class DataModule extends Module {
         tryRegisterServer(data);
     }
 
+    private void unregisterServer() {
+        String authToken;
+        if (config.contains("authentication-key")) {
+            authToken = config.getString("authentication-key");
+        } else {
+            authToken = generateNewToken();
+            config.set("authentication-key", authToken);
+            save();
+        }
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("auth", authToken);
+        tryUnregisterServer(data);
+    }
+
     private void tryRegisterServer(Map<String, Object> data) {
         sendProxyData(SGCraftLinkCommon.DATA_SERVER_REGISTER, data, (status, content) -> {
             if (status != 200) {
@@ -257,6 +269,16 @@ public class DataModule extends Module {
                 return;
             }
             plugin.getLogger().info("Registered server with proxy");
+        });
+    }
+
+    private void tryUnregisterServer(Map<String, Object> data) {
+        sendProxyData(SGCraftLinkCommon.DATA_SERVER_UNREGISTER, data, (status, content) -> {
+            if (status != 200) {
+                plugin.getLogger().warning("Failed trying to unregister with proxy!");
+                return;
+            }
+            plugin.getLogger().info("Unregistered server with proxy");
         });
     }
 
@@ -301,10 +323,17 @@ public class DataModule extends Module {
     @Override
     public void disable() {
         try {
+            unregisterServer();
             manager.shutdown();
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        List<LuckPermsModule.BackendRestMessenger> copy = new ArrayList<>(messengers);
+        for (LuckPermsModule.BackendRestMessenger c : copy) {
+            c.close();
+        }
+        messengers.clear();
 
         express.stop();
     }

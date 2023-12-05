@@ -2,7 +2,6 @@ package xyz.destiall.sgcraftlink.proxy.misc;
 
 import express.Express;
 import express.utils.Status;
-import net.luckperms.api.messenger.IncomingMessageConsumer;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -54,7 +53,7 @@ public final class DataManager {
                 String datatype = json.getString("data-type").toUpperCase();
 
                 String server = json.getString("server");
-                if (!datatype.equalsIgnoreCase(SGCraftLinkCommon.DATA_SERVER_REGISTER)) {
+                if (!datatype.equalsIgnoreCase(SGCraftLinkCommon.DATA_SERVER_REGISTER) || registeredServers.containsKey(server)) {
                     String auth = registeredServers.get(server).getValue();
                     if (!request.getHeader("X-Authorization").contains(auth)) {
                         response.sendStatus(Status._403);

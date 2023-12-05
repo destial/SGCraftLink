@@ -18,6 +18,7 @@ import xyz.destiall.sgcraftlink.hooks.PAPIHook;
 import xyz.destiall.sgcraftlink.listeners.AirBlockPlaceListener;
 import xyz.destiall.sgcraftlink.listeners.PML;
 import xyz.destiall.sgcraftlink.listeners.PlayerListener;
+import xyz.destiall.sgcraftlink.modules.BetaTestModule;
 import xyz.destiall.sgcraftlink.modules.BirthdayModule;
 import xyz.destiall.sgcraftlink.modules.CMIModule;
 import xyz.destiall.sgcraftlink.modules.Casino;
@@ -27,6 +28,7 @@ import xyz.destiall.sgcraftlink.modules.HeadHunt;
 import xyz.destiall.sgcraftlink.modules.LastLocation;
 import xyz.destiall.sgcraftlink.modules.LuckPermsModule;
 import xyz.destiall.sgcraftlink.modules.Module;
+import xyz.destiall.sgcraftlink.modules.NovaSkyblockModule;
 import xyz.destiall.sgcraftlink.modules.PiggyBankModule;
 import xyz.destiall.sgcraftlink.modules.Redeemables;
 import xyz.destiall.sgcraftlink.modules.ReputationModule;
@@ -122,6 +124,12 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             modules.add(new BirthdayModule(this));
         } catch (Exception e) {
             getLogger().warning("This version cannot run Birthdays!");
+        }
+        try {
+            testPaperOr1_8Above();
+            modules.add(new BetaTestModule(this));
+        } catch (Exception e) {
+            getLogger().warning("This version cannot run HeadHunt!");
         }
         try {
             modules.add(new DataModule(this));
@@ -220,6 +228,14 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             }
         }
 
+        if (getServer().getPluginManager().getPlugin("Nova") != null && getServer().getPluginManager().getPlugin("SuperiorSkyblock2") != null) {
+            try {
+                modules.add(new NovaSkyblockModule(this));
+            } catch (Exception e) {
+                getLogger().warning("This version cannot run Nova & SuperiorSkyblock Hook!");
+            }
+        }
+
         for (Module module : modules) {
             if (module instanceof Listener) {
                 try {
@@ -240,8 +256,6 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
 
         getServer().getMessenger().unregisterIncomingPluginChannel(this);
         getServer().getMessenger().unregisterOutgoingPluginChannel(this);
-
-        scheduler = null;
     }
 
     public void disable() {
