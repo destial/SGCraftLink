@@ -32,26 +32,6 @@ public abstract class PMListener {
                 if (plugin.getPlaytimeProvider().setFirstJoin(playerName, first)) {
                     plugin.getLoggerProvider().info("Setting first join playtime of " + playerName + " to " + first);
                 }
-                return;
-            }
-
-            if (type.equals(SGCraftLinkCommon.SET_RANKS)) {
-                String playerName = input.readUTF();
-                User user = plugin.getLinkProvider().getUser(playerName);
-                if (user == null) return;
-                Member member = plugin.getDiscordProvider().getMember(user.getId());
-                if (member == null) return;
-
-                String[] ranks = input.readUTF().split(",");
-                Map<String, Role> roleMap = plugin.getDiscordProvider().getRoleMap();
-                List<Role> rolesToAdd = roleMap.entrySet().stream().filter(en -> Arrays.stream(ranks).anyMatch(r -> r.equalsIgnoreCase(en.getKey()))).map(Map.Entry::getValue).collect(Collectors.toList());
-                List<Role> rolesToRemove = roleMap.values().stream().filter(r -> !rolesToAdd.contains(r)).collect(Collectors.toList());
-
-                try {
-                    member.getGuild().modifyMemberRoles(member, rolesToAdd, rolesToRemove).queue(q -> {
-                    }, err -> {
-                    });
-                } catch (Exception ignored) {}
             }
 
         } catch (IOException ex) {

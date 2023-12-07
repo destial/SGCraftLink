@@ -14,24 +14,32 @@ import java.util.concurrent.TimeUnit;
 public final class Birthday {
     private final Month month;
     private final int day;
-    private boolean celebrated;
+    private int lastCelebrated;
 
-    public Birthday(Month month, int day, boolean celebrated) {
+    public Birthday(Month month, int day, int lastCelebrated) {
         this.month = month;
         this.day = day;
-        this.celebrated = celebrated;
+        this.lastCelebrated = lastCelebrated;
     }
 
     public boolean hasAlreadyCelebrated() {
-        return celebrated;
+        return lastCelebrated == Year.now().getValue();
     }
 
     public int getMonth() {
-        return this.month.getValue();
+        return month.getValue();
     }
 
     public int getDay() {
-        return this.day;
+        return day;
+    }
+
+    public int getLastCelebrated() {
+        return lastCelebrated;
+    }
+
+    public void setLastCelebrated(int lastCelebrated) {
+        this.lastCelebrated = lastCelebrated;
     }
 
     public String getTimeLeft() {
@@ -87,9 +95,13 @@ public final class Birthday {
 
     public boolean isToday() {
         LocalDate today = LocalDate.now();
-        LocalDate birthday = LocalDate.of(Year.now().getValue(), day, month.value - 1);
+        LocalDate birthday = getDate();
 
         return today.equals(birthday);
+    }
+
+    public LocalDate getDate() {
+        return LocalDate.of(Year.now().getValue(), getDay(), getMonth() - 1);
     }
 
     public static class Days {

@@ -81,7 +81,7 @@ public class LuckPermsManager {
             String data = outgoingMessage.asEncodedString();
             Map<String, String> body = new HashMap<>();
             body.put("data", data);
-            module.sendDataToAll(null, SGCraftLinkCommon.DATA_LUCKPERMS_SERVICE, body);
+            module.sendDataToAll(null, SGCraftLinkCommon.DATA_LUCKPERMS_SERVICE, body, (mappings) -> {});
         }
 
         public boolean handleIncomingMessage(JSONObject object) {
@@ -90,7 +90,7 @@ public class LuckPermsManager {
             Map<String, String> body = new HashMap<>();
             body.put("data", encoded);
             body.put("server", server);
-            module.sendDataToAll(server, SGCraftLinkCommon.DATA_LUCKPERMS_SERVICE, body);
+            module.sendDataToAll(server, SGCraftLinkCommon.DATA_LUCKPERMS_SERVICE, body, (mappings) -> {});
             boolean accepted = this.consumer.consumeIncomingMessageAsString(encoded);
             if (accepted) {
                 module.getPlugin().getLoggerProvider().warning(this.consumer.getClass().getSimpleName() + " accepted incoming message");

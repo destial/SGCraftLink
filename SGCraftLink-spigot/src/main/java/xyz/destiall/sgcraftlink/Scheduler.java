@@ -55,13 +55,25 @@ public final class Scheduler {
     }
 
     /**
+     * Checks if this scheduler is currently accepting any tasks
+     * @return The state of this scheduler
+     */
+    public boolean isNotAccepting() {
+        try {
+            return isCancellingAll || plugin.getServer().isStopping();
+        } catch (NoSuchMethodError e) {
+            return isCancellingAll;
+        }
+    }
+
+    /**
      * Schedules a task to be executed on the global region scheduler on the next tick.
      * @param runnable The task to execute
      * @return The scheduled task wrapper for Bukkit or Folia
      */
     public Task runTask(Runnable runnable) {
         if (isFolia()) {
-            if (isCancellingAll)
+            if (isNotAccepting())
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
             return new Task(this, plugin.getServer().getGlobalRegionScheduler().run(plugin, task -> {
@@ -80,7 +92,7 @@ public final class Scheduler {
      */
     public Task runTaskAsync(Runnable runnable) {
         if (isFolia()) {
-            if (isCancellingAll)
+            if (isNotAccepting())
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
             return new Task(this, plugin.getServer().getGlobalRegionScheduler().run(plugin, task -> {
@@ -100,7 +112,7 @@ public final class Scheduler {
      */
     public Task runTask(Runnable runnable, Location location) {
         if (isFolia()) {
-            if (isCancellingAll)
+            if (isNotAccepting())
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
             return new Task(this, plugin.getServer().getRegionScheduler().run(plugin, location, task -> {
@@ -120,7 +132,7 @@ public final class Scheduler {
      */
     public Task runTaskAsync(Runnable runnable, Location location) {
         if (isFolia()) {
-            if (isCancellingAll)
+            if (isNotAccepting())
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
             return new Task(this, plugin.getServer().getRegionScheduler().run(plugin, location, task -> {
@@ -140,7 +152,7 @@ public final class Scheduler {
      */
     public Task runTask(Runnable runnable, Chunk chunk) {
         if (isFolia()) {
-            if (isCancellingAll)
+            if (isNotAccepting())
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
             return new Task(this, plugin.getServer().getRegionScheduler().run(plugin, chunk.getWorld(), chunk.getX(), chunk.getZ(),task -> {
@@ -160,7 +172,7 @@ public final class Scheduler {
      */
     public Task runTaskAsync(Runnable runnable, Chunk chunk) {
         if (isFolia()) {
-            if (isCancellingAll)
+            if (isNotAccepting())
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
             return new Task(this, plugin.getServer().getRegionScheduler().run(plugin, chunk.getWorld(), chunk.getX(), chunk.getZ(),task -> {
@@ -180,7 +192,7 @@ public final class Scheduler {
      */
     public Task runTask(Runnable runnable, Entity entity) {
         if (isFolia()) {
-            if (isCancellingAll)
+            if (isNotAccepting())
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
             return new Task(this, entity.getScheduler().run(plugin, task -> {
@@ -200,7 +212,7 @@ public final class Scheduler {
      */
     public Task runTaskAsync(Runnable runnable, Entity entity) {
         if (isFolia()) {
-            if (isCancellingAll)
+            if (isNotAccepting())
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
             return new Task(this, entity.getScheduler().run(plugin, task -> {
@@ -221,7 +233,7 @@ public final class Scheduler {
      */
     public Task runTaskTimer(Runnable runnable, long delay, long period) {
         if (isFolia()) {
-            if (isCancellingAll)
+            if (isNotAccepting())
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
             return new Task(this, plugin.getServer().getGlobalRegionScheduler().runAtFixedRate(plugin, task -> runnable.run(), delay <= 0L ? 1L : delay, period));
@@ -239,7 +251,7 @@ public final class Scheduler {
      */
     public Task runTaskTimerAsync(Runnable runnable, long delay, long period) {
         if (isFolia()) {
-            if (isCancellingAll)
+            if (isNotAccepting())
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
             return new Task(this, plugin.getServer().getGlobalRegionScheduler().runAtFixedRate(plugin, task -> runnable.run(), delay <= 0L ? 1L : delay, period));
@@ -258,7 +270,7 @@ public final class Scheduler {
      */
     public Task runTaskTimer(Runnable runnable, Location location, long delay, long period) {
         if (isFolia()) {
-            if (isCancellingAll)
+            if (isNotAccepting())
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
             return new Task(this, plugin.getServer().getRegionScheduler().runAtFixedRate(plugin, location, task -> runnable.run(), delay <= 0L ? 1L : delay, period));
@@ -277,7 +289,7 @@ public final class Scheduler {
      */
     public Task runTaskTimerAsync(Runnable runnable, Location location, long delay, long period) {
         if (isFolia()) {
-            if (isCancellingAll)
+            if (isNotAccepting())
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
             return new Task(this, plugin.getServer().getRegionScheduler().runAtFixedRate(plugin, location, task -> runnable.run(), delay <= 0L ? 1L : delay, period));
@@ -296,7 +308,7 @@ public final class Scheduler {
      */
     public Task runTaskTimer(Runnable runnable, Chunk chunk, long delay, long period) {
         if (isFolia()) {
-            if (isCancellingAll)
+            if (isNotAccepting())
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
             return new Task(this, plugin.getServer().getRegionScheduler().runAtFixedRate(plugin, chunk.getWorld(), chunk.getX(), chunk.getZ(), task -> runnable.run(), delay <= 0L ? 1L : delay, period));
@@ -315,7 +327,7 @@ public final class Scheduler {
      */
     public Task runTaskTimerAsync(Runnable runnable, Chunk chunk, long delay, long period) {
         if (isFolia()) {
-            if (isCancellingAll)
+            if (isNotAccepting())
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
             return new Task(this, plugin.getServer().getRegionScheduler().runAtFixedRate(plugin, chunk.getWorld(), chunk.getX(), chunk.getZ(), task -> runnable.run(), delay <= 0L ? 1L : delay, period));
@@ -334,7 +346,7 @@ public final class Scheduler {
      */
     public Task runTaskTimer(Runnable runnable, Entity entity, long delay, long period) {
         if (isFolia()) {
-            if (isCancellingAll)
+            if (isNotAccepting())
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
             return new Task(this, entity.getScheduler().runAtFixedRate(plugin, task -> runnable.run(), null, delay <= 0L ? 1L : delay, period));
@@ -353,7 +365,7 @@ public final class Scheduler {
      */
     public Task runTaskTimerAsync(Runnable runnable, Entity entity, long delay, long period) {
         if (isFolia()) {
-            if (isCancellingAll)
+            if (isNotAccepting())
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
             return new Task(this, entity.getScheduler().runAtFixedRate(plugin, task -> runnable.run(), null, delay <= 0L ? 1L : delay, period));
@@ -370,7 +382,7 @@ public final class Scheduler {
      */
     public Task runTaskLater(Runnable runnable, long delay) {
         if (isFolia()) {
-            if (isCancellingAll)
+            if (isNotAccepting())
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
             return new Task(this, plugin.getServer().getGlobalRegionScheduler().runDelayed(plugin, task -> {
@@ -390,7 +402,7 @@ public final class Scheduler {
      */
     public Task runTaskLaterAsync(Runnable runnable, long delay) {
         if (isFolia()) {
-            if (isCancellingAll)
+            if (isNotAccepting())
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
             return new Task(this, plugin.getServer().getGlobalRegionScheduler().runDelayed(plugin, task -> {
@@ -411,7 +423,7 @@ public final class Scheduler {
      */
     public Task runTaskLater(Runnable runnable, Location location, long delay) {
         if (isFolia()) {
-            if (isCancellingAll)
+            if (isNotAccepting())
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
             return new Task(this, plugin.getServer().getRegionScheduler().runDelayed(plugin, location, task -> {
@@ -432,7 +444,7 @@ public final class Scheduler {
      */
     public Task runTaskLaterAsync(Runnable runnable, Location location, long delay) {
         if (isFolia()) {
-            if (isCancellingAll)
+            if (isNotAccepting())
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
             return new Task(this, plugin.getServer().getRegionScheduler().runDelayed(plugin, location, task -> {
@@ -453,7 +465,7 @@ public final class Scheduler {
      */
     public Task runTaskLater(Runnable runnable, Chunk chunk, long delay) {
         if (isFolia()) {
-            if (isCancellingAll)
+            if (isNotAccepting())
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
             return new Task(this, plugin.getServer().getRegionScheduler().runDelayed(plugin, chunk.getWorld(), chunk.getX(), chunk.getZ(), task -> {
@@ -474,7 +486,7 @@ public final class Scheduler {
      */
     public Task runTaskLaterAsync(Runnable runnable, Chunk chunk, long delay) {
         if (isFolia()) {
-            if (isCancellingAll)
+            if (isNotAccepting())
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
             return new Task(this, plugin.getServer().getRegionScheduler().runDelayed(plugin, chunk.getWorld(), chunk.getX(), chunk.getZ(), task -> {
@@ -495,7 +507,7 @@ public final class Scheduler {
      */
     public Task runTaskLater(Runnable runnable, Entity entity, long delay) {
         if (isFolia()) {
-            if (isCancellingAll)
+            if (isNotAccepting())
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
             return new Task(this, entity.getScheduler().runDelayed(plugin, task -> {
@@ -516,7 +528,7 @@ public final class Scheduler {
      */
     public Task runTaskLaterAsync(Runnable runnable, Entity entity, long delay) {
         if (isFolia()) {
-            if (isCancellingAll)
+            if (isNotAccepting())
                 throw new RuntimeException("Unable to schedule a task while cancelTasks() is being called!");
 
             return new Task(this, entity.getScheduler().runDelayed(plugin, task -> {

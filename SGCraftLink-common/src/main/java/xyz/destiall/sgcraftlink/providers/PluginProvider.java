@@ -49,7 +49,7 @@ public interface PluginProvider {
             e.printStackTrace();
         }
         try {
-            getDataManager().shutdown().get();
+            getDataManager().shutdown().join();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -58,4 +58,6 @@ public interface PluginProvider {
     void disable();
 
     void enable();
+
+    boolean isShuttingDown();
 }

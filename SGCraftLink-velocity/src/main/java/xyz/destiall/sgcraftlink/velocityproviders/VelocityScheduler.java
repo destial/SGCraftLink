@@ -36,4 +36,9 @@ public class VelocityScheduler extends SchedulerProvider<SGCraftLinkVelocity> {
         }
         tasks.clear();
     }
+
+    @Override
+    public boolean isNotAccepting() {
+        return plugin.isShuttingDown();
+    }
 }

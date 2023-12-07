@@ -67,4 +67,9 @@ public class VelocityPlayer extends PlayerProvider {
         String suffix = super.getSuffix();
         return suffix == null ? null : LegacyComponentSerializer.legacyAmpersand().deserialize(suffix).content();
     }
+
+    @Override
+    public boolean isOnline() {
+        return player.isActive();
+    }
 }

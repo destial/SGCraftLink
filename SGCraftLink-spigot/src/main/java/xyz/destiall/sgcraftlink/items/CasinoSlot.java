@@ -13,6 +13,7 @@ import xyz.destiall.sgcraftlink.Scheduler;
 import xyz.destiall.sgcraftlink.modules.Casino;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static xyz.destiall.sgcraftlink.SGCraftLinkSpigot.color;
@@ -24,6 +25,7 @@ public class CasinoSlot {
     private final BlockFace left;
     private final Block center;
     private final BlockFace right;
+    private final List<Material> materials;
 
     private Scheduler.Task rollingTask;
 
@@ -33,6 +35,7 @@ public class CasinoSlot {
         this.center = center;
         this.left = left;
         this.right = right;
+        materials = new ArrayList<>(casino.getRewards().keySet());
 
         int max = Math.max(id, ids.get());
         ids.set(max);
@@ -151,7 +154,7 @@ public class CasinoSlot {
     private Material getNextBlock() {
         int bound = casino.getRewards().size();
         int random = (int) (Math.random() * bound);
-        return new ArrayList<>(casino.getRewards().keySet()).get(random);
+        return materials.get(random);
     }
 
     public void stop() {

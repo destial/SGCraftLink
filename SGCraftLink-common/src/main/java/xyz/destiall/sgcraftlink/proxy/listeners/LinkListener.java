@@ -92,7 +92,7 @@ public class LinkListener extends ListenerAdapter {
         });
 
         plugin.getDiscordProvider().updateNickname(player, member);
-        player.sendPluginMessage(SGCraftLinkCommon.GET_RANKS);
+        plugin.getDiscordProvider().updateRankStatus(player, member);
     }
 
     @Override

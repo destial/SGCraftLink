@@ -44,6 +44,7 @@ public final class SGCraftLinkWaterfall extends Plugin implements PluginProvider
     private LuckPermsManager luckPermsManager;
     private BirthdayManager birthdayManager;
     private DataManager dataManager;
+    private boolean shuttingDown = false;
 
     @Override
     public void onEnable() {
@@ -52,13 +53,20 @@ public final class SGCraftLinkWaterfall extends Plugin implements PluginProvider
         new BungeeClickEvent();
         new BungeeHoverEvent();
         scheduler = new BungeeScheduler(this);
+        shuttingDown = false;
         enable();
     }
 
     @Override
     public void onDisable() {
+        shuttingDown = true;
         shutdown();
         disable();
+    }
+
+    @Override
+    public boolean isShuttingDown() {
+        return shuttingDown;
     }
 
     @Override

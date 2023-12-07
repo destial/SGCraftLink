@@ -16,6 +16,7 @@ softdepend:
   - CMI
   - CoreProtect
   - Nova
+  - Parties
   - SuperiorSkyblock2
 commands:
   sgcreload:
@@ -34,6 +35,8 @@ commands:
     permission: sgc.wake
   casino:
     permission: sgc.casino
+  migrate:
+    permission: sgc.migrate
   reputation:
     permission: sgc.reputation
     aliases:

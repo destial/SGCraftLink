@@ -3,10 +3,12 @@ package xyz.destiall.sgcraftlink.proxy.misc;
 import express.Express;
 import express.utils.Status;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.providers.ConfigProvider;
+import xyz.destiall.sgcraftlink.providers.PlayerProvider;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
 import xyz.destiall.sgcraftlink.proxy.luckperms.LuckPermsManager;
 import xyz.destiall.sgcraftlink.utils.HTTPManager;
@@ -16,10 +18,12 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 public final class DataManager {
     private final PluginProvider plugin;
@@ -118,49 +122,39 @@ public final class DataManager {
                         }
                         break;
                     }
-                    case SGCraftLinkCommon.DATA_START_HEADHUNT: {
-                        for (String svr : registeredServers.keySet()) {
-                            if (svr.equalsIgnoreCase(server))
-                                continue;
-
-                            sendData(SGCraftLinkCommon.DATA_START_HEADHUNT, svr, new HashMap<>(), (status, content) -> {});
+                    case SGCraftLinkCommon.DATA_LUCKPERMS_SERVICE: {
+                        for (LuckPermsManager.ProxyRestMessenger messenger : messengers) {
+                            messenger.handleIncomingMessage(json);
                         }
                         response.sendStatus(Status._200);
                         break;
                     }
+                    case SGCraftLinkCommon.DATA_SECURITY_CHECK: {
+                        UUID uuid = UUID.fromString(json.getString("uuid"));
+                        PlayerProvider player = plugin.getPlayer(uuid);
+                        if (player != null && player.getServer().toLowerCase().contains(server)) {
+                            response.sendStatus(Status._200);
+                        } else {
+                            response.sendStatus(Status._203);
+                        }
+                        break;
+                    }
+                    case SGCraftLinkCommon.DATA_PLAYER_MIGRATE: {
+                        Birthday birthday = plugin.getBirthdayManager().getBirthday(json.getString("old_name"));
+                        if (birthday != null) {
+                            plugin.getBirthdayManager().saveBirthday(json.getString("new_name"), birthday);
+                        }
+                        // Do not break here!
+                    }
+                    case SGCraftLinkCommon.DATA_START_HEADHUNT:
+                    case SGCraftLinkCommon.DATA_REMOVE_HEAD_HEADHUNT:
+                    case SGCraftLinkCommon.DATA_CLEAR_SCORE_HEADHUNT:
                     case SGCraftLinkCommon.DATA_END_HEADHUNT: {
                         for (String svr : registeredServers.keySet()) {
                             if (svr.equalsIgnoreCase(server))
                                 continue;
 
-                            sendData(SGCraftLinkCommon.DATA_END_HEADHUNT, svr, new HashMap<>(), (status, content) -> {});
-                        }
-                        response.sendStatus(Status._200);
-                        break;
-                    }
-                    case SGCraftLinkCommon.DATA_CLEAR_SCORE_HEADHUNT: {
-                        for (String svr : registeredServers.keySet()) {
-                            if (svr.equalsIgnoreCase(server))
-                                continue;
-
-                            sendData(SGCraftLinkCommon.DATA_CLEAR_SCORE_HEADHUNT, svr, new HashMap<>(), (status, content) -> {});
-                        }
-                        response.sendStatus(Status._200);
-                        break;
-                    }
-                    case SGCraftLinkCommon.DATA_REMOVE_HEAD_HEADHUNT: {
-                        for (String svr : registeredServers.keySet()) {
-                            if (svr.equalsIgnoreCase(server))
-                                continue;
-
-                            sendData(SGCraftLinkCommon.DATA_REMOVE_HEAD_HEADHUNT, svr, new HashMap<>(), (status, content) -> {});
-                        }
-                        response.sendStatus(Status._200);
-                        break;
-                    }
-                    case SGCraftLinkCommon.DATA_LUCKPERMS_SERVICE: {
-                        for (LuckPermsManager.ProxyRestMessenger messenger : messengers) {
-                            messenger.handleIncomingMessage(json);
+                            sendData(datatype, svr, json.toMap(), (status, content) -> {});
                         }
                         response.sendStatus(Status._200);
                         break;
@@ -185,22 +179,17 @@ public final class DataManager {
     }
 
     public CompletableFuture<Void> shutdown() {
-        AtomicInteger i = new AtomicInteger(registeredServers.size());
         CompletableFuture<Void> future = new CompletableFuture<>();
-        for (String server : registeredServers.keySet()) {
-            sendData(SGCraftLinkCommon.DATA_SERVER_UNREGISTER, server, new HashMap<>(), (status, content) -> {
-                if (i.decrementAndGet() == 0) {
-                    try {
-                        manager.shutdown();
-                        registeredServers.clear();
-                        express.stop();
-                        future.complete(null);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            });
-        }
+        sendDataToAll(null, SGCraftLinkCommon.DATA_SERVER_UNREGISTER, new HashMap<>(), (result) -> {
+            try {
+                manager.shutdown();
+                registeredServers.clear();
+                express.stop();
+                future.complete(null);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
         return future;
     }
 
@@ -208,13 +197,19 @@ public final class DataManager {
         return registeredServers.keySet();
     }
 
-    public void sendDataToAll(String origin, String type, Map<?, ?> map) {
-        int i = 0;
+    public void sendDataToAll(@Nullable String origin, String type, Map<?, ?> map, Consumer<Map<String, Pair<Integer, String>>> callback) {
+        AtomicInteger i = new AtomicInteger(getServers().size() - (origin != null ? 1 : 0));
+        Map<String, Pair<Integer, String>> results = new HashMap<>();
         for (String server : getServers()) {
             if (server.equalsIgnoreCase(origin))
                 continue;
 
-            sendData(type, server, map, (s, c) -> {});
+            sendData(type, server, map, (s, c) -> {
+                results.put(server, new Pair<>(s, c));
+                if (i.decrementAndGet() == 0) {
+                    callback.accept(results);
+                }
+            });
         }
     }
 
@@ -226,7 +221,7 @@ public final class DataManager {
         JSONObject object = new JSONObject(map);
         object.put("data-type", type);
         Map<String, String> headers = HTTPManager.headers("X-Authorization", registration.getValue());
-        plugin.getScheduler().schedule(() -> {
+        Runnable runnable = () -> {
             try {
                 plugin.getLoggerProvider().warning("Sending " + type + " to " + server);
                 CompletableFuture<ContentResponse> response = manager.fetch("http://" + config.getConfig().getString("ip", "192.168.1.99"), registration.getKey(), HTTPManager.Method.POST, headers, object);
@@ -244,10 +239,15 @@ public final class DataManager {
                     result.accept(status, content);
                 });
             } catch (Exception e) {
-               e.printStackTrace();
+                e.printStackTrace();
             }
             result.accept(404, null);
-        }, 0L, TimeUnit.MILLISECONDS);
+        };
+        if (plugin.getScheduler().isNotAccepting()) {
+            runnable.run();
+        } else {
+            plugin.getScheduler().schedule(runnable, 0L, TimeUnit.MILLISECONDS);
+        }
 
 
         return true;

@@ -11,8 +11,6 @@ import java.util.Map;
 public class SGCraftLinkCommon {
     public static final String CHANNEL = "sgc:link";
 
-    public static final String GET_RANKS = "SGCGetRanks";
-    public static final String SET_RANKS = "SGCSetRanks";
     public static final String GET_FIRSTJOIN = "SGCGetJoined";
     public static final String SET_FIRSTJOIN = "SGCSetJoined";
     public static final String SET_JAIL = "SGCSetJail";
@@ -29,6 +27,9 @@ public class SGCraftLinkCommon {
     public static final String DATA_REMOVE_HEAD_HEADHUNT = "SGC_DATA_REMOVE_HEADHUNT";
     public static final String DATA_BIRTHDAY = "SGC_DATA_BIRTHDAY";
     public static final String DATA_LUCKPERMS_SERVICE = "SGC_LUCKPERMS_SERVICE";
+    public static final String DATA_PLAYER_MIGRATE = "SGC_MIGRATE_PLAYER";
+    public static final String DATA_SECURITY_CHECK = "SGC_SECURITY_CHECK";
+    public static final String DATA_GET_RANKS = "SGC_GET_RANKS";
 
     public static Map<String, Object> createCommandsData(String... commands) {
         Map<String, Object> data = new HashMap<>();

@@ -22,10 +22,6 @@ public class PML implements PluginMessageListener {
         ByteArrayDataInput input = ByteStreams.newDataInput(message);
         String type = input.readUTF();
         switch (type) {
-            case SGCraftLinkCommon.GET_RANKS:
-                logPM(type, channel, player);
-                plugin.getModule(LuckPermsModule.class).sendRanks(player);
-                break;
             case SGCraftLinkCommon.GET_FIRSTJOIN:
                 logPM(type, channel, player);
                 plugin.sendFirstJoin(player);

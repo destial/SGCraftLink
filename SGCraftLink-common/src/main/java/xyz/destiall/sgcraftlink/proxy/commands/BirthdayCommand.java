@@ -43,8 +43,8 @@ public class BirthdayCommand implements CommandProvider, TabProvider {
             int day = Integer.parseInt(args[1]);
             Birthday.Month m = Birthday.Month.valueOf(month.toUpperCase());
 
-            birthday = new Birthday(m, day, false);
-            birthdayManager.saveBirthday(player, birthday, Year.now().getValue() - 1);
+            birthday = new Birthday(m, day, Year.now().getValue() - 1);
+            birthdayManager.saveBirthday(player, birthday);
 
             player.sendMessage(ColorProvider.of("&aYou set your birthday to " + birthday.getMonthName() + " " + birthday.getDay()));
         } catch (Exception e) {

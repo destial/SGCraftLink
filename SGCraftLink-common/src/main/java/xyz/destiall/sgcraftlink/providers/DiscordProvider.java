@@ -16,6 +16,8 @@ import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import net.dv8tion.jda.api.utils.cache.SortedSnowflakeCacheView;
 import net.luckperms.api.node.types.InheritanceNode;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.proxy.listeners.AppealListener;
 import xyz.destiall.sgcraftlink.proxy.listeners.ConsoleCommandListener;
@@ -23,16 +25,19 @@ import xyz.destiall.sgcraftlink.proxy.listeners.DiscordCommandListener;
 import xyz.destiall.sgcraftlink.proxy.listeners.LinkListener;
 import xyz.destiall.sgcraftlink.proxy.listeners.ReportButtonListener;
 import xyz.destiall.sgcraftlink.proxy.listeners.StaffAppListener;
+import xyz.destiall.sgcraftlink.proxy.misc.Pair;
 
 import javax.security.auth.login.LoginException;
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -226,10 +231,33 @@ public class DiscordProvider {
         return linkListener;
     }
 
+    public void updateRankStatus(PlayerProvider player, Member member) {
+        Map<String, String> body = new HashMap<>();
+        body.put("uuid", player.getUUID().toString());
+        Set<String> ranks = ConcurrentHashMap.newKeySet();
+        plugin.getDataManager().sendDataToAll(null, SGCraftLinkCommon.DATA_GET_RANKS, body, (mappings) -> {
+            for (Pair<Integer, String> content : mappings.values()) {
+                JSONObject object = new JSONObject(content.getValue());
+                JSONArray rankArray = object.getJSONArray("ranks");
+                for (int i = 0; i < rankArray.length(); i++) {
+                    String rankName = rankArray.getString(i);
+                    ranks.add(rankName);
+                }
+
+                Map<String, Role> roleMap = plugin.getDiscordProvider().getRoleMap();
+                List<Role> rolesToAdd = roleMap.entrySet().stream().filter(en -> ranks.stream().anyMatch(r -> r.equalsIgnoreCase(en.getKey()))).map(Map.Entry::getValue).collect(Collectors.toList());
+                List<Role> rolesToRemove = roleMap.values().stream().filter(r -> !rolesToAdd.contains(r)).collect(Collectors.toList());
+
+                try {
+                    member.getGuild().modifyMemberRoles(member, rolesToAdd, rolesToRemove).queue(q -> {}, err -> {});
+                } catch (Exception ignored) {}
+            }
+        });
+    }
+
     public void link(PlayerProvider player, User user) {
         linkedRole.getGuild().retrieveMember(user).queue(m -> {
-            m.getGuild().addRoleToMember(m, linkedRole).queue();
-            player.sendPluginMessage(SGCraftLinkCommon.GET_RANKS);
+            updateRankStatus(player, m);
             player.sendPluginMessage(SGCraftLinkCommon.GET_FIRSTJOIN);
 
             plugin.getLuckPermsManager().getApi().getUserManager().modifyUser(player.getUUID(), u -> {

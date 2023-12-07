@@ -3,6 +3,9 @@ package xyz.destiall.sgcraftlink.modules;
 import express.Express;
 import express.utils.MediaType;
 import express.utils.Status;
+import net.luckperms.api.model.group.Group;
+import net.luckperms.api.model.user.User;
+import net.luckperms.api.track.Track;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -12,17 +15,24 @@ import org.json.JSONObject;
 import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.hooks.CoreProtectHook;
+import xyz.destiall.sgcraftlink.items.Migration;
 import xyz.destiall.sgcraftlink.items.Pair;
 import xyz.destiall.sgcraftlink.utils.HTTPManager;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 public class DataModule extends Module {
     private static final SecureRandom secureRandom = new SecureRandom(); //threadsafe
@@ -207,9 +217,67 @@ public class DataModule extends Module {
                         response.sendStatus(Status._200);
                         break;
                     }
+                    case SGCraftLinkCommon.DATA_GET_RANKS: {
+                        LuckPermsModule module = plugin.getModule(LuckPermsModule.class);
+                        if (module == null)
+                            return;
+
+                        UUID uuid = UUID.fromString(json.getString("uuid"));
+
+                        module.getApi().getUserManager().loadUser(uuid).whenComplete((user, error) -> {
+                            if (error != null) {
+                                error.printStackTrace();
+                                response.sendStatus(Status._201);
+                                return;
+                            }
+
+                            Collection<Group> inheritedGroups = user.getInheritedGroups(user.getQueryOptions());
+                            Map<Track, Group> tracks = new HashMap<>();
+                            for (Track track : module.getApi().getTrackManager().getLoadedTracks()) {
+                                tracks.put(track, null);
+                                List<String> groups = track.getGroups();
+                                for (String group : groups) {
+                                    for (Group inherited : inheritedGroups) {
+                                        if (inherited.getName().equalsIgnoreCase(group)) {
+                                            Group current = tracks.get(track);
+                                            if (current == null || current.getWeight().orElse(0) < inherited.getWeight().orElse(0)) {
+                                                tracks.put(track, inherited);
+                                            }
+                                        }
+                                    }
+                                }
+                                if (tracks.get(track) == null) {
+                                    tracks.remove(track);
+                                }
+                            }
+
+                            List<String> groups = tracks.values().stream().map(Group::getName).collect(Collectors.toList());
+                            JSONObject res = new JSONObject();
+                            res.put("ranks", new JSONArray(groups));
+
+                            response.setStatus(Status._200).send(res.toString());
+                        });
+                        break;
+                    }
                     case SGCraftLinkCommon.DATA_LUCKPERMS_SERVICE: {
                         for (LuckPermsModule.BackendRestMessenger messenger : messengers) {
                             messenger.handleIncomingMessage(json);
+                        }
+                        response.sendStatus(Status._200);
+                        break;
+                    }
+                    case SGCraftLinkCommon.DATA_PLAYER_MIGRATE: {
+                        MigrationModule module = plugin.getModule(MigrationModule.class);
+                        if (module == null) {
+                            response.sendStatus(Status._201);
+                            break;
+                        }
+                        String oldName = json.getString("old_name");
+                        String newName = json.getString("new_name");
+                        Migration migration = module.addMigration(oldName, newName);
+                        if (migration.hasMigrated() && !migration.migrate(true)) {
+                            response.sendStatus(Status._202);
+                            break;
                         }
                         response.sendStatus(Status._200);
                         break;
@@ -230,7 +298,7 @@ public class DataModule extends Module {
         registerServer();
     }
 
-    private void registerServer() {
+    public void registerServer() {
         String authToken;
         if (config.contains("authentication-key")) {
             authToken = config.getString("authentication-key");
@@ -287,7 +355,7 @@ public class DataModule extends Module {
         object.put("data-type", type);
         object.put("server", config.getString("server-name", "lobby"));
         Map<String, String> headers = HTTPManager.headers("X-Authorization", config.getString("authentication-key"));
-        plugin.getScheduler().runTaskLaterAsync(() -> {
+        Runnable runnable = () -> {
             try {
                 plugin.getLogger().warning("Sending " + type + " to proxy");
                 CompletableFuture<ContentResponse> response = manager.fetch("http://" + config.getString("proxy-ip", "192.168.1.99"), config.getInt("proxy-port", 1035), HTTPManager.Method.POST, headers, object);
@@ -308,7 +376,12 @@ public class DataModule extends Module {
                 e.printStackTrace();
                 result.accept(404, null);
             }
-        }, 1L);
+        };
+        if (plugin.getScheduler().isNotAccepting()) {
+            runnable.run();
+        } else {
+            plugin.getScheduler().runTaskLaterAsync(runnable, 1L);
+        }
     }
 
     @Override

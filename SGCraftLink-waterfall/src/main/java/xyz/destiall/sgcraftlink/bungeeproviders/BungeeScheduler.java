@@ -24,4 +24,9 @@ public class BungeeScheduler extends SchedulerProvider<SGCraftLinkWaterfall> {
     public void cancelAll() {
         plugin.getProxy().getScheduler().cancel(plugin);
     }
+
+    @Override
+    public boolean isNotAccepting() {
+        return plugin.isShuttingDown();
+    }
 }

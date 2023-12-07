@@ -28,7 +28,14 @@ public abstract class PlayerProvider {
 
     public abstract void sendMessageComponent(ComponentProvider<?>... componentProviders);
 
+    public boolean isOnline() {
+        return true;
+    }
+
     public void sendPluginMessage(String... data) {
+        if (!isOnline())
+            return;
+
         try (ByteArrayOutputStream stream = new ByteArrayOutputStream(); DataOutputStream out = new DataOutputStream(stream)) {
             out.writeUTF(data[0]);
             out.writeUTF(getName());

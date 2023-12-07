@@ -11,6 +11,6 @@ public abstract class SchedulerProvider<T extends PluginProvider> {
 
     public abstract void schedule(Runnable  task, long delay, long period, TimeUnit unit);
     public abstract void schedule(Runnable  task, long delay, TimeUnit unit);
-
     public abstract void cancelAll();
+    public abstract boolean isNotAccepting();
 }

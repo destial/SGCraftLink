@@ -1,5 +1,6 @@
 package xyz.destiall.sgcraftlink.proxy.misc;
 
+import org.jetbrains.annotations.NotNull;
 import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.providers.ConfigProvider;
 import xyz.destiall.sgcraftlink.providers.PlayerProvider;
@@ -19,23 +20,31 @@ public class BirthdayManager {
         config = plugin.getConfigProvider().createConfig("birthdays.yml");
     }
 
-    public void saveBirthday(PlayerProvider player, Birthday birthday, int year) {
-        config.getConfig().set(player.getName() + ".month", birthday.getMonthName());
-        config.getConfig().set(player.getName() + ".day", birthday.getDay());
-        config.getConfig().set(player.getName() + ".last-celebrated", year);
+    public void saveBirthday(String name, Birthday birthday) {
+        config.getConfig().set(name + ".month", birthday.getMonthName());
+        config.getConfig().set(name + ".day", birthday.getDay());
+        config.getConfig().set(name + ".last-celebrated", birthday.getLastCelebrated());
 
         config.save();
     }
 
-    public Birthday getBirthday(PlayerProvider player) {
-        if (!config.getConfig().contains(player.getName()))
+    public void saveBirthday(PlayerProvider player, Birthday birthday) {
+        saveBirthday(player.getName(), birthday);
+    }
+
+    public Birthday getBirthday(String name) {
+        if (!config.getConfig().contains(name))
             return null;
 
-        String month = config.getConfig().getString(player.getName() + ".month");
-        boolean celebrated = Integer.parseInt(config.getConfig().getString(player.getName() + ".last-celebrated")) == Year.now().getValue();
-        int day = config.getConfig().getInt(player.getName() + ".day");
+        String month = config.getConfig().getString(name + ".month");
+        int lastCelebrated = config.getConfig().getInt(name + ".last-celebrated");
+        int day = config.getConfig().getInt(name + ".day");
 
-        return new Birthday(Birthday.Month.valueOf(month.toUpperCase()), day, celebrated);
+        return new Birthday(Birthday.Month.valueOf(month.toUpperCase()), day, lastCelebrated);
+    }
+
+    public Birthday getBirthday(@NotNull PlayerProvider player) {
+        return getBirthday(player.getName());
     }
 
     public void onPlayerJoin(PlayerProvider player) {
@@ -46,10 +55,13 @@ public class BirthdayManager {
         Map<String, Object> map = new HashMap<>();
         map.put("celebrated", birthday.hasAlreadyCelebrated());
         map.put("name", player.getName());
-        for (String server : plugin.getDataManager().getServers()) {
-            plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_BIRTHDAY, server, map, (status, content) -> {});
-        }
+        plugin.getDataManager().sendDataToAll(null, SGCraftLinkCommon.DATA_BIRTHDAY, map, mapping -> {
+            if (!birthday.hasAlreadyCelebrated()) {
+                birthday.setLastCelebrated(Year.now().getValue());
+                saveBirthday(player, birthday);
+            }
+        });
 
-        saveBirthday(player, birthday, Year.now().getValue());
+
     }
 }

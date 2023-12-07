@@ -27,6 +27,7 @@ import xyz.destiall.sgcraftlink.modules.DataModule;
 import xyz.destiall.sgcraftlink.modules.HeadHunt;
 import xyz.destiall.sgcraftlink.modules.LastLocation;
 import xyz.destiall.sgcraftlink.modules.LuckPermsModule;
+import xyz.destiall.sgcraftlink.modules.MigrationModule;
 import xyz.destiall.sgcraftlink.modules.Module;
 import xyz.destiall.sgcraftlink.modules.NovaSkyblockModule;
 import xyz.destiall.sgcraftlink.modules.PiggyBankModule;
@@ -132,6 +133,12 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             getLogger().warning("This version cannot run HeadHunt!");
         }
         try {
+            testPaperOr1_8Above();
+            modules.add(new MigrationModule(this));
+        } catch (Exception e) {
+            getLogger().warning("This version cannot run Birthdays!");
+        }
+        try {
             modules.add(new DataModule(this));
         } catch (Exception e) {
             e.printStackTrace();
@@ -139,7 +146,12 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         }
 
         modules.add(new PlayerListener(this));
-        modules.add(new AirBlockPlaceListener(this));
+        try {
+            testPaperOr1_8Above();
+            modules.add(new AirBlockPlaceListener(this));
+        } catch (Exception e) {
+            getLogger().warning("This version cannot run Anti-Air Block Place!");
+        }
 
         try {
             testPaperOr1_8Above();

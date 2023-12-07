@@ -69,6 +69,8 @@ public class SGCraftLinkVelocity implements PluginProvider {
 
     private List<VelocityCommand> commands;
 
+    private boolean shuttingDown = false;
+
     @Inject
     public SGCraftLinkVelocity(Logger logger, ProxyServer server, @DataDirectory Path dataDirectory) {
         this.logger = new VelocityLogger(logger);
@@ -83,12 +85,13 @@ public class SGCraftLinkVelocity implements PluginProvider {
         new VelocityClickEvent();
         new VelocityHoverEvent();
         scheduler = new VelocityScheduler(this);
-
+        shuttingDown = false;
         enable();
     }
 
     @Subscribe
     public void onProxyShutdown(ProxyShutdownEvent e) {
+        shuttingDown = true;
         shutdown();
         disable();
     }
@@ -241,5 +244,10 @@ public class SGCraftLinkVelocity implements PluginProvider {
         commands.add(new VelocityCommand(this, "sgc", new StaffCommand(this)));
         commands.add(new VelocityCommand(this, "birthday", new BirthdayCommand(this)));
         commands.add(new VelocityCommand(this, "vote", new TempVoteCommand(this)));
+    }
+
+    @Override
+    public boolean isShuttingDown() {
+        return shuttingDown;
     }
 }

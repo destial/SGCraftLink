@@ -53,6 +53,11 @@ public class BungeePlayer extends PlayerProvider {
     }
 
     @Override
+    public boolean isOnline() {
+        return player.isConnected();
+    }
+
+    @Override
     public String getSuffix() {
         String suffix = super.getSuffix();
         return suffix == null ? null : ChatColor.stripColor(ChatColor.translateAlternateColorCodes('&', suffix));
