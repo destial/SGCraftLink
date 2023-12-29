@@ -138,7 +138,7 @@ public class StaffAppListener extends ListenerAdapter {
         buttons.add(Button.of(ButtonStyle.DANGER, "deny-" + suffix, "Unmute"));
         ActionRow row1 = ActionRow.of(buttons);
 
-        channel.sendMessage("Promote or deny? (" + username + " | " + (user != null ? user.getUser().getAsTag() : "Discord user not found") + ")").setActionRows(row1).queue();
+        channel.sendMessage("Promote or deny? (" + username + " | " + (user != null ? user.getUser().getName() : "Discord user not found") + ")").setActionRows(row1).queue();
     }
 
     @Override

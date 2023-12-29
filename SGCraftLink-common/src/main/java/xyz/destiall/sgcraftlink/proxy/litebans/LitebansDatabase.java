@@ -129,13 +129,8 @@ public final class LitebansDatabase {
             try (ResultSet rs = st.executeQuery()) {
                 while (rs.next()) {
                     if (rs.getString("uuid").equalsIgnoreCase(uuid)) {
-                        if (rs.getBoolean("ipban")) {
-                            Punishment p = new Punishment(PunishmentType.IPBAN, getPlayerName(uuid), rs.getString("banned_by_name"), rs.getLong("time"), rs.getLong("until"), rs.getString("reason"), rs.getBoolean("active"));
-                            history.add(p);
-                        } else {
-                            Punishment p = new Punishment(PunishmentType.BAN, getPlayerName(uuid), rs.getString("banned_by_name"), rs.getLong("time"), rs.getLong("until"), rs.getString("reason"), rs.getBoolean("active"));
-                            history.add(p);
-                        }
+                        Punishment p = new Punishment(rs.getBoolean("ipban") ? PunishmentType.IPBAN : PunishmentType.BAN, getPlayerName(uuid), rs.getString("banned_by_name"), rs.getLong("time"), rs.getLong("until"), rs.getString("reason"), rs.getBoolean("active"), rs.getString("server_origin"));
+                        history.add(p);
                     }
                 }
             }
@@ -147,7 +142,7 @@ public final class LitebansDatabase {
             try (ResultSet rs = st.executeQuery()) {
                 while (rs.next()) {
                     if (rs.getString("uuid").equalsIgnoreCase(uuid)) {
-                        Punishment p = new Punishment(PunishmentType.MUTE, getPlayerName(uuid), rs.getString("banned_by_name"), rs.getLong("time"), rs.getLong("until"), rs.getString("reason"), rs.getBoolean("active"));
+                        Punishment p = new Punishment(PunishmentType.MUTE, getPlayerName(uuid), rs.getString("banned_by_name"), rs.getLong("time"), rs.getLong("until"), rs.getString("reason"), rs.getBoolean("active"), rs.getString("server_origin"));
                         history.add(p);
                     }
                 }
@@ -160,7 +155,7 @@ public final class LitebansDatabase {
             try (ResultSet rs = st.executeQuery()) {
                 while (rs.next()) {
                     if (rs.getString("uuid").equalsIgnoreCase(uuid)) {
-                        Punishment p = new Punishment(PunishmentType.WARN, getPlayerName(uuid), rs.getString("banned_by_name"), rs.getLong("time"), rs.getLong("until"), rs.getString("reason"), rs.getBoolean("active"));
+                        Punishment p = new Punishment(PunishmentType.WARN, getPlayerName(uuid), rs.getString("banned_by_name"), rs.getLong("time"), rs.getLong("until"), rs.getString("reason"), rs.getBoolean("active"), rs.getString("server_origin"));
                         history.add(p);
                     }
                 }
@@ -173,7 +168,7 @@ public final class LitebansDatabase {
             try (ResultSet rs = st.executeQuery()) {
                 while (rs.next()) {
                     if (rs.getString("uuid").equalsIgnoreCase(uuid)) {
-                        Punishment p = new Punishment(PunishmentType.KICK, getPlayerName(uuid), rs.getString("banned_by_name"), rs.getLong("time"), rs.getLong("until"), rs.getString("reason"), rs.getBoolean("active"));
+                        Punishment p = new Punishment(PunishmentType.KICK, getPlayerName(uuid), rs.getString("banned_by_name"), rs.getLong("time"), rs.getLong("until"), rs.getString("reason"), rs.getBoolean("active"), rs.getString("server_origin"));
                         history.add(p);
                     }
                 }

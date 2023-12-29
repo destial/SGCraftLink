@@ -107,7 +107,7 @@ public class AppealListener extends ListenerAdapter {
         buttons.add(new ButtonImpl("unban-" + args, "Unban", ButtonStyle.PRIMARY, false, null));
         buttons.add(new ButtonImpl("unmute-" + args, "Unmute", ButtonStyle.PRIMARY, false, null));
 
-        if (appealReason.contains("xray") || appealReason.contains("x-ray") || appealReason.contains("exploit")) {
+        if (appealReason.contains("xray") || appealReason.contains("x-ray") || appealReason.contains("x ray") || appealReason.contains("exploit")) {
             buttons.add(new ButtonImpl("jail3h-" + args, "Jail 3h", ButtonStyle.PRIMARY, false, null));
             buttons.add(new ButtonImpl("jail8h-" + args, "Jail 8h", ButtonStyle.PRIMARY, false, null));
             buttons.add(new ButtonImpl("jail12-" + args, "Jail 12h", ButtonStyle.PRIMARY, false, null));
@@ -121,7 +121,7 @@ public class AppealListener extends ListenerAdapter {
         buttons.add(new ButtonImpl("deny-" + args, "Deny", ButtonStyle.DANGER, false, null));
 
         ActionRow row2 = ActionRow.of(buttons);
-        channel.sendMessage("Accept or deny? (" + username + " | " + (user != null ? user.getUser().getAsTag() : "Discord user not found") + ")").setActionRows(row1, row2).queue();
+        channel.sendMessage("Accept or deny? (" + username + " | " + (user != null ? user.getUser().getName() : "Discord user not found") + ")").setActionRows(row1, row2).queue();
     }
 
     @Override
@@ -200,8 +200,8 @@ public class AppealListener extends ListenerAdapter {
                             "cmi clear " + username,
                             "xcatch clear " + username
                     );
-                    plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, server, data, (status, content) -> {
-                        if (status == 200) {
+                    plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, server, data, (result) -> {
+                        if (result.isSuccess()) {
                             plugin.getLoggerProvider().info("Jailed and cleared " + username);
                         }
                     });

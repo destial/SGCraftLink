@@ -19,6 +19,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import static xyz.destiall.sgcraftlink.SGCraftLinkCommon.createDataMap;
+
 public class LuckPermsManager {
     private final PluginProvider plugin;
     private final LuckPerms api;
@@ -87,9 +89,7 @@ public class LuckPermsManager {
         public boolean handleIncomingMessage(JSONObject object) {
             String encoded = object.getString("data");
             String server = object.getString("server");
-            Map<String, String> body = new HashMap<>();
-            body.put("data", encoded);
-            body.put("server", server);
+            Map<String, Object> body = createDataMap("data", encoded, "server", server);
             module.sendDataToAll(server, SGCraftLinkCommon.DATA_LUCKPERMS_SERVICE, body, (mappings) -> {});
             boolean accepted = this.consumer.consumeIncomingMessageAsString(encoded);
             if (accepted) {

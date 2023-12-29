@@ -4,17 +4,20 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
 public class SGCraftLinkCommon {
     public static final String CHANNEL = "sgc:link";
+    public static final DateTimeFormatter format = DateTimeFormatter.ofPattern("EEE, MMM d, yyyy h:mm a Z").withZone(ZoneId.systemDefault());
 
     public static final String GET_FIRSTJOIN = "SGCGetJoined";
     public static final String SET_FIRSTJOIN = "SGCSetJoined";
-    public static final String SET_JAIL = "SGCSetJail";
-    public static final String GET_JAIL = "SGCGetJail";
 
     public static final String DATA_SERVER_REGISTER = "SGC_DATA_SERVER_REGISTER";
     public static final String DATA_SERVER_UNREGISTER = "SGC_DATA_SERVER_UNREGISTER";
@@ -30,11 +33,33 @@ public class SGCraftLinkCommon {
     public static final String DATA_PLAYER_MIGRATE = "SGC_MIGRATE_PLAYER";
     public static final String DATA_SECURITY_CHECK = "SGC_SECURITY_CHECK";
     public static final String DATA_GET_RANKS = "SGC_GET_RANKS";
+    public static final String DATA_JAILED = "SGC_JAILED_EVENT";
+
+    private static final Map<String, Object> emptyMap = Collections.emptyMap();
 
     public static Map<String, Object> createCommandsData(String... commands) {
         Map<String, Object> data = new HashMap<>();
         data.put("commands", Arrays.asList(commands));
         return data;
+    }
+
+    public static Map<String, Object> createDataMap(String first, Object second, Object... others) {
+        Map<String, Object> data = new HashMap<>();
+        data.put(first, second);
+        if (others != null) {
+            for (int i = 0; i < others.length; i += 2) {
+                data.put(String.valueOf(others[i]), others[i + 1]);
+            }
+        }
+        return data;
+    }
+
+    public static Map<String, Object> emptyDataMap() {
+        return emptyMap;
+    }
+
+    public static String formatDate(Date date) {
+        return format.format(date.toInstant());
     }
 
     public static String relativeDate(long end) {

@@ -60,9 +60,9 @@ public final class Scheduler {
      */
     public boolean isNotAccepting() {
         try {
-            return isCancellingAll || plugin.getServer().isStopping();
+            return isCancellingAll || plugin.getServer().isStopping() || !plugin.isEnabled();
         } catch (NoSuchMethodError e) {
-            return isCancellingAll;
+            return isCancellingAll || !plugin.isEnabled();
         }
     }
 

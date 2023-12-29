@@ -2,7 +2,6 @@ package xyz.destiall.sgcraftlink.proxy.misc;
 
 import express.Express;
 import express.utils.Status;
-import org.eclipse.jetty.client.api.ContentResponse;
 import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -10,7 +9,10 @@ import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.providers.ConfigProvider;
 import xyz.destiall.sgcraftlink.providers.PlayerProvider;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
+import xyz.destiall.sgcraftlink.proxy.litebans.Punishment;
+import xyz.destiall.sgcraftlink.proxy.litebans.PunishmentType;
 import xyz.destiall.sgcraftlink.proxy.luckperms.LuckPermsManager;
+import xyz.destiall.sgcraftlink.utils.DataResult;
 import xyz.destiall.sgcraftlink.utils.HTTPManager;
 
 import java.util.ArrayList;
@@ -22,15 +24,16 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+
+import static xyz.destiall.sgcraftlink.SGCraftLinkCommon.convertStreamToString;
+import static xyz.destiall.sgcraftlink.SGCraftLinkCommon.emptyDataMap;
 
 public final class DataManager {
     private final PluginProvider plugin;
     private final Express express;
-    private final ConfigProvider<?> config;
     private final HTTPManager manager;
-    private final Map<String, Pair<Integer, String>> registeredServers;
+    private final Map<String, RegisteredServer> registeredServers;
     private final List<LuckPermsManager.ProxyRestMessenger> messengers;
 
     public DataManager(PluginProvider plugin) {
@@ -38,27 +41,24 @@ public final class DataManager {
         express = new Express();
         manager = new HTTPManager();
 
-        config = plugin.getConfigProvider().createConfig("api-config.yml");
+        ConfigProvider<?> config = plugin.getConfigProvider().createConfig("api-config.yml");
         registeredServers = new HashMap<>();
         messengers = new ArrayList<>();
 
         int port = config.getConfig().getInt("listen-port", 1035);
         express.post("/", (request, response) -> {
             try {
-                String body = SGCraftLinkCommon.convertStreamToString(request.getBody()).trim();
+                String body = convertStreamToString(request.getBody()).trim();
                 plugin.getLoggerProvider().warning("Received data " + body);
                 JSONObject json = new JSONObject(body);
-
                 if (!json.has("data-type")) {
                     response.sendStatus(Status._405);
                     return;
                 }
-
-                String datatype = json.getString("data-type").toUpperCase();
-
+                String datatype = json.getString("data-type");
                 String server = json.getString("server");
                 if (!datatype.equalsIgnoreCase(SGCraftLinkCommon.DATA_SERVER_REGISTER) || registeredServers.containsKey(server)) {
-                    String auth = registeredServers.get(server).getValue();
+                    String auth = registeredServers.get(server).getToken();
                     if (!request.getHeader("X-Authorization").contains(auth)) {
                         response.sendStatus(Status._403);
                         return;
@@ -69,8 +69,11 @@ public final class DataManager {
                     case SGCraftLinkCommon.DATA_SERVER_REGISTER: {
                         int serverport = json.getInt("port");
                         String auth = json.getString("auth");
-                        plugin.getLoggerProvider().info("Registered server " + server + " with port " + serverport);
-                        registeredServers.put(server, new Pair<>(serverport, auth));
+                        RegisteredServer registration = new RegisteredServer(serverport, auth);
+                        registeredServers.put(server, registration);
+                        String ip = json.has("ip") ? json.getString("ip") : registration.getIp();
+                        registration.setIp(ip);
+                        plugin.getLoggerProvider().info("Registered server " + server + " to " + registration.getIp() + ":" + serverport);
                         response.sendStatus(Status._200);
                         break;
                     }
@@ -89,6 +92,18 @@ public final class DataManager {
                         response.sendStatus(Status._200);
                         break;
                     }
+                    case SGCraftLinkCommon.DATA_JAILED: {
+                        String username = json.getString("username");
+                        String executor = json.getString("executor");
+                        String reason = json.getString("reason");
+                        long duration = json.getLong("duration");
+                        long until = json.getLong("until");
+                        boolean active = json.getBoolean("jailed");
+
+                        Punishment punishment = new Punishment(PunishmentType.JAIL, username, executor, duration, until, reason, active, server);
+                        plugin.getDiscordProvider().getPunishmentListener().broadcastToDiscord(punishment, false);
+                        break;
+                    }
                     case SGCraftLinkCommon.DATA_GET_HEADHUNT: {
                         AtomicInteger i = new AtomicInteger(registeredServers.size() - 1);
                         AtomicInteger remaining = new AtomicInteger(0);
@@ -99,9 +114,9 @@ public final class DataManager {
                             if (svr.equalsIgnoreCase(server))
                                 continue;
 
-                            sendData(SGCraftLinkCommon.DATA_GET_HEADHUNT, svr, new HashMap<>(), (status, content) -> {
-                                if (status == 200) {
-                                    JSONObject obj = new JSONObject(content);
+                            sendData(SGCraftLinkCommon.DATA_GET_HEADHUNT, svr, emptyDataMap(), (result) -> {
+                                if (result.getStatus() == 200) {
+                                    JSONObject obj = result.getJSON();
                                     int r = obj.getInt("remaining");
                                     remaining.addAndGet(r);
                                     servers.put(svr, r);
@@ -149,19 +164,15 @@ public final class DataManager {
                     case SGCraftLinkCommon.DATA_START_HEADHUNT:
                     case SGCraftLinkCommon.DATA_REMOVE_HEAD_HEADHUNT:
                     case SGCraftLinkCommon.DATA_CLEAR_SCORE_HEADHUNT:
-                    case SGCraftLinkCommon.DATA_END_HEADHUNT: {
+                    case SGCraftLinkCommon.DATA_END_HEADHUNT:
+                    default: {
                         for (String svr : registeredServers.keySet()) {
                             if (svr.equalsIgnoreCase(server))
                                 continue;
 
-                            sendData(datatype, svr, json.toMap(), (status, content) -> {});
+                            sendData(datatype, svr, json.toMap(), (s) -> {});
                         }
                         response.sendStatus(Status._200);
-                        break;
-                    }
-                    default: {
-                        plugin.getLoggerProvider().warning("Received data " + datatype + " but have no implementation!");
-                        response.sendStatus(Status._201);
                         break;
                     }
                 }
@@ -197,15 +208,15 @@ public final class DataManager {
         return registeredServers.keySet();
     }
 
-    public void sendDataToAll(@Nullable String origin, String type, Map<?, ?> map, Consumer<Map<String, Pair<Integer, String>>> callback) {
+    public void sendDataToAll(@Nullable String origin, String type, Map<?, ?> map, Consumer<Map<String, DataResult>> callback) {
         AtomicInteger i = new AtomicInteger(getServers().size() - (origin != null ? 1 : 0));
-        Map<String, Pair<Integer, String>> results = new HashMap<>();
+        Map<String, DataResult> results = new HashMap<>();
         for (String server : getServers()) {
             if (server.equalsIgnoreCase(origin))
                 continue;
 
-            sendData(type, server, map, (s, c) -> {
-                results.put(server, new Pair<>(s, c));
+            sendData(type, server, map, (result) -> {
+                results.put(server, result);
                 if (i.decrementAndGet() == 0) {
                     callback.accept(results);
                 }
@@ -213,48 +224,41 @@ public final class DataManager {
         }
     }
 
-    public boolean sendData(String type, String server, Map<?, ?> map, BiConsumer<Integer, String> result) {
-        Pair<Integer, String> registration = registeredServers.get(server);
+    public boolean sendData(String type, String server, Map<?, ?> map, Consumer<DataResult> result) {
+        RegisteredServer registration = registeredServers.get(server);
         if (registration == null) {
             return false;
         }
         JSONObject object = new JSONObject(map);
         object.put("data-type", type);
-        Map<String, String> headers = HTTPManager.headers("X-Authorization", registration.getValue());
+        Map<String, String> headers = HTTPManager.headers("X-Authorization", registration.getToken());
         Runnable runnable = () -> {
             try {
                 plugin.getLoggerProvider().warning("Sending " + type + " to " + server);
-                CompletableFuture<ContentResponse> response = manager.fetch("http://" + config.getConfig().getString("ip", "192.168.1.99"), registration.getKey(), HTTPManager.Method.POST, headers, object);
+                CompletableFuture<DataResult> response = manager.fetch("http://" + registration.getIp(), registration.getPort(), HTTPManager.Method.POST, headers, object);
                 response.whenComplete((res, err) -> {
                     if (err != null) {
                         plugin.getLoggerProvider().warning("Responded back with 404");
                         plugin.getLoggerProvider().error(err.getLocalizedMessage());
-                        result.accept(404, null);
+                        result.accept(new DataResult(404, null));
                         return;
                     }
-                    String content = res.getContentAsString().trim();
-                    content = content.isEmpty() ? "{}" : content;
                     plugin.getLoggerProvider().warning("Responded back with " + res.getStatus());
-                    int status = res.getStatus();
-                    result.accept(status, content);
+                    result.accept(res);
                 });
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            result.accept(404, null);
+            result.accept(new DataResult(404, null));
         };
+
         if (plugin.getScheduler().isNotAccepting()) {
             runnable.run();
         } else {
             plugin.getScheduler().schedule(runnable, 0L, TimeUnit.MILLISECONDS);
         }
 
-
         return true;
-    }
-
-    public Express getExpress() {
-        return express;
     }
 
     public PluginProvider getPlugin() {

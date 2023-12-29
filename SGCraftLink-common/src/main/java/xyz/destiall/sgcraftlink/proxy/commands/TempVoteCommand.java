@@ -44,7 +44,7 @@ public class TempVoteCommand implements CommandProvider, TabProvider {
         }
 
         String value = args[0];
-        int i = 0;
+        int i;
         try {
             i = Integer.parseInt(value) - 1;
         } catch (Exception e) {
@@ -73,6 +73,6 @@ public class TempVoteCommand implements CommandProvider, TabProvider {
 
     @Override
     public List<String> tab(PlayerProvider sender, String[] args) {
-        return IntStream.range(1, sites.length + 1).mapToObj(Integer::toString).filter(s -> s.toLowerCase().startsWith(args[0].toLowerCase())).collect(Collectors.toList());
+        return IntStream.range(1, sites.length).mapToObj(Integer::toString).filter(s -> s.toLowerCase().startsWith(args[0].toLowerCase())).collect(Collectors.toList());
     }
 }

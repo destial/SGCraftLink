@@ -47,7 +47,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+
+import static xyz.destiall.sgcraftlink.SGCraftLinkCommon.emptyDataMap;
 
 public class HeadHunt extends Module implements Listener, CommandExecutor {
     private final Set<Location> hunts = new HashSet<>();
@@ -57,6 +60,7 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
     private ItemStack head = new ItemStack(Material.SKELETON_SKULL);
     private String blockData;
     private boolean checkOtherServers = true;
+    private AtomicBoolean dirty = new AtomicBoolean(false);
 
     public HeadHunt(SGCraftLinkSpigot plugin) {
         super(plugin, "hunt.yml");
@@ -113,13 +117,9 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
                     if (module == null)
                         return;
 
-                    module.sendProxyData(SGCraftLinkCommon.DATA_GET_HEADHUNT, new HashMap<>(), (status, content) -> {
-                        if (status == 200) {
-                            if (content.isEmpty()) {
-                                return;
-                            }
-                            JSONObject obj = new JSONObject(content);
-
+                    module.sendProxyData(SGCraftLinkCommon.DATA_GET_HEADHUNT, emptyDataMap(), (result) -> {
+                        if (result.isSuccess()) {
+                            JSONObject obj = result.getJSON();
                             JSONObject score = obj.getJSONObject("score");
                             for (String player : score.keySet()) {
                                 otherServerPlayers.put(player, score.getInt(player));
@@ -171,6 +171,7 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
 
         Location location = e.getBlockPlaced().getLocation();
         if (hunts.add(location)) {
+            dirty.compareAndSet(false, true);
             e.getPlayer().sendMessage(color("&eYou placed an egg here!"));
         } else {
             e.getPlayer().sendMessage(color("&cThat is already an egg location!"));
@@ -181,7 +182,7 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
             if (module == null)
                 return;
 
-            module.sendProxyData(SGCraftLinkCommon.DATA_START_HEADHUNT, new HashMap<>(), (s, c) -> {});
+            module.sendProxyData(SGCraftLinkCommon.DATA_START_HEADHUNT, new HashMap<>(), (s) -> {});
         }
     }
 
@@ -193,12 +194,13 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
             if (e.getPlayer().hasPermission("easter.hunt")) {
                 e.getPlayer().sendMessage(color("&eYou removed an egg!"));
                 hunts.remove(location);
+                dirty.compareAndSet(false, true);
 
                 DataModule module = plugin.getModule(DataModule.class);
                 if (module == null)
                     return;
 
-                module.sendProxyData(SGCraftLinkCommon.DATA_END_HEADHUNT, new HashMap<>(), (s, c) -> {});
+                module.sendProxyData(SGCraftLinkCommon.DATA_END_HEADHUNT, emptyDataMap(), (s) -> {});
                 return;
             }
             e.getPlayer().sendMessage(color("&cRight click this egg to claim it!"));
@@ -216,6 +218,7 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
             return;
 
         if (hunts.remove(block.getLocation())) {
+            dirty.compareAndSet(false, true);
             int amount = players.getOrDefault(e.getPlayer().getName(), 0);
             amount++;
             players.put(e.getPlayer().getName(), amount);
@@ -242,7 +245,7 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
                     if (module == null)
                         return;
 
-                    module.sendProxyData(SGCraftLinkCommon.DATA_END_HEADHUNT, new HashMap<>(), (s, c) -> {});
+                    module.sendProxyData(SGCraftLinkCommon.DATA_END_HEADHUNT, emptyDataMap(), (s) -> {});
                 }
             });
         }
@@ -287,7 +290,9 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
 
     @Override
     public void disable() {
-        save();
+        if (dirty.get()) {
+            save();
+        }
         hunts.clear();
         players.clear();
 
@@ -322,9 +327,9 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
             future.complete(getRemaining());
             return future;
         }
-        module.sendProxyData(SGCraftLinkCommon.DATA_GET_HEADHUNT, new HashMap<>(), (status, content) -> {
-            if (status == 200) {
-                JSONObject obj = new JSONObject(content);
+        module.sendProxyData(SGCraftLinkCommon.DATA_GET_HEADHUNT, emptyDataMap(), (result) -> {
+            if (result.getStatus() == 200) {
+                JSONObject obj = result.getJSON();
                 int total = obj.getInt("total") + getRemaining();
                 future.complete(total);
                 return;
@@ -347,12 +352,9 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
         if (module == null)
             return;
 
-        module.sendProxyData(SGCraftLinkCommon.DATA_GET_HEADHUNT, new HashMap<>(), (status, content) -> {
-            if (status == 200) {
-                if (content.isEmpty()) {
-                    return;
-                }
-                JSONObject obj = new JSONObject(content);
+        module.sendProxyData(SGCraftLinkCommon.DATA_GET_HEADHUNT, emptyDataMap(), (result) -> {
+            if (result.getStatus() == 200) {
+                JSONObject obj = result.getJSON();
                 JSONObject score = obj.getJSONObject("score");
                 for (String player : score.keySet()) {
                     otherServerPlayers.put(player, score.getInt(player));
@@ -415,7 +417,7 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
             if (module == null)
                 return true;
 
-            module.sendProxyData(SGCraftLinkCommon.DATA_START_HEADHUNT, new HashMap<>(), (s, c) -> {});
+            module.sendProxyData(SGCraftLinkCommon.DATA_START_HEADHUNT, new HashMap<>(), (s) -> {});
             return true;
         }
 
@@ -428,7 +430,7 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
             if (module == null)
                 return true;
 
-            module.sendProxyData(SGCraftLinkCommon.DATA_CLEAR_SCORE_HEADHUNT, new HashMap<>(), (s, c) -> {});
+            module.sendProxyData(SGCraftLinkCommon.DATA_CLEAR_SCORE_HEADHUNT, emptyDataMap(), (s) -> {});
             return true;
         }
 
@@ -443,7 +445,7 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
             if (module == null)
                 return true;
 
-            module.sendProxyData(SGCraftLinkCommon.DATA_REMOVE_HEAD_HEADHUNT, new HashMap<>(), (s, c) -> {});
+            module.sendProxyData(SGCraftLinkCommon.DATA_REMOVE_HEAD_HEADHUNT, emptyDataMap(), (s) -> {});
             return true;
         }
 
@@ -526,6 +528,7 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
             plugin.dispatchCommand(player, "setblock " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ() + " " + blockData + " replace", false);
             player.sendMessage(color("&aPlaced an egg on " + loc.getBlockX() + ", " + loc.getBlockY() + ", " + loc.getBlockZ()));
             hunts.add(loc);
+            dirty.compareAndSet(false, true);
         }, loc);
     }
 }

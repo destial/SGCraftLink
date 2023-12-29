@@ -19,6 +19,8 @@ softdepend:
   - Parties
   - SuperiorSkyblock2
 commands:
+  betatest:
+    permission: betatest.admin
   sgcreload:
     permission: sgc.reload
   lastloc:

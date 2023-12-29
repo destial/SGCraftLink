@@ -7,8 +7,9 @@ import xyz.destiall.sgcraftlink.providers.PlayerProvider;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
 
 import java.time.Year;
-import java.util.HashMap;
 import java.util.Map;
+
+import static xyz.destiall.sgcraftlink.SGCraftLinkCommon.createDataMap;
 
 public class BirthdayManager {
     private final PluginProvider plugin;
@@ -52,9 +53,7 @@ public class BirthdayManager {
         if (birthday == null || !birthday.isToday())
             return;
 
-        Map<String, Object> map = new HashMap<>();
-        map.put("celebrated", birthday.hasAlreadyCelebrated());
-        map.put("name", player.getName());
+        Map<String, Object> map = createDataMap("celebrated", birthday.hasAlreadyCelebrated(), "name", player.getName());
         plugin.getDataManager().sendDataToAll(null, SGCraftLinkCommon.DATA_BIRTHDAY, map, mapping -> {
             if (!birthday.hasAlreadyCelebrated()) {
                 birthday.setLastCelebrated(Year.now().getValue());

@@ -25,12 +25,12 @@ import xyz.destiall.sgcraftlink.proxy.listeners.DiscordCommandListener;
 import xyz.destiall.sgcraftlink.proxy.listeners.LinkListener;
 import xyz.destiall.sgcraftlink.proxy.listeners.ReportButtonListener;
 import xyz.destiall.sgcraftlink.proxy.listeners.StaffAppListener;
-import xyz.destiall.sgcraftlink.proxy.misc.Pair;
+import xyz.destiall.sgcraftlink.proxy.litebans.PunishmentListener;
+import xyz.destiall.sgcraftlink.utils.DataResult;
 
 import javax.security.auth.login.LoginException;
 import java.awt.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -43,6 +43,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static xyz.destiall.sgcraftlink.SGCraftLinkCommon.createDataMap;
+
 public class DiscordProvider {
     protected final PluginProvider plugin;
     protected JDA jda;
@@ -54,6 +56,7 @@ public class DiscordProvider {
     protected StaffAppListener staffApp;
     protected DiscordCommandListener dcl;
     protected LinkListener linkListener;
+    protected PunishmentListener punishmentListener;
 
     public DiscordProvider(PluginProvider plugin) {
         this.plugin = plugin;
@@ -89,6 +92,18 @@ public class DiscordProvider {
         setup(configManager);
 
         hookConsole();
+        hookPunishmentListener();
+    }
+
+    private void hookPunishmentListener() {
+        if (jda == null)
+            return;
+
+        punishmentListener = new PunishmentListener(plugin);
+    }
+
+    public PunishmentListener getPunishmentListener() {
+        return punishmentListener;
     }
 
     public void hookConsole() {
@@ -207,7 +222,8 @@ public class DiscordProvider {
     }
 
     public void shutdown() {
-        if (jda == null) return;
+        if (jda == null)
+            return;
         if (consoleLogger != null) {
             consoleLogger.shutdown();
             consoleLogger = null;
@@ -216,6 +232,10 @@ public class DiscordProvider {
         dcl.unregisterCommands();
         jda.shutdown();
         jda = null;
+        if (punishmentListener != null) {
+            punishmentListener.close();
+            punishmentListener = null;
+        }
         linkListener.getSub().close();
     }
 
@@ -232,12 +252,13 @@ public class DiscordProvider {
     }
 
     public void updateRankStatus(PlayerProvider player, Member member) {
-        Map<String, String> body = new HashMap<>();
-        body.put("uuid", player.getUUID().toString());
+        Map<String, Object> body = createDataMap("uuid", player.getUUID().toString());
         Set<String> ranks = ConcurrentHashMap.newKeySet();
         plugin.getDataManager().sendDataToAll(null, SGCraftLinkCommon.DATA_GET_RANKS, body, (mappings) -> {
-            for (Pair<Integer, String> content : mappings.values()) {
-                JSONObject object = new JSONObject(content.getValue());
+            for (DataResult result : mappings.values()) {
+                if (!result.isSuccess())
+                    continue;
+                JSONObject object = result.getJSON();
                 JSONArray rankArray = object.getJSONArray("ranks");
                 for (int i = 0; i < rankArray.length(); i++) {
                     String rankName = rankArray.getString(i);

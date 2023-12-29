@@ -130,7 +130,8 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             testPaperOr1_8Above();
             modules.add(new BetaTestModule(this));
         } catch (Exception e) {
-            getLogger().warning("This version cannot run HeadHunt!");
+            getLogger().warning("This version cannot run BetaTestModule!");
+            e.printStackTrace();
         }
         try {
             testPaperOr1_8Above();
@@ -340,27 +341,6 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             out.writeUTF(SGCraftLinkCommon.SET_FIRSTJOIN);
             out.writeUTF(player.getName());
             out.writeLong(time);
-            player.sendPluginMessage(this, SGCraftLinkCommon.CHANNEL, stream.toByteArray());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void sendJail(Player player, CMIModule.JailResult result) {
-        sendJail(player, result.reason, result.until, result.duration);
-    }
-
-    public void sendJail(Player player, String reason, long until, long duration) {
-        if (reason == null)
-            return;
-
-        try (ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                DataOutputStream out = new DataOutputStream(stream)) {
-            out.writeUTF(SGCraftLinkCommon.SET_JAIL);
-            out.writeUTF(player.getName());
-            out.writeUTF(reason.replace(" ", "*"));
-            out.writeLong(until);
-            out.writeLong(duration);
             player.sendPluginMessage(this, SGCraftLinkCommon.CHANNEL, stream.toByteArray());
         } catch (IOException e) {
             e.printStackTrace();

@@ -16,10 +16,11 @@ import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static xyz.destiall.sgcraftlink.SGCraftLinkCommon.createDataMap;
 
 public class LuckPermsModule extends Module {
     private final LuckPerms api;
@@ -65,7 +66,7 @@ public class LuckPermsModule extends Module {
         return api;
     }
 
-    public static class BackendRestMessenger implements Messenger {
+    public class BackendRestMessenger implements Messenger {
         private final IncomingMessageConsumer consumer;
         private final DataModule module;
 
@@ -88,9 +89,10 @@ public class LuckPermsModule extends Module {
         @Override
         public void sendOutgoingMessage(@NonNull OutgoingMessage outgoingMessage) {
             String data = outgoingMessage.asEncodedString();
-            Map<String, String> body = new HashMap<>();
-            body.put("data", data);
-            module.sendProxyData(SGCraftLinkCommon.DATA_LUCKPERMS_SERVICE, body, (s, c) -> {});
+            Map<String, Object> body = createDataMap("data", data);
+            plugin.getScheduler().runTask(() -> {
+                module.sendProxyData(SGCraftLinkCommon.DATA_LUCKPERMS_SERVICE, body, (s) -> {});
+            });
         }
 
         public boolean handleIncomingMessage(JSONObject object) {
@@ -103,7 +105,7 @@ public class LuckPermsModule extends Module {
         }
     }
 
-    private static class BackendRestMessengerProvider implements MessengerProvider {
+    private class BackendRestMessengerProvider implements MessengerProvider {
         private final DataModule dataModule;
 
         public BackendRestMessengerProvider(DataModule module) {

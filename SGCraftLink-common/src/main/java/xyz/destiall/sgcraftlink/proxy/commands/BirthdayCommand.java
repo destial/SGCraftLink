@@ -66,7 +66,7 @@ public class BirthdayCommand implements CommandProvider, TabProvider {
         if (args.length == 2) {
             try {
                 Birthday.Month month = Birthday.Month.valueOf(args[0].toUpperCase());
-                return IntStream.range(1, Birthday.Days.ALL_DAYS.get(month).getMax()).mapToObj(String::valueOf).filter(s -> s.startsWith(args[1])).collect(Collectors.toList());
+                return IntStream.range(1, month.getDays()).mapToObj(String::valueOf).filter(s -> s.startsWith(args[1])).collect(Collectors.toList());
             } catch (Exception e) {
                 return Collections.emptyList();
             }

@@ -13,7 +13,10 @@ import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
+import net.dv8tion.jda.api.utils.MarkdownUtil;
+import net.dv8tion.jda.api.utils.TimeFormat;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
@@ -24,8 +27,8 @@ import xyz.destiall.sgcraftlink.proxy.misc.Pair;
 
 import java.awt.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -35,6 +38,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class DiscordCommandListener extends ListenerAdapter {
     private JDA jda;
@@ -103,7 +107,7 @@ public class DiscordCommandListener extends ListenerAdapter {
         switch (command.getName()) {
             case "history": {
                 String playerName = e.getOption("player", OptionMapping::getAsString);
-                e.replyEmbeds(sendHistory(playerName).build()).queue();
+                e.replyEmbeds(sendHistory(playerName).stream().map(EmbedBuilder::build).collect(Collectors.toList())).queue();
                 break;
             }
             case "alts": {
@@ -135,7 +139,7 @@ public class DiscordCommandListener extends ListenerAdapter {
                 String name = e.getOption("player", OptionMapping::getAsString);
                 Integer limit = e.getOption("limit", (fallback) -> 50);
                 e.deferReply().queue(r ->
-                    sendChatHistory(plugin, e.getMember(), name, limit == null ? 50 : limit, (consumer) ->
+                    sendChatHistory(plugin, e.getMember(), name, limit == null ? 50 : limit, System.currentTimeMillis(), (consumer) ->
                         r.editOriginalEmbeds(consumer).queue()
                     )
                 );
@@ -169,7 +173,7 @@ public class DiscordCommandListener extends ListenerAdapter {
                 e.getMessage().replyEmbeds(new EmbedBuilder().setTitle("Usage is: " + prefix + "history [playerName]").setColor(Color.RED).build()).queue();
                 return;
             }
-            e.getMessage().replyEmbeds(sendHistory(playerName).build()).queue();
+            e.getMessage().replyEmbeds(sendHistory(playerName).stream().map(EmbedBuilder::build).collect(Collectors.toList())).queue();
         } else if (command.startsWith("alts") && args.length > 1) {
             String playerName = args[1].trim();
             if (playerName.isEmpty()) {
@@ -196,7 +200,7 @@ public class DiscordCommandListener extends ListenerAdapter {
         } else if (command.startsWith("chathistory") && args.length > 1) {
             String name = args[1];
             int limit = args.length > 2 ? Integer.parseInt(args[2]) : 50;
-            sendChatHistory(plugin, e.getMember(), name, limit, (consumer) ->
+            sendChatHistory(plugin, e.getMember(), name, limit, System.currentTimeMillis() ,(consumer) ->
                 e.getMessage().replyEmbeds(consumer).queue()
             );
         }
@@ -208,8 +212,8 @@ public class DiscordCommandListener extends ListenerAdapter {
             return;
         }
         Map<String, Object> data = SGCraftLinkCommon.createCommandsData("authme password " + playerName + " " + pw);
-        if (!plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, "lobby", data, (status, content) -> {
-            if (status == 200) {
+        if (!plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, "lobby", data, (result) -> {
+            if (result.isSuccess()) {
                 consumer.accept(new EmbedBuilder().setTitle("Changed password of " + playerName + " to ||" + pw + "||").setColor(Color.GREEN));
                 return;
             }
@@ -254,33 +258,55 @@ public class DiscordCommandListener extends ListenerAdapter {
             return new EmbedBuilder().setTitle(name + " does not have a valid join date!").setColor(Color.RED);
         }
 
-        String d = String.valueOf(firstJoin);
-        String substring = d.substring(0, d.length() - 3);
-        String date = "<t:" + substring + ":f>";
-        String relative = "<t:" + substring + ":R>";
+        String date = TimeFormat.DATE_TIME_LONG.format(firstJoin);
+        String relative = TimeFormat.RELATIVE.format(firstJoin);
 
         EmbedBuilder builder = new EmbedBuilder();
         builder.setDescription(name + " has played since " + date + "\n" + relative);
         return builder;
     }
 
-    public static EmbedBuilder sendHistory(String playerName) {
+    public static List<EmbedBuilder> sendHistory(String name, int page, List<Punishment> history) {
+        List<EmbedBuilder> embeds = new ArrayList<>();
+        EmbedBuilder builder = new EmbedBuilder();
+        builder.setTitle("History of " + name);
+        builder.setFooter("Page " + page);
+        builder.setColor(Color.CYAN);
+        embeds.add(builder);
+        for (int i = 0; i < history.size(); i++) {
+            Punishment p = history.get(i);
+            if (i > 23) {
+                List<Punishment> copy = history.subList(i, history.size());
+                embeds.addAll(sendHistory(name, page + 1, copy));
+                break;
+            }
+
+            String title = p.getType().name() + " (" + p.getDuration() + ")";
+            String field = "Is Currently Active? " + (p.isActive() ? "✅" : "❌") +
+                    "\n" +
+                    "Reason: " + MarkdownUtil.monospace(p.getReason()) +
+                    "\n" +
+                    "Punished by: " + MarkdownUtil.monospace(p.getExecutor()) +
+                    "\n" +
+                    "Server: " + MarkdownUtil.monospace(p.getServer()) +
+                    "\n" +
+                    "Time: " + TimeFormat.DATE_TIME_LONG.format(p.getMilliseconds()) + " (" + TimeFormat.RELATIVE.format(p.getMilliseconds()) + ")"+
+                    "\n-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-";
+            builder.addField(title, field, false);
+        }
+        if (page == 1 && builder.getFields().isEmpty()) {
+            builder.addField("None", "This player has not been punished!", false);
+        }
+        return embeds;
+    }
+
+    public static List<EmbedBuilder> sendHistory(String playerName) {
         UUID uuid = checkUserExists(playerName);
         if (uuid == null)
-            return new EmbedBuilder().setTitle("Invalid user!").setColor(Color.RED);
+            return Collections.singletonList(new EmbedBuilder().setTitle("Invalid user!").setColor(Color.RED));
 
         List<Punishment> history = LitebansDatabase.getHistory(uuid.toString());
-        EmbedBuilder builder = new EmbedBuilder();
-        builder.setTitle("History of " + LitebansDatabase.getPlayerName(uuid.toString()));
-        builder.setFooter("Will only show latest 24 history");
-        builder.setColor(Color.CYAN);
-        int i = 0;
-        for (Punishment p : history) {
-            ++i;
-            if (i >= 24) break;
-            builder.addField(p.getType().name() + " (" + p.getDuration() + ") " + (p.isActive() ? "Active" : "Inactive"), p.getReason() + " *(" + p.getExecutor() + ")*", false);
-        }
-        return builder;
+        return sendHistory(LitebansDatabase.getPlayerName(uuid.toString()), 1, history);
     }
 
     public static UUID checkUserExists(String playerName) {
@@ -301,36 +327,41 @@ public class DiscordCommandListener extends ListenerAdapter {
         return builder;
     }
 
-    public static void sendChatHistory(PluginProvider plugin, Member requester, String playerName, int limit, Consumer<List<MessageEmbed>> consumer) {
-        UUID uuid = checkUserExists(playerName);
-        if (uuid == null) {
-            consumer.accept(Arrays.asList(new EmbedBuilder().setTitle("Invalid user!").setColor(Color.RED).build()));
-            return;
+    public static void sendChatHistory(PluginProvider plugin, Member requester, @Nullable String playerName, int limit, long millis, Consumer<List<MessageEmbed>> consumer) {
+        if (playerName != null) {
+            UUID uuid = checkUserExists(playerName);
+            if (uuid == null) {
+                consumer.accept(Collections.singletonList(new EmbedBuilder().setTitle("Invalid user!").setColor(Color.RED).build()));
+                return;
+            }
         }
 
         List<Pair<Long, String>> chatMessages = new ArrayList<>();
         Map<String, Object> data = new HashMap<>();
-        data.put("player", playerName);
+        if (playerName != null) {
+            data.put("player", playerName);
+        }
         data.put("limit", limit);
+        data.put("time", millis);
         AtomicInteger test = new AtomicInteger(0);
         Collection<String> servers = plugin.getDataManager().getServers();
         List<MessageEmbed> embeds = new ArrayList<>();
         for (String server : servers) {
-            plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_CHATS, server, data, (status, content) -> {
-                if (status == 200) {
-                    JSONObject obj = new JSONObject(content);
+            plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_CHATS, server, data, (result) -> {
+                if (result.isSuccess()) {
+                    JSONObject obj = result.getJSON();
                     JSONArray array = obj.getJSONArray("messages");
                     for (int i = 0; i < array.length(); i++) {
                         JSONObject msg = array.getJSONObject(i);
                         long time = msg.getLong("time");
-                        chatMessages.add(new Pair<>(time, "<t:" + time + ":R> [" + server + "] " + playerName + ": " + msg.getString("msg")));
+                        chatMessages.add(new Pair<>(time, TimeFormat.RELATIVE.format(time) + " [" + server + "] " + msg.getString("user") + ": " + msg.getString("msg")));
                     }
 
                     chatMessages.sort(Comparator.comparingLong(Pair<Long,String>::getKey).reversed());
                     if (test.incrementAndGet() >= servers.size()) {
                         EmbedBuilder embed = new EmbedBuilder();
                         embed.setColor(Color.RED);
-                        embed.setTitle("Chat History of " + playerName);
+                        embed.setTitle(playerName != null ? "Chat History of " + playerName : "Chat History Globally");
                         embed.setFooter("Requested by " + requester.getEffectiveName());
                         StringBuilder text = new StringBuilder();
                         for (Pair<Long, String> messages : chatMessages) {

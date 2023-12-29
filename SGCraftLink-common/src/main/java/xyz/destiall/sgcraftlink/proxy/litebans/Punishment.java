@@ -9,8 +9,9 @@ public class Punishment {
     private final long milliseconds;
     private final long until;
     private final boolean active;
+    private final String server;
 
-    public Punishment(PunishmentType type, String victim, String executor, long milliseconds, long until, String reason, boolean active) {
+    public Punishment(PunishmentType type, String victim, String executor, long milliseconds, long until, String reason, boolean active, String server) {
         this.type = type;
         this.victim = victim;
         this.reason = reason;
@@ -19,10 +20,15 @@ public class Punishment {
         this.active = active;
         this.milliseconds = milliseconds;
         this.until = until;
+        this.server = server.toLowerCase();
     }
 
     public boolean isActive() {
-        return active;
+        return active && getType() != PunishmentType.KICK;
+    }
+
+    public String getServer() {
+        return server;
     }
 
     public long getUntil() {

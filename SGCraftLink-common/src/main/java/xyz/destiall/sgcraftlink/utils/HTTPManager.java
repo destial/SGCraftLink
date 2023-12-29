@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 public class HTTPManager {
     private final HttpClient client;
-    private final Stack<Pair<Request, CompletableFuture<ContentResponse>>> queueStack;
+    private final Stack<Pair<Request, CompletableFuture<DataResult>>> queueStack;
     private final ExecutorService service;
     private boolean stopping = false;
 
@@ -36,10 +36,10 @@ public class HTTPManager {
         service.submit(() -> {
             while (!stopping) {
                 if (!queueStack.isEmpty()) {
-                    Pair<Request, CompletableFuture<ContentResponse>> pair = queueStack.pop();
+                    Pair<Request, CompletableFuture<DataResult>> pair = queueStack.pop();
                     try {
                         ContentResponse response = pair.getKey().timeout(10L, TimeUnit.SECONDS).send();
-                        pair.getValue().complete(response);
+                        pair.getValue().complete(new DataResult(response));
                     } catch (Exception e) {
                         pair.getValue().completeExceptionally(e);
                     }
@@ -59,7 +59,7 @@ public class HTTPManager {
         }
     }
 
-    public CompletableFuture<ContentResponse> fetch(String url, int port, Method method, Map<String, String> headers, JSONObject... body) {
+    public CompletableFuture<DataResult> fetch(String url, int port, Method method, Map<String, String> headers, JSONObject... body) {
         Request builder = client.newRequest(url).method(method.name()).port(port);
         if (!headers.isEmpty()) {
             for (Map.Entry<String, String> header : headers.entrySet()) {
@@ -77,8 +77,8 @@ public class HTTPManager {
             case DELETE:
                 break;
         }
-        CompletableFuture<ContentResponse> future = new CompletableFuture<>();
-        Pair<Request, CompletableFuture<ContentResponse>> pair = new Pair<>(builder, future);
+        CompletableFuture<DataResult> future = new CompletableFuture<>();
+        Pair<Request, CompletableFuture<DataResult>> pair = new Pair<>(builder, future);
         queueStack.push(pair);
         return future;
     }

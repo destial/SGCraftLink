@@ -1,9 +1,11 @@
 package xyz.destiall.sgcraftlink.modules;
 
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -15,6 +17,7 @@ import xyz.destiall.sgcraftlink.items.Migration;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import static xyz.destiall.sgcraftlink.SGCraftLinkSpigot.color;
 
@@ -101,11 +104,31 @@ public class MigrationModule extends Module implements Listener, CommandExecutor
         }
         String sourceName = args[0];
         String targetName = args[1];
+
+        Migration migration = addMigration(sourceName, targetName);
+        if (migration.migrate(false)) {
+            awaitingMigration.remove(migration);
+            plugin.getLogger().info("Completed migration of " + migration.getOldName() + " to " + migration.getNewName());
+            sender.sendMessage(color("&aCompleted migration of " + migration.getOldName() + " to " + migration.getNewName()));
+        } else {
+            sender.sendMessage(color("&cUnable to complete migration of " + migration.getOldName() + " to " + migration.getNewName()));
+            sender.sendMessage(color("&cSee console for more details!"));
+        }
         return false;
     }
 
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        return null;
+        return args.length == 1 ? Bukkit.getOnlinePlayers().stream()
+                .map(Player::getName)
+                .filter(name -> name.toLowerCase().startsWith(args[0].toLowerCase()))
+                .collect(Collectors.toList())
+
+                : args.length == 2 ? Bukkit.getOnlinePlayers().stream()
+                .map(Player::getName)
+                .filter(name -> !name.equalsIgnoreCase(args[0]))
+                .filter(name -> name.toLowerCase().startsWith(args[1].toLowerCase()))
+                .collect(Collectors.toList())
+                : null;
     }
 }

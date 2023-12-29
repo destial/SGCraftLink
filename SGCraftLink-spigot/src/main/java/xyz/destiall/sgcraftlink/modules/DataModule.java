@@ -4,24 +4,21 @@ import express.Express;
 import express.utils.MediaType;
 import express.utils.Status;
 import net.luckperms.api.model.group.Group;
-import net.luckperms.api.model.user.User;
 import net.luckperms.api.track.Track;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.eclipse.jetty.client.api.ContentResponse;
+import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
+import xyz.destiall.sgcraftlink.Scheduler;
 import xyz.destiall.sgcraftlink.hooks.CoreProtectHook;
 import xyz.destiall.sgcraftlink.items.Migration;
-import xyz.destiall.sgcraftlink.items.Pair;
+import xyz.destiall.sgcraftlink.utils.DataResult;
 import xyz.destiall.sgcraftlink.utils.HTTPManager;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -31,8 +28,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import static xyz.destiall.sgcraftlink.SGCraftLinkCommon.createDataMap;
 
 public class DataModule extends Module {
     private static final SecureRandom secureRandom = new SecureRandom(); //threadsafe
@@ -87,8 +86,9 @@ public class DataModule extends Module {
                         break;
                     }
                     case SGCraftLinkCommon.DATA_CHATS: {
-                        String player = json.getString("player");
+                        @Nullable String player = json.has("player") ? json.getString("player") : null;
                         int limit = json.getInt("limit");
+                        long since = json.has("time") ? System.currentTimeMillis() : json.getLong("time");
 
                         CoreProtectHook hook = plugin.getModule(CoreProtectHook.class);
                         JSONArray array = new JSONArray();
@@ -102,7 +102,7 @@ public class DataModule extends Module {
                             break;
                         }
 
-                        List<Pair<Long, String>> messages = hook.getChats(player, limit);
+                        List<CoreProtectHook.ChatMessageResult> messages = hook.getChats(player, limit, since);
                         if (messages == null) {
                             res.put("messages", array);
                             plugin.getLogger().warning("No messages found!");
@@ -113,10 +113,11 @@ public class DataModule extends Module {
                         }
 
                         for (int i = 0; i < messages.size() && i < limit; i++) {
-                            Pair<Long, String> m = messages.get(i);
+                            CoreProtectHook.ChatMessageResult m = messages.get(i);
                             JSONObject obj = new JSONObject();
-                            obj.put("time", m.getKey());
-                            obj.put("msg", m.getValue());
+                            obj.put("time", m.getTime());
+                            obj.put("msg", m.getMessage());
+                            obj.put("user", m.getUsername());
                             array.put(obj);
                         }
 
@@ -308,9 +309,7 @@ public class DataModule extends Module {
             save();
         }
 
-        Map<String, Object> data = new HashMap<>();
-        data.put("port", config.getInt("port", 1034));
-        data.put("auth", authToken);
+        Map<String, Object> data = createDataMap("port", config.getInt("port", 1034), "auth", authToken);
         tryRegisterServer(data);
     }
 
@@ -324,25 +323,32 @@ public class DataModule extends Module {
             save();
         }
 
-        Map<String, Object> data = new HashMap<>();
-        data.put("auth", authToken);
+        Map<String, Object> data = createDataMap("auth", authToken);
         tryUnregisterServer(data);
     }
 
+    private Scheduler.Task currentRegistrationTask = null;
+
     private void tryRegisterServer(Map<String, Object> data) {
-        sendProxyData(SGCraftLinkCommon.DATA_SERVER_REGISTER, data, (status, content) -> {
-            if (status != 200) {
+        sendProxyData(SGCraftLinkCommon.DATA_SERVER_REGISTER, data, (result) -> {
+            if (!result.isSuccess()) {
                 plugin.getLogger().warning("Failed! Trying to register server with proxy again...");
-                plugin.getScheduler().runTaskLaterAsync(() -> tryRegisterServer(data), 20L * 60L);
+                if (currentRegistrationTask != null) {
+                    currentRegistrationTask.cancel();
+                }
+                currentRegistrationTask = plugin.getScheduler().runTaskLaterAsync(() -> tryRegisterServer(data), 20L * 60L);
                 return;
+            }
+            if (currentRegistrationTask != null) {
+                currentRegistrationTask.cancel();
             }
             plugin.getLogger().info("Registered server with proxy");
         });
     }
 
     private void tryUnregisterServer(Map<String, Object> data) {
-        sendProxyData(SGCraftLinkCommon.DATA_SERVER_UNREGISTER, data, (status, content) -> {
-            if (status != 200) {
+        sendProxyData(SGCraftLinkCommon.DATA_SERVER_UNREGISTER, data, (result) -> {
+            if (!result.isSuccess()) {
                 plugin.getLogger().warning("Failed trying to unregister with proxy!");
                 return;
             }
@@ -350,7 +356,7 @@ public class DataModule extends Module {
         });
     }
 
-    public void sendProxyData(String type, Map<?, ?> map, BiConsumer<Integer, String> result) {
+    public void sendProxyData(String type, Map<?, ?> map, Consumer<DataResult> result) {
         JSONObject object = new JSONObject(map);
         object.put("data-type", type);
         object.put("server", config.getString("server-name", "lobby"));
@@ -358,29 +364,30 @@ public class DataModule extends Module {
         Runnable runnable = () -> {
             try {
                 plugin.getLogger().warning("Sending " + type + " to proxy");
-                CompletableFuture<ContentResponse> response = manager.fetch("http://" + config.getString("proxy-ip", "192.168.1.99"), config.getInt("proxy-port", 1035), HTTPManager.Method.POST, headers, object);
+                CompletableFuture<DataResult> response = manager.fetch("http://" + config.getString("proxy-ip", "192.168.1.99"), config.getInt("proxy-port", 1035), HTTPManager.Method.POST, headers, object);
                 response.whenComplete((res, err) -> {
                     if (err != null) {
                         plugin.getLogger().warning("Responded back with 404");
-                        plugin.getLogger().severe(err.getLocalizedMessage());
-                        result.accept(404, null);
+                        plugin.getLogger().warning(err.getLocalizedMessage());
+                        result.accept(new DataResult(404, null));
                         return;
                     }
-                    String content = res.getContentAsString().trim();
-                    content = content.isEmpty() ? "{}" : content;
                     plugin.getLogger().warning("Responded back with " + res.getStatus());
-                    int status = res.getStatus();
-                    result.accept(status, content);
+                    result.accept(res);
                 });
             } catch (Exception e) {
                 e.printStackTrace();
-                result.accept(404, null);
+                result.accept(new DataResult(404, null));
             }
         };
         if (plugin.getScheduler().isNotAccepting()) {
             runnable.run();
         } else {
-            plugin.getScheduler().runTaskLaterAsync(runnable, 1L);
+            try {
+                plugin.getScheduler().runTaskLaterAsync(runnable, 1L);
+            } catch (Exception e) {
+                runnable.run();
+            }
         }
     }
 

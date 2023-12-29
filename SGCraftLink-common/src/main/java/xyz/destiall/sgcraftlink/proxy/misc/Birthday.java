@@ -6,9 +6,7 @@ import java.time.LocalDate;
 import java.time.Year;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public final class Birthday {
@@ -101,47 +99,7 @@ public final class Birthday {
     }
 
     public LocalDate getDate() {
-        return LocalDate.of(Year.now().getValue(), getDay(), getMonth() - 1);
-    }
-
-    public static class Days {
-        public static Map<Month, Days> ALL_DAYS = new HashMap<>();
-        static {
-            for (Month month : Month.values()) {
-                Days d = new Days(month);
-                ALL_DAYS.put(month, d);
-            }
-        }
-
-        private final Month month;
-        Days(Month month) {
-            this.month = month;
-        }
-
-        public boolean isMonth(Month month) {
-            return this.month.equals(month);
-        }
-
-        public int getMax() {
-            switch (month) {
-                case JANUARY:
-                case MARCH:
-                case MAY:
-                case JULY:
-                case AUGUST:
-                case OCTOBER:
-                case DECEMBER:
-                    return 31;
-                case FEBRUARY:
-                    return Year.now().isLeap() ? 29 : 28;
-                case APRIL:
-                case JUNE:
-                case SEPTEMBER:
-                case NOVEMBER:
-                default:
-                    return 30;
-            }
-        }
+        return LocalDate.of(Year.now().getValue(), getMonth(), getDay());
     }
 
     public enum Month {
@@ -166,6 +124,27 @@ public final class Birthday {
 
         public final int getValue() {
             return this.value;
+        }
+
+        public final int getDays() {
+            switch (this) {
+                case JANUARY:
+                case MARCH:
+                case MAY:
+                case JULY:
+                case AUGUST:
+                case OCTOBER:
+                case DECEMBER:
+                    return 31;
+                case FEBRUARY:
+                    return Year.now().isLeap() ? 29 : 28;
+                case APRIL:
+                case JUNE:
+                case SEPTEMBER:
+                case NOVEMBER:
+                default:
+                    return 30;
+            }
         }
 
         public final String getName() {

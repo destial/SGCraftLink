@@ -7,19 +7,18 @@ import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
+import net.dv8tion.jda.api.utils.MarkdownUtil;
 import org.jetbrains.annotations.NotNull;
 import xyz.destiall.sgcraftlink.providers.ColorProvider;
 import xyz.destiall.sgcraftlink.providers.PlayerProvider;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
 import xyz.destiall.sgcraftlink.proxy.litebans.LitebansDatabase;
-import xyz.destiall.sgcraftlink.proxy.litebans.Punishment;
 
-import java.awt.*;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static xyz.destiall.sgcraftlink.proxy.listeners.DiscordCommandListener.sendChatHistory;
+import static xyz.destiall.sgcraftlink.proxy.listeners.DiscordCommandListener.sendHistory;
 
 public class ReportButtonListener extends ListenerAdapter {
     private final PluginProvider plugin;
@@ -65,6 +64,9 @@ public class ReportButtonListener extends ListenerAdapter {
             }
         }
 
+        String reported = embed.getTitle();
+        String reason = embed.getDescription();
+
         PlayerProvider player = plugin.getPlayer(reporter);
         switch (id) {
             case "sgc-report-accepted": {
@@ -79,9 +81,9 @@ public class ReportButtonListener extends ListenerAdapter {
                 User reporterUser = plugin.getLinkProvider().getUser(reporter);
                 if (reporterUser != null) {
                     String finalStaff = staff;
-                    reporterUser.openPrivateChannel().queue(pm -> {
-                        pm.sendMessage(finalStaff + " has acknowledged your report!").queue();
-                    });
+                    reporterUser.openPrivateChannel().queue(pm ->
+                        pm.sendMessage(finalStaff + " has acknowledged your report!\n" + MarkdownUtil.monospace(reported + ": " + reason)).queue()
+                    , err -> {});
                 }
                 break;
             }
@@ -97,40 +99,24 @@ public class ReportButtonListener extends ListenerAdapter {
                 User reporterUser = plugin.getLinkProvider().getUser(reporter);
                 if (reporterUser != null) {
                     String finalStaff = staff;
-                    reporterUser.openPrivateChannel().queue(pm -> {
-                        pm.sendMessage(finalStaff + " has denied your report!").queue();
-                    });
+                    reporterUser.openPrivateChannel().queue(pm ->
+                        pm.sendMessage(finalStaff + " has denied your report!\n" + MarkdownUtil.monospace(reported + ": " + reason)).queue()
+                    , err -> {});
                 }
                 break;
             }
             case "sgc-report-history":
-                UUID uuid = LitebansDatabase.getUUID(embed.getTitle());
-                if (uuid == null) {
-                    event.reply("User not found!").setEphemeral(true).queue();
-                    return;
-                }
-
-                List<Punishment> history = LitebansDatabase.getHistory(uuid.toString());
-                EmbedBuilder builder = new EmbedBuilder();
-                builder.setTitle("History of " + LitebansDatabase.getPlayerName(uuid.toString()));
-                builder.setFooter("Will only show latest 24 history");
-                builder.setColor(Color.CYAN);
-                int i = 0;
-                for (Punishment p : history) {
-                    ++i;
-                    if (i >= 24) break;
-                    builder.addField(p.getType().name() + " (" + p.getDuration() + ") " + (p.isActive() ? "Active" : "Inactive"), p.getReason() + " *(" + p.getExecutor() + ")*", false);
-                }
-
-                event.replyEmbeds(builder.build()).queue();
+                event.deferReply().queue(r -> {
+                    List<EmbedBuilder> embeds = sendHistory(LitebansDatabase.getPlayerName(embed.getTitle()));
+                    r.editOriginalEmbeds(embeds.stream().map(EmbedBuilder::build).collect(Collectors.toList())).queue();
+                });
                 break;
             case "sgc-report-chathistory": {
-                int limit = 50;
-                event.deferReply().queue(r -> {
-                    sendChatHistory(plugin, event.getMember(), embed.getTitle(), limit, (consumer) ->
+                event.deferReply().queue(r ->
+                    sendChatHistory(plugin, event.getMember(), embed.getTitle(), 50, event.getMessage().getTimeCreated().toInstant().toEpochMilli(), (consumer) ->
                         r.editOriginalEmbeds(consumer).queue()
-                    );
-                });
+                    )
+                );
                 break;
             }
             default: {

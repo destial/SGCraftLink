@@ -6,5 +6,6 @@ public enum PunishmentType {
     WARN,
     MUTE,
     IPBAN,
+    JAIL,
     UNKNOWN
 }
