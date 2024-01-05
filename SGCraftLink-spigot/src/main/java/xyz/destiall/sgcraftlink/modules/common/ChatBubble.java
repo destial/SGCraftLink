@@ -1,4 +1,4 @@
-package xyz.destiall.sgcraftlink.modules;
+package xyz.destiall.sgcraftlink.modules.common;
 
 import com.google.common.util.concurrent.AtomicDouble;
 import org.bukkit.ChatColor;
@@ -11,12 +11,14 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.jetbrains.annotations.NotNull;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.Scheduler;
 import xyz.destiall.sgcraftlink.items.ChatBubblePacket;
+import xyz.destiall.sgcraftlink.modules.Module;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -91,6 +93,16 @@ public class ChatBubble extends Module implements Listener, CommandExecutor {
         if (e.getTo().getWorld() == e.getFrom().getWorld())
             return;
 
+        Player player = e.getPlayer();
+        Chat playerBubbles = chatBubbles.remove(player);
+        if (playerBubbles == null)
+            return;
+
+        playerBubbles.clear();
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent e) {
         Player player = e.getPlayer();
         Chat playerBubbles = chatBubbles.remove(player);
         if (playerBubbles == null)

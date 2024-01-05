@@ -34,6 +34,7 @@ public class SGCraftLinkCommon {
     public static final String DATA_SECURITY_CHECK = "SGC_SECURITY_CHECK";
     public static final String DATA_GET_RANKS = "SGC_GET_RANKS";
     public static final String DATA_JAILED = "SGC_JAILED_EVENT";
+    public static final String DATA_ONEPERSONDEATH = "SGC_ONEPERSONDEATH";
 
     private static final Map<String, Object> emptyMap = Collections.emptyMap();
 

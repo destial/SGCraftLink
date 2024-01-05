@@ -1,4 +1,4 @@
-package xyz.destiall.sgcraftlink.modules;
+package xyz.destiall.sgcraftlink.modules.vanilla;
 
 import com.spawnchunk.piggybank.config.Config;
 import com.spawnchunk.piggybank.modules.Account;
@@ -11,6 +11,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.inventory.ItemStack;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
+import xyz.destiall.sgcraftlink.modules.Module;
 
 import java.util.Comparator;
 import java.util.List;

@@ -117,8 +117,7 @@ public abstract class LinkProvider {
         save();
     }
 
-    public void unlink(PlayerProvider player) {
-        String name = player.getName();
+    public void unlink(String name) {
         Member member = plugin.getDiscordProvider().getMember(getId(name));
         if (member == null)
             return;
@@ -127,21 +126,27 @@ public abstract class LinkProvider {
 
         plugin.getDiscordProvider().unlink(member, false);
         plugin.getPlaytimeProvider().unlink(member.getId());
+
+        member.getUser().openPrivateChannel().queue(channel -> channel.sendMessage("You have unlinked this account from " + name).queue());
+    }
+
+    public void unlink(PlayerProvider player) {
+        String name = player.getName();
+        unlink(name);
+
         plugin.getLuckPermsManager().getApi().getUserManager().modifyUser(player.getUUID(), u -> {
             Node node = InheritanceNode.builder("booster").build();
             if (u.data().contains(node, NodeEqualityPredicate.ONLY_KEY) == Tristate.TRUE) {
                 u.data().remove(node);
-                plugin.getLoggerProvider().info(player.getName() + " is unlinking his Nitro! Removing rank...");
+                plugin.getLoggerProvider().info(name + " is unlinking his Nitro! Removing rank...");
             }
 
             Node linked = InheritanceNode.builder("dclinked").build();
             if (u.data().contains(linked, NodeEqualityPredicate.ONLY_KEY) == Tristate.TRUE) {
                 u.data().remove(linked);
-                plugin.getLoggerProvider().info(player.getName() + " is unlinking! Removing rank...");
+                plugin.getLoggerProvider().info(name + " is unlinking! Removing rank...");
             }
         });
-
-        member.getUser().openPrivateChannel().queue(channel -> channel.sendMessage("You have unlinked this account from " + name).queue());
     }
 
     public Collection<String> getDatabase() {

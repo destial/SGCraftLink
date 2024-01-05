@@ -1,4 +1,4 @@
-package xyz.destiall.sgcraftlink.modules;
+package xyz.destiall.sgcraftlink.modules.common;
 
 import org.bukkit.Material;
 import org.bukkit.command.Command;
@@ -18,6 +18,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.items.Redeemable;
+import xyz.destiall.sgcraftlink.modules.Module;
 
 import java.util.ArrayList;
 import java.util.Arrays;

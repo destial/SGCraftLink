@@ -2,6 +2,7 @@ package xyz.destiall.sgcraftlink.proxy.misc;
 
 import express.Express;
 import express.utils.Status;
+import net.dv8tion.jda.api.entities.User;
 import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -58,7 +59,13 @@ public final class DataManager {
                 String datatype = json.getString("data-type");
                 String server = json.getString("server");
                 if (!datatype.equalsIgnoreCase(SGCraftLinkCommon.DATA_SERVER_REGISTER) || registeredServers.containsKey(server)) {
-                    String auth = registeredServers.get(server).getToken();
+                    RegisteredServer registeredServer = registeredServers.get(server);
+                    if (registeredServer == null) {
+                        response.sendStatus(Status._403);
+                        return;
+                    }
+
+                    String auth = registeredServer.getToken();
                     if (!request.getHeader("X-Authorization").contains(auth)) {
                         response.sendStatus(Status._403);
                         return;
@@ -159,6 +166,18 @@ public final class DataManager {
                         if (birthday != null) {
                             plugin.getBirthdayManager().saveBirthday(json.getString("new_name"), birthday);
                         }
+
+                        PlayerProvider sourcePlayer = plugin.getPlayer(json.getString("old_name"));
+                        User sourceUser = plugin.getLinkProvider().getUser(json.getString("old_name"));
+                        if (sourceUser != null) {
+                            plugin.getLinkProvider().link(json.getString("new_name"), sourceUser);
+                        }
+
+                        if (sourcePlayer != null) {
+                            plugin.getLinkProvider().unlink(sourcePlayer);
+                        } else {
+                            plugin.getLinkProvider().unlink(json.getString("old_name"));
+                        }
                         // Do not break here!
                     }
                     case SGCraftLinkCommon.DATA_START_HEADHUNT:
@@ -209,15 +228,15 @@ public final class DataManager {
     }
 
     public void sendDataToAll(@Nullable String origin, String type, Map<?, ?> map, Consumer<Map<String, DataResult>> callback) {
-        AtomicInteger i = new AtomicInteger(getServers().size() - (origin != null ? 1 : 0));
+        AtomicInteger i = new AtomicInteger(registeredServers.size() - (origin != null ? 1 : 0));
         Map<String, DataResult> results = new HashMap<>();
-        for (String server : getServers()) {
+        for (String server : registeredServers.keySet()) {
             if (server.equalsIgnoreCase(origin))
                 continue;
 
             sendData(type, server, map, (result) -> {
                 results.put(server, result);
-                if (i.decrementAndGet() == 0) {
+                if (i.decrementAndGet() <= 0) {
                     callback.accept(results);
                 }
             });

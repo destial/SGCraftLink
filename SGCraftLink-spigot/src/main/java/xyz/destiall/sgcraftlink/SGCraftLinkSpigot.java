@@ -11,31 +11,33 @@ import org.bukkit.event.Listener;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
-import xyz.destiall.sgcraftlink.hooks.CoreProtectHook;
-import xyz.destiall.sgcraftlink.hooks.DiscordSRVHook;
-import xyz.destiall.sgcraftlink.hooks.DynmapHook;
-import xyz.destiall.sgcraftlink.hooks.PAPIHook;
+import xyz.destiall.sgcraftlink.gamemode.OnePersonDeath;
 import xyz.destiall.sgcraftlink.listeners.AirBlockPlaceListener;
 import xyz.destiall.sgcraftlink.listeners.PML;
 import xyz.destiall.sgcraftlink.listeners.PlayerListener;
-import xyz.destiall.sgcraftlink.modules.BetaTestModule;
-import xyz.destiall.sgcraftlink.modules.BirthdayModule;
-import xyz.destiall.sgcraftlink.modules.CMIModule;
-import xyz.destiall.sgcraftlink.modules.Casino;
-import xyz.destiall.sgcraftlink.modules.ChatBubble;
 import xyz.destiall.sgcraftlink.modules.DataModule;
-import xyz.destiall.sgcraftlink.modules.HeadHunt;
-import xyz.destiall.sgcraftlink.modules.LastLocation;
-import xyz.destiall.sgcraftlink.modules.LuckPermsModule;
-import xyz.destiall.sgcraftlink.modules.MigrationModule;
 import xyz.destiall.sgcraftlink.modules.Module;
-import xyz.destiall.sgcraftlink.modules.NovaSkyblockModule;
-import xyz.destiall.sgcraftlink.modules.PiggyBankModule;
-import xyz.destiall.sgcraftlink.modules.Redeemables;
-import xyz.destiall.sgcraftlink.modules.ReputationModule;
-import xyz.destiall.sgcraftlink.modules.ScheduledCommands;
-import xyz.destiall.sgcraftlink.modules.Tags;
-import xyz.destiall.sgcraftlink.modules.Triggers;
+import xyz.destiall.sgcraftlink.modules.common.BetaTestModule;
+import xyz.destiall.sgcraftlink.modules.common.BirthdayModule;
+import xyz.destiall.sgcraftlink.modules.common.CMIModule;
+import xyz.destiall.sgcraftlink.modules.common.ChatBubble;
+import xyz.destiall.sgcraftlink.modules.common.HeadHunt;
+import xyz.destiall.sgcraftlink.modules.common.LuckPermsModule;
+import xyz.destiall.sgcraftlink.modules.common.MigrationModule;
+import xyz.destiall.sgcraftlink.modules.common.Redeemables;
+import xyz.destiall.sgcraftlink.modules.common.ScheduledCommands;
+import xyz.destiall.sgcraftlink.modules.common.Tags;
+import xyz.destiall.sgcraftlink.modules.common.Triggers;
+import xyz.destiall.sgcraftlink.modules.hooks.CoreProtectHook;
+import xyz.destiall.sgcraftlink.modules.hooks.DiscordSRVHook;
+import xyz.destiall.sgcraftlink.modules.hooks.DynmapHook;
+import xyz.destiall.sgcraftlink.modules.hooks.PAPIHook;
+import xyz.destiall.sgcraftlink.modules.skyblock.NovaEconomyGUIModule;
+import xyz.destiall.sgcraftlink.modules.skyblock.NovaSkyblockModule;
+import xyz.destiall.sgcraftlink.modules.vanilla.Casino;
+import xyz.destiall.sgcraftlink.modules.vanilla.LastLocation;
+import xyz.destiall.sgcraftlink.modules.vanilla.PiggyBankModule;
+import xyz.destiall.sgcraftlink.modules.vanilla.ReputationModule;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -74,7 +76,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         }
     }
 
-    public void testPaperOr1_8Above() throws Exception {
+    public void testPaperOr1_8Above() throws ClassNotFoundException {
         Class.forName("com.destroystokyo.paper.profile.PlayerProfile");
     }
 
@@ -161,6 +163,14 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             getLogger().warning("This version cannot run Casino!");
         }
 
+        try {
+            testPaperOr1_8Above();
+            modules.add(new OnePersonDeath(this));
+        } catch (Exception e) {
+            e.printStackTrace();
+            getLogger().warning("This version cannot run OnePersonDeath!");
+        }
+
         if (getServer().getPluginManager().getPlugin("ProtocolLib") != null) {
             try {
                 testPaperOr1_8Above();
@@ -175,6 +185,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
                 modules.add(new CMIModule(this));
             } catch (Exception e) {
                 getLogger().warning("This version cannot run CMIModule!");
+                e.printStackTrace();
             }
         }
 
@@ -189,6 +200,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
                 modules.add(new PiggyBankModule(this));
             } catch (Exception e) {
                 getLogger().warning("This version cannot run PiggyBankModule!");
+                e.printStackTrace();
             }
         }
 
@@ -202,6 +214,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
                     modules.add(new LuckPermsModule(this, provider.getProvider()));
                 } catch (Exception e) {
                     getLogger().warning("This version cannot run LuckPermsModule!");
+                    e.printStackTrace();
                 }
             }
         }
@@ -212,6 +225,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
                 papiHook.register();
             } catch (Exception e) {
                 getLogger().warning("This version cannot run PAPI Hook!");
+                e.printStackTrace();
             }
         }
 
@@ -221,6 +235,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
                 modules.add(new DiscordSRVHook(this));
             } catch (Exception e) {
                 getLogger().warning("This version cannot run DiscordSRV Hook!");
+                e.printStackTrace();
             }
         }
 
@@ -230,6 +245,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
                 modules.add(new CoreProtectHook(this));
             } catch (Exception e) {
                 getLogger().warning("This version cannot run CoreProtect Hook!");
+                e.printStackTrace();
             }
         }
 
@@ -238,14 +254,26 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
                 modules.add(new DynmapHook(this));
             } catch (Exception e) {
                 getLogger().warning("This version cannot run Dynmap Hook!");
+                e.printStackTrace();
             }
         }
 
-        if (getServer().getPluginManager().getPlugin("Nova") != null && getServer().getPluginManager().getPlugin("SuperiorSkyblock2") != null) {
-            try {
-                modules.add(new NovaSkyblockModule(this));
-            } catch (Exception e) {
-                getLogger().warning("This version cannot run Nova & SuperiorSkyblock Hook!");
+        if (getServer().getPluginManager().getPlugin("Nova") != null) {
+            if (getServer().getPluginManager().getPlugin("SuperiorSkyblock2") != null) {
+                try {
+                    modules.add(new NovaSkyblockModule(this));
+                } catch (Exception e) {
+                    getLogger().warning("This version cannot run Nova & SuperiorSkyblock Hook!");
+                    e.printStackTrace();
+                }
+            }
+            if (getServer().getPluginManager().getPlugin("EconomyShopGUI") != null) {
+                try {
+                    modules.add(new NovaEconomyGUIModule(this));
+                } catch (Exception e) {
+                    getLogger().warning("This version cannot run Nova & EconomyShopGUI Hook!");
+                    e.printStackTrace();
+                }
             }
         }
 

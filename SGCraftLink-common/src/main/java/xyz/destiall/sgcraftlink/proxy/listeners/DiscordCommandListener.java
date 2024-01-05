@@ -24,10 +24,10 @@ import xyz.destiall.sgcraftlink.providers.PluginProvider;
 import xyz.destiall.sgcraftlink.proxy.litebans.LitebansDatabase;
 import xyz.destiall.sgcraftlink.proxy.litebans.Punishment;
 import xyz.destiall.sgcraftlink.proxy.misc.Pair;
+import xyz.destiall.sgcraftlink.utils.DataResult;
 
 import java.awt.*;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -36,7 +36,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -290,7 +289,7 @@ public class DiscordCommandListener extends ListenerAdapter {
                     "\n" +
                     "Server: " + MarkdownUtil.monospace(p.getServer()) +
                     "\n" +
-                    "Time: " + TimeFormat.DATE_TIME_LONG.format(p.getMilliseconds()) + " (" + TimeFormat.RELATIVE.format(p.getMilliseconds()) + ")"+
+                    "Time: " + TimeFormat.DATE_TIME_LONG.format(p.getTime()) + " (" + TimeFormat.RELATIVE.format(p.getTime()) + ")"+
                     "\n-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-";
             builder.addField(title, field, false);
         }
@@ -343,48 +342,45 @@ public class DiscordCommandListener extends ListenerAdapter {
         }
         data.put("limit", limit);
         data.put("time", millis);
-        AtomicInteger test = new AtomicInteger(0);
-        Collection<String> servers = plugin.getDataManager().getServers();
         List<MessageEmbed> embeds = new ArrayList<>();
-        for (String server : servers) {
-            plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_CHATS, server, data, (result) -> {
-                if (result.isSuccess()) {
-                    JSONObject obj = result.getJSON();
+        plugin.getDataManager().sendDataToAll(null, SGCraftLinkCommon.DATA_CHATS, data, (result) -> {
+            for (Map.Entry<String, DataResult> serverResults : result.entrySet()) {
+                if (serverResults.getValue().isSuccess()) {
+                    JSONObject obj = serverResults.getValue().getJSON();
                     JSONArray array = obj.getJSONArray("messages");
                     for (int i = 0; i < array.length(); i++) {
                         JSONObject msg = array.getJSONObject(i);
                         long time = msg.getLong("time");
-                        chatMessages.add(new Pair<>(time, TimeFormat.RELATIVE.format(time) + " [" + server + "] " + msg.getString("user") + ": " + msg.getString("msg")));
+                        chatMessages.add(new Pair<>(time, TimeFormat.RELATIVE.format(time) + " [" + serverResults.getKey() + "] " + msg.getString("user") + ": " + msg.getString("msg")));
                     }
 
                     chatMessages.sort(Comparator.comparingLong(Pair<Long,String>::getKey).reversed());
-                    if (test.incrementAndGet() >= servers.size()) {
-                        EmbedBuilder embed = new EmbedBuilder();
-                        embed.setColor(Color.RED);
-                        embed.setTitle(playerName != null ? "Chat History of " + playerName : "Chat History Globally");
-                        embed.setFooter("Requested by " + requester.getEffectiveName());
-                        StringBuilder text = new StringBuilder();
-                        for (Pair<Long, String> messages : chatMessages) {
-                            if (text.length() + messages.getValue().length() > 2048) {
-                                embed.setDescription(text);
-                                embeds.add(embed.build());
-                                embed.setDescription("");
-                                text = new StringBuilder();
-                            }
-                            text.append(messages.getValue()).append("\n");
-                        }
-
-                        if (text.length() > 2048) {
-                            text.delete(2044, text.length() - 1);
-                            text.append("...");
-                        }
-                        embed.setDescription(text);
-                        embeds.add(embed.build());
-
-                        consumer.accept(embeds);
-                    }
                 }
-            });
-        }
+            }
+
+            EmbedBuilder embed = new EmbedBuilder();
+            embed.setColor(Color.RED);
+            embed.setTitle(playerName != null ? "Chat History of " + playerName : "Chat History Globally");
+            embed.setFooter("Requested by " + requester.getEffectiveName());
+            StringBuilder text = new StringBuilder();
+            for (Pair<Long, String> messages : chatMessages) {
+                if (text.length() + messages.getValue().length() > 2048) {
+                    embed.setDescription(text);
+                    embeds.add(embed.build());
+                    embed.setDescription("");
+                    text = new StringBuilder();
+                }
+                text.append(messages.getValue()).append("\n");
+            }
+
+            if (text.length() > 2048) {
+                text.delete(2044, text.length() - 1);
+                text.append("...");
+            }
+            embed.setDescription(text);
+            embeds.add(embed.build());
+
+            consumer.accept(embeds);
+        });
     }
 }

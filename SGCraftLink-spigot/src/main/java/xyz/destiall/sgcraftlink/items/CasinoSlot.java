@@ -10,7 +10,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import xyz.destiall.sgcraftlink.Scheduler;
-import xyz.destiall.sgcraftlink.modules.Casino;
+import xyz.destiall.sgcraftlink.modules.vanilla.Casino;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -45,13 +45,25 @@ public final class Scheduler {
         if (isFolia()) {
             isCancellingAll = true;
             List<Task> copy = new ArrayList<>(foliaTasks);
-            copy.forEach(Task::_internalCancel);
+            for (Task task : copy) {
+                try {
+                    task._internalCancel();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
             foliaTasks.clear();
             isCancellingAll = false;
             return;
         }
 
-        plugin.getServer().getScheduler().cancelTasks(plugin);
+        isCancellingAll = true;
+        try {
+            plugin.getServer().getScheduler().cancelTasks(plugin);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        isCancellingAll = false;
     }
 
     /**

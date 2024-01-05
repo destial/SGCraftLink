@@ -1,6 +1,5 @@
-package xyz.destiall.sgcraftlink.modules;
+package xyz.destiall.sgcraftlink.modules.common;
 
-import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -11,8 +10,12 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.json.JSONObject;
+import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
+import xyz.destiall.sgcraftlink.events.DataReceiveEvent;
 import xyz.destiall.sgcraftlink.items.Migration;
+import xyz.destiall.sgcraftlink.modules.Module;
 
 import java.util.List;
 import java.util.Set;
@@ -26,6 +29,8 @@ public class MigrationModule extends Module implements Listener, CommandExecutor
     private final boolean piggybank;
     private final boolean luckperms;
     private final boolean parties;
+    private final boolean griefPrevention;
+    private final boolean survivalPlots;
 
     private final Set<Migration> awaitingMigration;
 
@@ -36,6 +41,8 @@ public class MigrationModule extends Module implements Listener, CommandExecutor
         piggybank = plugin.getServer().getPluginManager().isPluginEnabled("PiggyBank");
         luckperms = plugin.getServer().getPluginManager().isPluginEnabled("LuckPerms");
         parties = plugin.getServer().getPluginManager().isPluginEnabled("Parties");
+        griefPrevention = plugin.getServer().getPluginManager().isPluginEnabled("GriefPrevention");
+        survivalPlots = plugin.getServer().getPluginManager().isPluginEnabled("SurvivalPlots");
 
         plugin.getCommand("migrate").setExecutor(this);
 
@@ -65,10 +72,32 @@ public class MigrationModule extends Module implements Listener, CommandExecutor
         return parties;
     }
 
+    public boolean hasGriefPrevention() {
+        return griefPrevention;
+    }
+
+    public boolean hasSurvivalPlots() {
+        return survivalPlots;
+    }
+
     public Migration addMigration(String oldName, String newName) {
         Migration migration = new Migration(this, oldName, newName);
         awaitingMigration.add(migration);
         return awaitingMigration.stream().filter(m -> m.getOldName().equals(oldName)).findFirst().orElse(null);
+    }
+
+    @EventHandler
+    public void onDataReceive(DataReceiveEvent e) {
+        if (!e.getDataType().equals(SGCraftLinkCommon.DATA_PLAYER_MIGRATE))
+            return;
+
+        String oldName = e.getJson().getString("old_name");
+        String newName = e.getJson().getString("new_name");
+        Migration migration = addMigration(oldName, newName);
+        if (migration.hasMigrated() && !migration.migrate(true))
+            return;
+
+        e.setResponse(new JSONObject().put("success", true));
     }
 
     @EventHandler
@@ -79,6 +108,7 @@ public class MigrationModule extends Module implements Listener, CommandExecutor
 
         if (migration.migrate(false)) {
             awaitingMigration.remove(migration);
+            config.set(migration.getOldName(), null);
             plugin.getLogger().info("Completed migration of " + migration.getOldName() + " to " + migration.getNewName());
         }
     }
@@ -87,8 +117,10 @@ public class MigrationModule extends Module implements Listener, CommandExecutor
     public void disable() {
         plugin.getCommand("migrate").setExecutor(null);
         for (Migration migration : awaitingMigration) {
-            if (migration.hasMigrated())
+            if (migration.hasMigrated()) {
+                config.set(migration.getOldName(), null);
                 continue;
+            }
 
             config.set(migration.getOldName(), migration.getNewName());
         }
@@ -108,6 +140,7 @@ public class MigrationModule extends Module implements Listener, CommandExecutor
         Migration migration = addMigration(sourceName, targetName);
         if (migration.migrate(false)) {
             awaitingMigration.remove(migration);
+            config.set(migration.getOldName(), null);
             plugin.getLogger().info("Completed migration of " + migration.getOldName() + " to " + migration.getNewName());
             sender.sendMessage(color("&aCompleted migration of " + migration.getOldName() + " to " + migration.getNewName()));
         } else {
@@ -119,12 +152,12 @@ public class MigrationModule extends Module implements Listener, CommandExecutor
 
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        return args.length == 1 ? Bukkit.getOnlinePlayers().stream()
+        return args.length == 1 ? plugin.getServer().getOnlinePlayers().stream()
                 .map(Player::getName)
                 .filter(name -> name.toLowerCase().startsWith(args[0].toLowerCase()))
                 .collect(Collectors.toList())
 
-                : args.length == 2 ? Bukkit.getOnlinePlayers().stream()
+                : args.length == 2 ? plugin.getServer().getOnlinePlayers().stream()
                 .map(Player::getName)
                 .filter(name -> !name.equalsIgnoreCase(args[0]))
                 .filter(name -> name.toLowerCase().startsWith(args[1].toLowerCase()))

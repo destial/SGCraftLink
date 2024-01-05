@@ -1,4 +1,4 @@
-package xyz.destiall.sgcraftlink.hooks;
+package xyz.destiall.sgcraftlink.modules.hooks;
 
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.OfflinePlayer;
@@ -9,11 +9,11 @@ import org.jetbrains.annotations.Nullable;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.items.PlayerReputation;
 import xyz.destiall.sgcraftlink.items.Tag;
-import xyz.destiall.sgcraftlink.modules.HeadHunt;
-import xyz.destiall.sgcraftlink.modules.LuckPermsModule;
-import xyz.destiall.sgcraftlink.modules.PiggyBankModule;
-import xyz.destiall.sgcraftlink.modules.ReputationModule;
-import xyz.destiall.sgcraftlink.modules.Tags;
+import xyz.destiall.sgcraftlink.modules.common.HeadHunt;
+import xyz.destiall.sgcraftlink.modules.common.LuckPermsModule;
+import xyz.destiall.sgcraftlink.modules.common.Tags;
+import xyz.destiall.sgcraftlink.modules.vanilla.PiggyBankModule;
+import xyz.destiall.sgcraftlink.modules.vanilla.ReputationModule;
 
 import java.util.ArrayList;
 import java.util.Collection;

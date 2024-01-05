@@ -8,7 +8,7 @@
     <parent>
         <groupId>xyz.destiall</groupId>
         <artifactId>SGCraftLink</artifactId>
-        <version>1.0-SNAPSHOT</version>
+        <version>1.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>SGCraftLink-spigot</artifactId>
@@ -138,6 +138,18 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>com.github.TechFortress</groupId>
+            <artifactId>GriefPrevention</artifactId>
+            <version>16.18</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>xyz.destiall</groupId>
+            <artifactId>SurvivalPlots</artifactId>
+            <version>1.4-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>net.luckperms</groupId>
             <artifactId>api</artifactId>
             <version>5.4</version>
@@ -177,6 +189,12 @@
             <groupId>net.Zrips</groupId>
             <artifactId>TryMe</artifactId>
             <version>7.1.1.2</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.Gypopo</groupId>
+            <artifactId>EconomyShopGUI-Free</artifactId>
+            <version>6.2.5</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

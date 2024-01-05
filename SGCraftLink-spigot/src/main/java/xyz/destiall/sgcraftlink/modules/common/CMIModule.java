@@ -1,4 +1,4 @@
-package xyz.destiall.sgcraftlink.modules;
+package xyz.destiall.sgcraftlink.modules.common;
 
 import com.Zrips.CMI.CMI;
 import com.Zrips.CMI.Containers.CMIUser;
@@ -6,6 +6,7 @@ import com.Zrips.CMI.events.CMIAfkEnterEvent;
 import com.Zrips.CMI.events.CMIAfkLeaveEvent;
 import com.Zrips.CMI.events.CMIPlayerJailEvent;
 import com.Zrips.CMI.events.CMIPlayerUnjailEvent;
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -17,6 +18,8 @@ import org.bukkit.event.player.PlayerBedLeaveEvent;
 import org.jetbrains.annotations.NotNull;
 import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
+import xyz.destiall.sgcraftlink.modules.DataModule;
+import xyz.destiall.sgcraftlink.modules.Module;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -70,6 +73,9 @@ public class CMIModule extends Module implements Listener, CommandExecutor {
 
     @EventHandler
     public void onUnjail(CMIPlayerUnjailEvent e) {
+        if (!e.getUser().isJailed())
+            return;
+
         DataModule module = plugin.getModule(DataModule.class);
         if (module == null)
             return;
@@ -77,10 +83,17 @@ public class CMIModule extends Module implements Listener, CommandExecutor {
         String reason = e.getUser().getJailedReason();
         long until = e.getUser().getJailedUntil();
         long duration = e.getUser().getJailedForTime();
+        String executor;
+        CMIUser jailer = CMI.getInstance().getPlayerManager().getUser(e.getUser().getJailedBy());
+        if (jailer != null) {
+            executor = jailer.getName();
+        } else {
+            executor = Bukkit.getOfflinePlayer(e.getUser().getJailedBy()).getName();
+        }
 
         Map<String, Object> json = createDataMap(
                 "username", e.getUser().getName(),
-                "executor", CMI.getInstance().getPlayerManager().getUser(e.getUser().getJailedBy()).getName(),
+                "executor", executor,
                 "reason", reason,
                 "until", until,
                 "duration", duration,

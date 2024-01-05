@@ -1,4 +1,4 @@
-package xyz.destiall.sgcraftlink.modules;
+package xyz.destiall.sgcraftlink.modules.common;
 
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.messenger.IncomingMessageConsumer;
@@ -8,21 +8,30 @@ import net.luckperms.api.messenger.message.OutgoingMessage;
 import net.luckperms.api.model.group.Group;
 import net.luckperms.api.model.user.User;
 import net.luckperms.api.node.Node;
+import net.luckperms.api.track.Track;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
+import xyz.destiall.sgcraftlink.events.DataReceiveEvent;
+import xyz.destiall.sgcraftlink.modules.DataModule;
+import xyz.destiall.sgcraftlink.modules.Module;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static xyz.destiall.sgcraftlink.SGCraftLinkCommon.createDataMap;
 
-public class LuckPermsModule extends Module {
+public class LuckPermsModule extends Module implements Listener {
     private final LuckPerms api;
 
     public LuckPermsModule(SGCraftLinkSpigot plugin, LuckPerms api) {
@@ -38,6 +47,40 @@ public class LuckPermsModule extends Module {
 
     @Override
     public void disable() {}
+
+    @EventHandler
+    public void onDataReceive(DataReceiveEvent e) {
+        if (!e.getDataType().equals(SGCraftLinkCommon.DATA_GET_RANKS))
+            return;
+
+        UUID uuid = UUID.fromString(e.getJson().getString("uuid"));
+
+        User user = getApi().getUserManager().loadUser(uuid).join();
+        Collection<Group> inheritedGroups = user.getInheritedGroups(user.getQueryOptions());
+        Map<Track, Group> tracks = new HashMap<>();
+        for (Track track : getApi().getTrackManager().getLoadedTracks()) {
+            tracks.put(track, null);
+            List<String> groups = track.getGroups();
+            for (String group : groups) {
+                for (Group inherited : inheritedGroups) {
+                    if (inherited.getName().equalsIgnoreCase(group)) {
+                        Group current = tracks.get(track);
+                        if (current == null || current.getWeight().orElse(0) < inherited.getWeight().orElse(0)) {
+                            tracks.put(track, inherited);
+                        }
+                    }
+                }
+            }
+            if (tracks.get(track) == null) {
+                tracks.remove(track);
+            }
+        }
+
+        List<String> groups = tracks.values().stream().map(Group::getName).collect(Collectors.toList());
+        JSONObject res = new JSONObject();
+        res.put("ranks", new JSONArray(groups));
+        e.setResponse(res);
+    }
 
     public Collection<String> getPermissions(Player sender) {
         try {
@@ -97,11 +140,7 @@ public class LuckPermsModule extends Module {
 
         public boolean handleIncomingMessage(JSONObject object) {
             String encoded = object.getString("data");
-            boolean accepted = this.consumer.consumeIncomingMessageAsString(encoded);
-            if (accepted) {
-                module.getPlugin().getLogger().warning(this.consumer.getClass().getSimpleName() + " accepted incoming message");
-            }
-            return accepted;
+            return this.consumer.consumeIncomingMessageAsString(encoded);
         }
     }
 

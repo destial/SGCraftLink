@@ -1,4 +1,4 @@
-package xyz.destiall.sgcraftlink.modules;
+package xyz.destiall.sgcraftlink.modules.vanilla;
 
 import com.Zrips.CMI.Modules.Economy.Economy;
 import org.bukkit.Material;
@@ -20,6 +20,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.items.CasinoSlot;
+import xyz.destiall.sgcraftlink.modules.Module;
 
 import java.util.ArrayList;
 import java.util.HashMap;

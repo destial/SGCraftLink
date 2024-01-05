@@ -1,10 +1,11 @@
-package xyz.destiall.sgcraftlink.modules;
+package xyz.destiall.sgcraftlink.modules.common;
 
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
+import xyz.destiall.sgcraftlink.modules.Module;
 
 import java.util.HashMap;
 import java.util.Map;

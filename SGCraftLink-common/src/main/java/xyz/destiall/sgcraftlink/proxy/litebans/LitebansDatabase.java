@@ -176,7 +176,7 @@ public final class LitebansDatabase {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        history.sort(Comparator.comparingLong(Punishment::getMilliseconds).reversed());
+        history.sort(Comparator.comparingLong(Punishment::getTime).reversed());
         return history;
     }
 

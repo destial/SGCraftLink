@@ -1,10 +1,13 @@
-package xyz.destiall.sgcraftlink.modules;
+package xyz.destiall.sgcraftlink.modules.common;
 
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
+import xyz.destiall.sgcraftlink.events.DataReceiveEvent;
+import xyz.destiall.sgcraftlink.modules.Module;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -30,6 +33,22 @@ public class BirthdayModule extends Module implements Listener {
 
     public void addBirthday(String name, boolean celebrated) {
         birthdays.putIfAbsent(name, celebrated);
+    }
+
+    @EventHandler
+    public void onDataReceive(DataReceiveEvent e) {
+        if (!e.getDataType().equals(SGCraftLinkCommon.DATA_BIRTHDAY))
+            return;
+
+        String name = e.getJson().getString("name");
+        boolean celebrated = e.getJson().getBoolean("celebrated");
+
+        Player online = plugin.getServer().getPlayer(name);
+        if (online != null) {
+            celebrate(online, celebrated);
+        } else {
+            addBirthday(name, celebrated);
+        }
     }
 
     @EventHandler

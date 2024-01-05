@@ -1,7 +1,8 @@
-package xyz.destiall.sgcraftlink.modules;
+package xyz.destiall.sgcraftlink.modules.common;
 
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.items.Tag;
+import xyz.destiall.sgcraftlink.modules.Module;
 
 import java.util.ArrayList;
 import java.util.List;

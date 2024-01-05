@@ -1,4 +1,4 @@
-package xyz.destiall.sgcraftlink.modules;
+package xyz.destiall.sgcraftlink.modules.vanilla;
 
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -15,6 +15,7 @@ import org.jetbrains.annotations.Nullable;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.Scheduler;
 import xyz.destiall.sgcraftlink.items.PlayerReputation;
+import xyz.destiall.sgcraftlink.modules.Module;
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;

@@ -1,4 +1,4 @@
-package xyz.destiall.sgcraftlink.modules;
+package xyz.destiall.sgcraftlink.modules.vanilla;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -13,6 +13,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.jetbrains.annotations.NotNull;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
+import xyz.destiall.sgcraftlink.modules.Module;
 
 import java.util.ArrayList;
 import java.util.HashMap;

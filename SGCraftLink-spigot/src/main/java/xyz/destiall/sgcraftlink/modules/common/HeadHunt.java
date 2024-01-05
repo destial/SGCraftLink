@@ -1,4 +1,4 @@
-package xyz.destiall.sgcraftlink.modules;
+package xyz.destiall.sgcraftlink.modules.common;
 
 import com.destroystokyo.paper.profile.PlayerProfile;
 import com.destroystokyo.paper.profile.ProfileProperty;
@@ -37,6 +37,9 @@ import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
+import xyz.destiall.sgcraftlink.events.DataReceiveEvent;
+import xyz.destiall.sgcraftlink.modules.DataModule;
+import xyz.destiall.sgcraftlink.modules.Module;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -160,6 +163,45 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
 
     public Map<String, Integer> getOtherServersScore() {
         return otherServerPlayers;
+    }
+
+    @EventHandler
+    public void onDataReceive(DataReceiveEvent e) {
+        switch (e.getDataType()) {
+            case SGCraftLinkCommon.DATA_GET_HEADHUNT: {
+                JSONObject res = new JSONObject();
+                res.put("remaining", getRemaining());
+                JSONObject players = new JSONObject();
+                for (Map.Entry<String, Integer> score : getScore().entrySet()) {
+                    players.put(score.getKey(), score.getValue());
+                }
+                res.put("score", players);
+                e.setResponse(res);
+                break;
+            }
+            case SGCraftLinkCommon.DATA_START_HEADHUNT: {
+                setCheckOtherServers(true);
+                break;
+            }
+            case SGCraftLinkCommon.DATA_END_HEADHUNT: {
+                setCheckOtherServers(false);
+                announceWinner();
+                break;
+            }
+            case SGCraftLinkCommon.DATA_CLEAR_SCORE_HEADHUNT: {
+                getScore().clear();
+                getOtherServersScore().clear();
+                break;
+            }
+            case SGCraftLinkCommon.DATA_REMOVE_HEAD_HEADHUNT: {
+                for (Location loc : getHunts()) {
+                    loc.getBlock().setType(Material.AIR);
+                }
+
+                getHunts().clear();
+                break;
+            }
+        }
     }
 
     @EventHandler(ignoreCancelled = true)

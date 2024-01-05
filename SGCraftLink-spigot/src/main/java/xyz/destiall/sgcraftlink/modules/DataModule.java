@@ -1,39 +1,34 @@
 package xyz.destiall.sgcraftlink.modules;
 
 import express.Express;
-import express.utils.MediaType;
 import express.utils.Status;
-import net.luckperms.api.model.group.Group;
-import net.luckperms.api.track.Track;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.entity.Player;
-import org.jetbrains.annotations.Nullable;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.plugin.RegisteredListener;
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.Scheduler;
-import xyz.destiall.sgcraftlink.hooks.CoreProtectHook;
-import xyz.destiall.sgcraftlink.items.Migration;
+import xyz.destiall.sgcraftlink.events.DataReceiveEvent;
+import xyz.destiall.sgcraftlink.modules.common.LuckPermsModule;
 import xyz.destiall.sgcraftlink.utils.DataResult;
 import xyz.destiall.sgcraftlink.utils.HTTPManager;
 
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import static xyz.destiall.sgcraftlink.SGCraftLinkCommon.createDataMap;
+import static xyz.destiall.sgcraftlink.SGCraftLinkSpigot.color;
 
-public class DataModule extends Module {
+public class DataModule extends Module implements CommandExecutor {
     private static final SecureRandom secureRandom = new SecureRandom(); //threadsafe
     private static final Base64.Encoder base64Encoder = Base64.getUrlEncoder(); //threadsafe
 
@@ -85,179 +80,11 @@ public class DataModule extends Module {
                         response.sendStatus(Status._200);
                         break;
                     }
-                    case SGCraftLinkCommon.DATA_CHATS: {
-                        @Nullable String player = json.has("player") ? json.getString("player") : null;
-                        int limit = json.getInt("limit");
-                        long since = json.has("time") ? System.currentTimeMillis() : json.getLong("time");
-
-                        CoreProtectHook hook = plugin.getModule(CoreProtectHook.class);
-                        JSONArray array = new JSONArray();
-                        JSONObject res = new JSONObject();
-                        if (hook == null) {
-                            res.put("messages", array);
-                            plugin.getLogger().warning("CoreProtect Hook not found!");
-                            plugin.getLogger().info("Sending back to proxy");
-                            response.setContentType(MediaType._str);
-                            response.setStatus(Status._200).send(res.toString());
-                            break;
-                        }
-
-                        List<CoreProtectHook.ChatMessageResult> messages = hook.getChats(player, limit, since);
-                        if (messages == null) {
-                            res.put("messages", array);
-                            plugin.getLogger().warning("No messages found!");
-                            plugin.getLogger().info("Sending back to proxy");
-                            response.setContentType(MediaType._str);
-                            response.setStatus(Status._200).send(res.toString());
-                            break;
-                        }
-
-                        for (int i = 0; i < messages.size() && i < limit; i++) {
-                            CoreProtectHook.ChatMessageResult m = messages.get(i);
-                            JSONObject obj = new JSONObject();
-                            obj.put("time", m.getTime());
-                            obj.put("msg", m.getMessage());
-                            obj.put("user", m.getUsername());
-                            array.put(obj);
-                        }
-
-                        res.put("messages", array);
-                        plugin.getLogger().info("Sending back " + array.length() + " messages to proxy");
-                        response.setContentType(MediaType._str);
-                        response.setStatus(Status._200).send(res.toString());
-                        break;
-                    }
-                    case SGCraftLinkCommon.DATA_GET_HEADHUNT: {
-                        JSONObject res = new JSONObject();
-                        HeadHunt hunt = plugin.getModule(HeadHunt.class);
-                        if (hunt == null) {
-                            response.setStatus(Status._201).send(res.toString());
-                            break;
-                        }
-
-                        res.put("remaining", hunt.getRemaining());
-                        JSONObject players = new JSONObject();
-                        for (Map.Entry<String, Integer> score : hunt.getScore().entrySet()) {
-                            players.put(score.getKey(), score.getValue());
-                        }
-                        res.put("score", players);
-                        response.setStatus(Status._200).send(res.toString());
-                        break;
-                    }
-                    case SGCraftLinkCommon.DATA_START_HEADHUNT: {
-                        HeadHunt hunt = plugin.getModule(HeadHunt.class);
-                        if (hunt == null) {
-                            response.sendStatus(Status._201);
-                            break;
-                        }
-                        hunt.setCheckOtherServers(true);
-                        response.sendStatus(Status._200);
-                        break;
-                    }
-                    case SGCraftLinkCommon.DATA_END_HEADHUNT: {
-                        HeadHunt hunt = plugin.getModule(HeadHunt.class);
-                        if (hunt == null) {
-                            response.sendStatus(Status._201);
-                            break;
-                        }
-                        hunt.setCheckOtherServers(false);
-                        hunt.announceWinner();
-                        response.sendStatus(Status._200);
-                        break;
-                    }
-                    case SGCraftLinkCommon.DATA_CLEAR_SCORE_HEADHUNT: {
-                        HeadHunt hunt = plugin.getModule(HeadHunt.class);
-                        if (hunt == null) {
-                            response.setStatus(Status._201);
-                            break;
-                        }
-
-                        hunt.getScore().clear();
-                        hunt.getOtherServersScore().clear();
-                        response.sendStatus(Status._200);
-                        break;
-                    }
-                    case SGCraftLinkCommon.DATA_REMOVE_HEAD_HEADHUNT: {
-                        HeadHunt hunt = plugin.getModule(HeadHunt.class);
-                        if (hunt == null) {
-                            response.setStatus(Status._201);
-                            break;
-                        }
-
-                        for (Location loc : hunt.getHunts()) {
-                            loc.getBlock().setType(Material.AIR);
-                        }
-
-                        hunt.getHunts().clear();
-                        response.sendStatus(Status._200);
-                        break;
-                    }
-                    case SGCraftLinkCommon.DATA_BIRTHDAY: {
-                        BirthdayModule bday = plugin.getModule(BirthdayModule.class);
-                        if (bday == null) {
-                            response.sendStatus(Status._201);
-                            break;
-                        }
-
-                        String name = json.getString("name");
-                        boolean celebrated = json.getBoolean("celebrated");
-
-                        Player online = plugin.getServer().getPlayer(name);
-                        if (online != null) {
-                            bday.celebrate(online, celebrated);
-                        } else {
-                            bday.addBirthday(name, celebrated);
-                        }
-                        response.sendStatus(Status._200);
-                        break;
-                    }
                     case SGCraftLinkCommon.DATA_SERVER_UNREGISTER: {
                         plugin.getLogger().warning("Proxy has unregistered this server! This is probably due to a proxy plugin reload!");
                         plugin.getLogger().warning("We will try to register this server again!");
                         registerServer();
                         response.sendStatus(Status._200);
-                        break;
-                    }
-                    case SGCraftLinkCommon.DATA_GET_RANKS: {
-                        LuckPermsModule module = plugin.getModule(LuckPermsModule.class);
-                        if (module == null)
-                            return;
-
-                        UUID uuid = UUID.fromString(json.getString("uuid"));
-
-                        module.getApi().getUserManager().loadUser(uuid).whenComplete((user, error) -> {
-                            if (error != null) {
-                                error.printStackTrace();
-                                response.sendStatus(Status._201);
-                                return;
-                            }
-
-                            Collection<Group> inheritedGroups = user.getInheritedGroups(user.getQueryOptions());
-                            Map<Track, Group> tracks = new HashMap<>();
-                            for (Track track : module.getApi().getTrackManager().getLoadedTracks()) {
-                                tracks.put(track, null);
-                                List<String> groups = track.getGroups();
-                                for (String group : groups) {
-                                    for (Group inherited : inheritedGroups) {
-                                        if (inherited.getName().equalsIgnoreCase(group)) {
-                                            Group current = tracks.get(track);
-                                            if (current == null || current.getWeight().orElse(0) < inherited.getWeight().orElse(0)) {
-                                                tracks.put(track, inherited);
-                                            }
-                                        }
-                                    }
-                                }
-                                if (tracks.get(track) == null) {
-                                    tracks.remove(track);
-                                }
-                            }
-
-                            List<String> groups = tracks.values().stream().map(Group::getName).collect(Collectors.toList());
-                            JSONObject res = new JSONObject();
-                            res.put("ranks", new JSONArray(groups));
-
-                            response.setStatus(Status._200).send(res.toString());
-                        });
                         break;
                     }
                     case SGCraftLinkCommon.DATA_LUCKPERMS_SERVICE: {
@@ -267,25 +94,22 @@ public class DataModule extends Module {
                         response.sendStatus(Status._200);
                         break;
                     }
-                    case SGCraftLinkCommon.DATA_PLAYER_MIGRATE: {
-                        MigrationModule module = plugin.getModule(MigrationModule.class);
-                        if (module == null) {
-                            response.sendStatus(Status._201);
-                            break;
-                        }
-                        String oldName = json.getString("old_name");
-                        String newName = json.getString("new_name");
-                        Migration migration = module.addMigration(oldName, newName);
-                        if (migration.hasMigrated() && !migration.migrate(true)) {
-                            response.sendStatus(Status._202);
-                            break;
-                        }
-                        response.sendStatus(Status._200);
-                        break;
-                    }
                     default: {
-                        plugin.getLogger().warning("Received data " + datatype + " but have no implementation!");
-                        response.sendStatus(Status._201);
+                        if (DataReceiveEvent.handlers.getRegisteredListeners() == null || DataReceiveEvent.handlers.getRegisteredListeners().length == 0) {
+                            plugin.getLogger().warning("Received data " + datatype + " but have no implementation!");
+                            response.sendStatus(Status._201);
+                        } else {
+                            DataReceiveEvent event = new DataReceiveEvent(json);
+                            for (RegisteredListener listener : event.getHandlers().getRegisteredListeners()) {
+                                plugin.getLogger().info("Passing DataReceiveEvent to " + listener);
+                            }
+                            plugin.getServer().getPluginManager().callEvent(event);
+                            if (event.getResponse() == null) {
+                                response.sendStatus(event.getStatus());
+                            } else {
+                                response.setStatus(event.getStatus()).send(event.getResponse().toString());
+                            }
+                        }
                         break;
                     }
                 }
@@ -295,34 +119,18 @@ public class DataModule extends Module {
             }
         });
         express.listen(config.getInt("port"));
-
+        plugin.getCommand("datacomm").setExecutor(this);
         registerServer();
     }
 
     public void registerServer() {
-        String authToken;
-        if (config.contains("authentication-key")) {
-            authToken = config.getString("authentication-key");
-        } else {
-            authToken = generateNewToken();
-            config.set("authentication-key", authToken);
-            save();
-        }
-
+        String authToken = getAuthToken();
         Map<String, Object> data = createDataMap("port", config.getInt("port", 1034), "auth", authToken);
         tryRegisterServer(data);
     }
 
     private void unregisterServer() {
-        String authToken;
-        if (config.contains("authentication-key")) {
-            authToken = config.getString("authentication-key");
-        } else {
-            authToken = generateNewToken();
-            config.set("authentication-key", authToken);
-            save();
-        }
-
+        String authToken = getAuthToken();
         Map<String, Object> data = createDataMap("auth", authToken);
         tryUnregisterServer(data);
     }
@@ -402,6 +210,8 @@ public class DataModule extends Module {
 
     @Override
     public void disable() {
+        plugin.getCommand("datacomm").setExecutor(null);
+
         try {
             unregisterServer();
             manager.shutdown();
@@ -418,11 +228,48 @@ public class DataModule extends Module {
         express.stop();
     }
 
+    public String getAuthToken() {
+        String authToken;
+        if (config.contains("authentication-key")) {
+            authToken = config.getString("authentication-key");
+        } else {
+            authToken = generateNewToken();
+            config.set("authentication-key", authToken);
+            save();
+        }
+        return authToken;
+    }
+
     public String getServer() {
         return config.getString("server-name", "lobby");
     }
 
     public List<LuckPermsModule.BackendRestMessenger> getMessengers() {
         return messengers;
+    }
+
+    @Override
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String s, @NotNull String[] args) {
+        if (args.length == 0) {
+            sender.sendMessage(color("&cUsage: /datacomms [reg/unreg]"));
+            return false;
+        }
+
+        switch (args[0].toLowerCase()) {
+            case "reg": {
+                registerServer();
+                sender.sendMessage(color("&6Trying to register server... Check console for details!"));
+                break;
+            }
+
+            case "unreg": {
+                unregisterServer();
+                sender.sendMessage(color("&6Trying to unregister server... Check console for details!"));
+                break;
+            }
+
+            default: break;
+        }
+        return false;
     }
 }

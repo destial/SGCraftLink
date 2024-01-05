@@ -1,8 +1,9 @@
-package xyz.destiall.sgcraftlink.hooks;
+package xyz.destiall.sgcraftlink.modules.hooks;
 
 import github.scarsz.discordsrv.DiscordSRV;
 import github.scarsz.discordsrv.api.Subscribe;
 import github.scarsz.discordsrv.api.events.DiscordGuildMessageReceivedEvent;
+import github.scarsz.discordsrv.dependencies.jda.api.EmbedBuilder;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Message;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.TextChannel;
 import net.md_5.bungee.api.chat.ClickEvent;
@@ -10,24 +11,30 @@ import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.Sound;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
+import org.jetbrains.annotations.NotNull;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.modules.Module;
 
-public class DiscordSRVHook extends Module {
+import java.awt.*;
+
+public class DiscordSRVHook extends Module implements CommandExecutor {
     private final String announcementsId;
 
     public DiscordSRVHook(SGCraftLinkSpigot plugin) {
         super(plugin, "news.yml");
         announcementsId = config.getString("news-channel-id");
-
-        if (announcementsId == null)
-            return;
-
         DiscordSRV.api.subscribe(this);
+        plugin.getCommand("sgcdiscord").setExecutor(this);
     }
 
     @Subscribe
     public void discordMessageReceived(DiscordGuildMessageReceivedEvent event) {
+        if (announcementsId == null)
+            return;
+
         if (!event.getMessage().getChannel().getId().equals(announcementsId))
             return;
 
@@ -49,9 +56,6 @@ public class DiscordSRVHook extends Module {
     }
 
     private TextComponent format(Message message, String s) {
-        if (announcementsId == null)
-            return color(s);
-
         return color(s.replace("{message}", message.getContentStripped())
                 .replace("{channel}", message.getChannel().getName()));
     }
@@ -71,5 +75,37 @@ public class DiscordSRVHook extends Module {
     @Override
     public void disable() {
         DiscordSRV.api.unsubscribe(this);
+        plugin.getCommand("sgcdiscord").setExecutor(null);
+    }
+
+    @Override
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String s, @NotNull String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage("Usage: /sgcdiscord [rankup|rankdown] [player] [rank]");
+            return false;
+        }
+
+        String playerName = args[1];
+
+        if (args[0].equalsIgnoreCase("rankup") && args.length > 2) {
+            EmbedBuilder embed = new EmbedBuilder();
+            String rank = args[2];
+            embed.setAuthor(playerName + " has ranked up to " + rank, null, DiscordSRV.getAvatarUrl(playerName, null));
+            embed.setColor(Color.ORANGE);
+            DiscordSRV.getPlugin().getMainTextChannel().sendMessageEmbeds(embed.build()).queue();
+            return false;
+        }
+
+        if (args[0].equalsIgnoreCase("rankdown") && args.length > 2) {
+            EmbedBuilder embed = new EmbedBuilder();
+            String rank = args[2];
+            embed.setAuthor(playerName + " has ranked down to " + rank, null, DiscordSRV.getAvatarUrl(playerName, null));
+            embed.setColor(Color.ORANGE);
+            DiscordSRV.getPlugin().getMainTextChannel().sendMessageEmbeds(embed.build()).queue();
+            return false;
+        }
+
+        sender.sendMessage("Usage: /sgcdiscord [rankup|rankdown] [player] [rank]");
+        return false;
     }
 }

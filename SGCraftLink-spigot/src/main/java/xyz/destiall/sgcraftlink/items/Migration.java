@@ -6,6 +6,9 @@ import com.alessiodp.parties.api.Parties;
 import com.alessiodp.parties.api.interfaces.Party;
 import com.alessiodp.parties.api.interfaces.PartyPlayer;
 import com.spawnchunk.piggybank.modules.Account;
+import me.ryanhamshire.GriefPrevention.Claim;
+import me.ryanhamshire.GriefPrevention.GriefPrevention;
+import me.ryanhamshire.GriefPrevention.PlayerData;
 import net.luckperms.api.LuckPermsProvider;
 import net.luckperms.api.model.data.NodeMap;
 import net.luckperms.api.model.user.User;
@@ -15,8 +18,15 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.Statistic;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
-import xyz.destiall.sgcraftlink.modules.MigrationModule;
+import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
+import xyz.destiall.sgcraftlink.modules.DataModule;
+import xyz.destiall.sgcraftlink.modules.common.MigrationModule;
+import xyz.destiall.sgcraftlink.modules.vanilla.ReputationModule;
+import xyz.destiall.survivalplots.SurvivalPlotsPlugin;
+import xyz.destiall.survivalplots.plot.SurvivalPlot;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public class Migration {
@@ -42,7 +52,7 @@ public class Migration {
 
     public boolean migrate(boolean remote) {
         if (hasMigrated())
-            return false;
+            return true;
 
         OfflinePlayer source = module.getPlugin().getServer().getOfflinePlayer(oldName);
         Player target = module.getPlugin().getServer().getPlayer(newName);
@@ -52,23 +62,73 @@ public class Migration {
         }
 
         for (Statistic statistic : Statistic.values()) {
-            try {
-                target.setStatistic(statistic, source.getStatistic(statistic));
-            } catch (IllegalArgumentException e1) {
-                try {
-                    for (EntityType entityType : EntityType.values()) {
-                        target.setStatistic(statistic, source.getStatistic(statistic, entityType));
+            switch (statistic) {
+                case MINE_BLOCK: {
+                    for (Material material : Material.values()) {
+                        if (!material.isBlock())
+                            continue;
+
+                        int i = source.getStatistic(statistic, material);
+                        if (i == 0)
+                            continue;
+
+                        target.setStatistic(statistic, material, i);
                     }
-                } catch (IllegalArgumentException e2) {
-                    try {
-                        for (Material material : Material.values()) {
-                            target.setStatistic(statistic, source.getStatistic(statistic, material));
-                        }
-                    } catch (Exception e3) {
-                        e3.printStackTrace();
-                    }
+
+                    continue;
                 }
+                case BREAK_ITEM:
+                case USE_ITEM: {
+                    for (Material material : Material.values()) {
+                        if (!material.isItem())
+                            continue;
+
+                        int i = source.getStatistic(statistic, material);
+                        if (i == 0)
+                            continue;
+
+                        target.setStatistic(statistic, material, i);
+                    }
+
+                    continue;
+                }
+                case PICKUP:
+                case DROP:
+                case CRAFT_ITEM: {
+                    for (Material material : Material.values()) {
+                        int i = source.getStatistic(statistic, material);
+                        if (i == 0)
+                            continue;
+
+                        target.setStatistic(statistic, material, i);
+                    }
+
+                    continue;
+                }
+                case KILL_ENTITY:
+                case ENTITY_KILLED_BY: {
+                    for (EntityType entityType : EntityType.values()) {
+                        if (entityType == EntityType.UNKNOWN)
+                            continue;
+
+                        int i = source.getStatistic(statistic, entityType);
+                        if (i == 0)
+                            continue;
+
+                        target.setStatistic(statistic, entityType, i);
+                    }
+
+                    continue;
+                }
+
+                default: break;
             }
+
+            int i = source.getStatistic(statistic);
+            if (i == 0)
+                continue;
+
+            target.setStatistic(statistic, i);
         }
 
         if (module.hasCmi()) {
@@ -84,11 +144,16 @@ public class Migration {
                 module.getPlugin().getLogger().warning("Unable to switchPlayerData in CMI!");
                 return false;
             }
+
+            module.getPlugin().getLogger().info("Migrated CMI");
         }
 
         if (module.hasPiggybank()) {
             double sourceBalance = Account.readBalance(source);
             Account.updateBalance(target, sourceBalance);
+            Account.updateBalance(source, 0);
+
+            module.getPlugin().getLogger().info("Migrated PiggyBank");
         }
 
         if (module.hasLuckperms() && !remote) {
@@ -107,6 +172,13 @@ public class Migration {
             LuckPermsProvider.get().getUserManager().saveUser(lpTarget).whenComplete((u, e) -> {
                 LuckPermsProvider.get().getMessagingService().get().pushUserUpdate(lpTarget);
             });
+
+            lpSource.data().clear();
+            LuckPermsProvider.get().getUserManager().saveUser(lpSource).whenComplete((u, e) -> {
+                LuckPermsProvider.get().getMessagingService().get().pushUserUpdate(lpSource);
+            });
+
+            module.getPlugin().getLogger().info("Migrated Permissions");
         }
 
         if (module.hasParties() && !remote) {
@@ -115,16 +187,60 @@ public class Migration {
                 PartyPlayer partyPlayerTarget = Parties.getApi().getPartyPlayer(target.getUniqueId());
                 if (partyPlayerTarget == null) {
                     module.getPlugin().getLogger().warning("Unable to get target party player in Parties!");
-                    return false;
-                }
-                if (!partySource.addMember(partyPlayerTarget)) {
+                } else if (!partySource.addMember(partyPlayerTarget)) {
                     module.getPlugin().getLogger().warning("Unable to add target to source party in Parties!");
-                    return false;
                 }
+
+                PartyPlayer sourcePlayer = Parties.getApi().getPartyPlayer(source.getUniqueId());
+                if (sourcePlayer != null) {
+                    partySource.removeMember(sourcePlayer);
+                }
+
+                module.getPlugin().getLogger().info("Migrated Parties");
             }
         }
 
-        target.saveData();
+        if (module.hasGriefPrevention()) {
+            PlayerData sourceData = GriefPrevention.instance.dataStore.getPlayerData(source.getUniqueId());
+            List<Claim> sourceClaims = new ArrayList<>(sourceData.getClaims());
+            for (Claim sourceClaim : sourceClaims) {
+                GriefPrevention.instance.dataStore.changeClaimOwner(sourceClaim, target.getUniqueId());
+            }
+            module.getPlugin().getLogger().info("Migrated GriefPrevention");
+        }
+
+        if (module.hasSurvivalPlots()) {
+            List<SurvivalPlot> sourcePlots = SurvivalPlotsPlugin.getInst().getPlotManager().getOwnedPlots(oldName);
+            for (SurvivalPlot sourcePlot : sourcePlots) {
+                sourcePlot.setOwner(newName);
+                sourcePlot.updateExpiry();
+            }
+
+            SurvivalPlotsPlugin.getInst().getPlotManager().update();
+            module.getPlugin().getLogger().info("Migrated SurvivalPlots");
+        }
+
+        ReputationModule reputation = module.getPlugin().getModule(ReputationModule.class);
+        if (reputation != null) {
+            PlayerReputation sourceReputation = reputation.getReputation(oldName);
+            PlayerReputation targetReputation = reputation.getReputation(newName);
+            targetReputation.setDayJoinStreak(sourceReputation.getDayJoinStreak());
+            targetReputation.setLastJoinDate(sourceReputation.getLastJoinDate());
+            targetReputation.setPlayerRatings(sourceReputation.getPlayerRatings());
+            targetReputation.setTotalRatings(sourceReputation.getTotalRatings());
+            targetReputation.setLongestDayJoinStreak(sourceReputation.getLongestDayJoinStreak());
+
+            reputation.updateReputation(targetReputation);
+
+            module.getPlugin().getLogger().info("Migrated Reputation");
+        }
+
+        DataModule dataModule = module.getPlugin().getModule(DataModule.class);
+        if (dataModule != null) {
+            dataModule.sendProxyData(SGCraftLinkCommon.DATA_PLAYER_MIGRATE, SGCraftLinkCommon.createDataMap("old_name", oldName, "new_name", newName), (r) -> {});
+        }
+
+        module.getPlugin().getLogger().info("Saved migrated data!");
 
         setMigrated(true);
         return true;

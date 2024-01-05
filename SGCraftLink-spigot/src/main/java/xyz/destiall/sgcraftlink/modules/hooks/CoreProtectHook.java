@@ -1,12 +1,18 @@
-package xyz.destiall.sgcraftlink.hooks;
+package xyz.destiall.sgcraftlink.modules.hooks;
 
 import net.coreprotect.CoreProtect;
 import net.coreprotect.CoreProtectAPI;
 import net.coreprotect.config.ConfigHandler;
 import net.coreprotect.database.Database;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.Nullable;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
+import xyz.destiall.sgcraftlink.events.DataReceiveEvent;
 import xyz.destiall.sgcraftlink.modules.Module;
 
 import java.sql.Connection;
@@ -15,7 +21,7 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CoreProtectHook extends Module {
+public class CoreProtectHook extends Module implements Listener {
     private CoreProtectAPI api;
     public CoreProtectHook(SGCraftLinkSpigot plugin) {
         super(plugin, null);
@@ -30,6 +36,41 @@ public class CoreProtectHook extends Module {
         }
 
         api = ((CoreProtect) cp).getAPI();
+    }
+
+    @EventHandler
+    public void onDataReceive(DataReceiveEvent e) {
+        if (!e.getDataType().equals(SGCraftLinkCommon.DATA_CHATS))
+            return;
+
+        @Nullable String player = e.getJson().has("player") ? e.getJson().getString("player") : null;
+        int limit = e.getJson().getInt("limit");
+        long since = e.getJson().has("time") ? System.currentTimeMillis() : e.getJson().getLong("time");
+
+        JSONArray array = new JSONArray();
+        JSONObject res = new JSONObject();
+
+        List<CoreProtectHook.ChatMessageResult> messages = getChats(player, limit, since);
+        if (messages == null) {
+            res.put("messages", array);
+            plugin.getLogger().warning("No messages found!");
+            plugin.getLogger().info("Sending back to proxy");
+            e.setResponse(res);
+            return;
+        }
+
+        for (int i = 0; i < messages.size() && i < limit; i++) {
+            CoreProtectHook.ChatMessageResult m = messages.get(i);
+            JSONObject obj = new JSONObject();
+            obj.put("time", m.getTime());
+            obj.put("msg", m.getMessage());
+            obj.put("user", m.getUsername());
+            array.put(obj);
+        }
+
+        res.put("messages", array);
+        plugin.getLogger().info("Sending back " + array.length() + " messages to proxy");
+        e.setResponse(res);
     }
 
     public List<ChatMessageResult> getChats(@Nullable String player, int limit, long since) {

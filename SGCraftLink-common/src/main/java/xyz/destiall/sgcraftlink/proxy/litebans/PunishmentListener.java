@@ -9,6 +9,7 @@ import net.dv8tion.jda.api.utils.TimeFormat;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
 
 import java.awt.*;
+import java.time.Instant;
 
 public class PunishmentListener extends Events.Listener {
     private final PluginProvider plugin;
@@ -98,12 +99,15 @@ public class PunishmentListener extends Events.Listener {
                 "\n" +
                 "Server: " + MarkdownUtil.monospace(punishment.getServer()) +
                 "\n" +
-                "Time: " + TimeFormat.DATE_TIME_LONG.format(punishment.getMilliseconds()) + " (" + TimeFormat.RELATIVE.format(punishment.getMilliseconds()) + ")";
+                "Until: " + (punishment.getUntil() <= 0 ? "`Forever`" : TimeFormat.DATE_TIME_LONG.format(punishment.getUntil()) + " (" + TimeFormat.RELATIVE.format(punishment.getUntil()) + ")") +
+                "\n" +
+                "Date: " + TimeFormat.DATE_TIME_LONG.format(punishment.getTime()) + " (" + TimeFormat.RELATIVE.format(punishment.getUntil()) + ")";
         EmbedBuilder embed = new EmbedBuilder();
         embed.setColor(Color.YELLOW);
         embed.setAuthor(author, null, "https://cravatar.eu/helmavatar/{username}/16.png".replace("{username}", author));
         embed.setTitle(title);
         embed.setDescription(field);
+        embed.setTimestamp(Instant.now());
 
         channel.sendMessageEmbeds(embed.build()).queue();
     }

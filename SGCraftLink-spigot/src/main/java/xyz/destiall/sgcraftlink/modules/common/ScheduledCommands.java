@@ -1,4 +1,4 @@
-package xyz.destiall.sgcraftlink.modules;
+package xyz.destiall.sgcraftlink.modules.common;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -6,6 +6,7 @@ import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.items.ScheduledCommand;
+import xyz.destiall.sgcraftlink.modules.Module;
 
 import java.text.DateFormat;
 import java.time.Duration;
@@ -97,17 +98,32 @@ public class ScheduledCommands extends Module implements CommandExecutor {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        // /schedulecmd [date] [command]
-        if (args.length < 2) {
-            sender.sendMessage(color("&cUsage: /schedulecmd [date] [command]"));
+        if (args.length < 1) {
+            sender.sendMessage(color("&cUsage: /schedulecmd [list|clear|date]"));
             return false;
         }
 
         if (args[0].equalsIgnoreCase("list")) {
             sender.sendMessage(color("&aCurrently scheduled commands:"));
+            int i = 0;
             for (ScheduledCommand cmd : scheduledCommands) {
-                sender.sendMessage(color("&b" + DateFormat.getDateTimeInstance().format(cmd.date) + ": " + String.join("|", cmd.commands)));
+                sender.sendMessage(color("&b" +(++i) + ". " + DateFormat.getDateTimeInstance().format(cmd.date) + ": " + String.join("|", cmd.commands)));
             }
+            return false;
+        }
+
+        if (args[0].equalsIgnoreCase("clear")) {
+            sender.sendMessage(color("&aCleared all scheduled commands."));
+            for (ScheduledCommand cmd : scheduledCommands) {
+                cmd.timer.cancel();
+            }
+            scheduledCommands.clear();
+            save();
+            return false;
+        }
+
+        if (args.length < 2) {
+            sender.sendMessage(color("&cUsage: /schedulecmd [date] [command]"));
             return false;
         }
 

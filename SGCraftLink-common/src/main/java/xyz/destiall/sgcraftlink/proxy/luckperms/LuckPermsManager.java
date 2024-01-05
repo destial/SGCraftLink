@@ -91,11 +91,7 @@ public class LuckPermsManager {
             String server = object.getString("server");
             Map<String, Object> body = createDataMap("data", encoded, "server", server);
             module.sendDataToAll(server, SGCraftLinkCommon.DATA_LUCKPERMS_SERVICE, body, (mappings) -> {});
-            boolean accepted = this.consumer.consumeIncomingMessageAsString(encoded);
-            if (accepted) {
-                module.getPlugin().getLoggerProvider().warning(this.consumer.getClass().getSimpleName() + " accepted incoming message");
-            }
-            return accepted;
+            return this.consumer.consumeIncomingMessageAsString(encoded);
         }
     }
 

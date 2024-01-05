@@ -17,8 +17,14 @@ softdepend:
   - CoreProtect
   - Nova
   - Parties
+  - GriefPrevention
   - SuperiorSkyblock2
+  - EconomyShopGUI
 commands:
+  datacomm:
+    permission: sgc.datacomm
+  opd:
+    permission: opd.gamemode
   betatest:
     permission: betatest.admin
   sgcreload:
@@ -35,6 +41,8 @@ commands:
     permission: scheduledcmd.admin
   sgcwake:
     permission: sgc.wake
+  sgcdiscord:
+    permission: sgc.discord
   casino:
     permission: sgc.casino
   migrate:

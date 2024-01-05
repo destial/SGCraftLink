@@ -1,4 +1,4 @@
-package xyz.destiall.sgcraftlink.modules;
+package xyz.destiall.sgcraftlink.modules.common;
 
 import com.bgsoftware.superiorskyblock.api.events.PlayerToggleFlyEvent;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.TextChannel;
@@ -19,7 +19,8 @@ import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
-import xyz.destiall.sgcraftlink.hooks.DiscordSRVHook;
+import xyz.destiall.sgcraftlink.modules.Module;
+import xyz.destiall.sgcraftlink.modules.hooks.DiscordSRVHook;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,20 +37,19 @@ import static xyz.destiall.sgcraftlink.SGCraftLinkSpigot.color;
 
 public class BetaTestModule extends Module implements CommandExecutor, TabExecutor {
     private BetaTestListener listener;
-    private Map<String, Set<String>> blacklist;
+    private final Map<String, Set<String>> blacklist;
     private Set<String> eventNames;
     private boolean dirty = false;
 
     public BetaTestModule(SGCraftLinkSpigot plugin) {
         super(plugin, "beta-test.yml");
 
+        blacklist = new HashMap<>();
+        eventNames = ConcurrentHashMap.newKeySet();
         if (!config.getBoolean("enabled"))
             return;
 
         listener = new BetaTestListener();
-        blacklist = new HashMap<>();
-        eventNames = ConcurrentHashMap.newKeySet();
-
         if (config.contains("blacklist")) {
             ConfigurationSection players = config.getConfigurationSection("blacklist");
             if (players != null) {
@@ -98,14 +98,14 @@ public class BetaTestModule extends Module implements CommandExecutor, TabExecut
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        if (sender.hasPermission("betatest.admin")) {
+        if (!sender.hasPermission("betatest.admin")) {
             sender.sendMessage(color("&cYou do not have permission!"));
             return false;
         }
 
         // /betatest blacklist [event]
         if (args.length != 2) {
-            sender.sendMessage(color("&cUsage: /betatest (remove/add)-event [event-type]"));
+            sender.sendMessage(color("&cUsage: /betatest [(remove/add)-event|toggle] [event-type]"));
             return false;
         }
 
@@ -124,6 +124,12 @@ public class BetaTestModule extends Module implements CommandExecutor, TabExecut
                 sender.sendMessage(color("&aWhitelisted event " + args[1]));
                 break;
             }
+            case "toggle": {
+                config.set("enabled", !config.getBoolean("enabled"));
+                dirty = true;
+                sender.sendMessage(color("&aToggled beta test: " + (config.getBoolean("enabled") ? "&a&lENABLED" : "&c&lDISABLED")));
+                break;
+            }
             default:
                 sender.sendMessage(color("&cUnknown option: " + args[0]));
                 break;
@@ -134,9 +140,32 @@ public class BetaTestModule extends Module implements CommandExecutor, TabExecut
 
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        return args.length == 1 ? Stream.of("add-event", "remove-event").filter(e -> e.startsWith(args[0].toLowerCase())).collect(Collectors.toList()) :
+        return args.length == 1 ? Stream.of("add-event", "remove-event", "toggle").filter(e -> e.startsWith(args[0].toLowerCase())).collect(Collectors.toList()) :
                 args.length == 2 ? eventNames.stream().filter(e -> e.toLowerCase().startsWith(args[1].toLowerCase())).collect(Collectors.toList()) :
                         Collections.emptyList();
+    }
+
+    public void log(CommandSender sender, String logMessage, Class<? extends Event> eventType) {
+        eventNames.add(eventType.getSimpleName());
+        if (sender.hasPermission("betatest.admin"))
+            return;
+
+        plugin.getLogger().warning(sender.getName() + ": " + logMessage);
+        for (Player player : plugin.getServer().getOnlinePlayers()) {
+            if (player.hasPermission("betatest.admin") && !blacklist.getOrDefault(player.getName(), Collections.emptySet()).contains(eventType.getSimpleName())) {
+                player.sendMessage(color("&e" + sender.getName() + ": " + logMessage));
+            }
+        }
+
+        DiscordSRVHook hook = BetaTestModule.this.plugin.getModule(DiscordSRVHook.class);
+        if (hook == null)
+            return;
+
+        TextChannel channel = hook.getTextChannel(config.getString("log-channel", "1181570472769495061"));
+        if (channel == null)
+            return;
+
+        channel.sendMessage(sender.getName() + ": " + logMessage).queue();
     }
 
 
@@ -161,28 +190,6 @@ public class BetaTestModule extends Module implements CommandExecutor, TabExecut
         public void onFish(PlayerFishEvent e) {
             if (e.getCaught() != null)
                 log(e.getPlayer(), "fished a(n) " + e.getCaught().getType().name(), e.getClass());
-        }
-
-        public void log(Player sender, String logMessage, Class<? extends Event> eventType) {
-            eventNames.add(eventType.getSimpleName());
-            if (sender.hasPermission("betatest.admin"))
-                return;
-
-            for (Player player : plugin.getServer().getOnlinePlayers()) {
-                if (player.hasPermission("betatest.admin") && !blacklist.getOrDefault(player.getName(), Collections.emptySet()).contains(eventType.getSimpleName())) {
-                    player.sendMessage(color("&e" + sender.getName() + ": " + logMessage));
-                }
-            }
-
-            DiscordSRVHook hook = BetaTestModule.this.plugin.getModule(DiscordSRVHook.class);
-            if (hook == null)
-                return;
-
-            TextChannel channel = hook.getTextChannel(config.getString("log-channel", "1181570472769495061"));
-            if (channel == null)
-                return;
-
-            channel.sendMessage(sender.getName() + ": " + logMessage).queue();
         }
     }
 }

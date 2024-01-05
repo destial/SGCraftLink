@@ -6,19 +6,19 @@ public class Punishment {
     private final String executor;
     private final String duration;
     private final String reason;
-    private final long milliseconds;
+    private final long time;
     private final long until;
     private final boolean active;
     private final String server;
 
-    public Punishment(PunishmentType type, String victim, String executor, long milliseconds, long until, String reason, boolean active, String server) {
+    public Punishment(PunishmentType type, String victim, String executor, long time, long until, String reason, boolean active, String server) {
         this.type = type;
         this.victim = victim;
         this.reason = reason;
         this.executor = executor;
-        this.duration = toDate(until - milliseconds);
+        this.duration = toDate(until - time);
         this.active = active;
-        this.milliseconds = milliseconds;
+        this.time = time;
         this.until = until;
         this.server = server.toLowerCase();
     }
@@ -35,8 +35,8 @@ public class Punishment {
         return until;
     }
 
-    public long getMilliseconds() {
-        return this.milliseconds;
+    public long getTime() {
+        return this.time;
     }
 
     public String getExecutor() {
@@ -60,13 +60,18 @@ public class Punishment {
     }
 
     public static String toDate(long milliseconds) {
-        if (milliseconds <= 0) return "Forever";
-        String str = ""; long d = 0, h = 0, m = 0, s = 0;
+        if (milliseconds <= 0)
+            return "Forever";
+
+        String str = "";
+        long d = 0, h = 0, m = 0, s;
+
         if (milliseconds >= 86400000L) {
             d = milliseconds / 86400000L;
             str = d + (d > 1 ? " days" : " day");
             milliseconds = milliseconds - (d * 86400000L);
         }
+
         if (milliseconds >= 3600000L) {
             h = milliseconds / 3600000;
             if (d != 0) {
@@ -76,6 +81,7 @@ public class Punishment {
             }
             milliseconds = milliseconds - (h * 3600000L);
         }
+
         if (milliseconds > 60000L) {
             m = milliseconds / 60000L;
             if (h != 0 || d != 0) {
@@ -85,6 +91,7 @@ public class Punishment {
             }
             milliseconds = milliseconds - (m * 60000L);
         }
+
         if (milliseconds > 1000L) {
             s = milliseconds / 1000L;
             if (h != 0 || d != 0 || m != 0) {
@@ -92,6 +99,10 @@ public class Punishment {
             } else {
                 str += s + (s > 1 ? " seconds" : " second");
             }
+        }
+
+        if (str.trim().isEmpty()) {
+            str = milliseconds + " ms";
         }
 
         return str;

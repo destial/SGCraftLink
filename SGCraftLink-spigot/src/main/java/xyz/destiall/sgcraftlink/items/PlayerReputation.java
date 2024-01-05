@@ -1,6 +1,6 @@
 package xyz.destiall.sgcraftlink.items;
 
-import xyz.destiall.sgcraftlink.modules.ReputationModule;
+import xyz.destiall.sgcraftlink.modules.vanilla.ReputationModule;
 
 import java.time.ZonedDateTime;
 import java.util.HashMap;

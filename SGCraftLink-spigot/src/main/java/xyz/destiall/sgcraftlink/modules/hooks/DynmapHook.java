@@ -1,4 +1,4 @@
-package xyz.destiall.sgcraftlink.hooks;
+package xyz.destiall.sgcraftlink.modules.hooks;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
