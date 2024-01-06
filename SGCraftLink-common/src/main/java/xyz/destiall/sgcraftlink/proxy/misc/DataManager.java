@@ -227,28 +227,38 @@ public final class DataManager {
         return registeredServers.keySet();
     }
 
-    public void sendDataToAll(@Nullable String origin, String type, Map<?, ?> map, Consumer<Map<String, DataResult>> callback) {
+    public CompletableFuture<Void> sendDataToAll(@Nullable String origin, String type, Map<?, ?> map, Consumer<Map<String, DataResult>> callback) {
+        return sendDataToAll(origin, type, new JSONObject(map), callback);
+    }
+
+    public CompletableFuture<Void> sendDataToAll(@Nullable String origin, String type, JSONObject object, Consumer<Map<String, DataResult>> callback) {
+        CompletableFuture<Void> future = new CompletableFuture<>();
         AtomicInteger i = new AtomicInteger(registeredServers.size() - (origin != null ? 1 : 0));
         Map<String, DataResult> results = new HashMap<>();
         for (String server : registeredServers.keySet()) {
             if (server.equalsIgnoreCase(origin))
                 continue;
 
-            sendData(type, server, map, (result) -> {
+            sendData(type, server, object, (result) -> {
                 results.put(server, result);
                 if (i.decrementAndGet() <= 0) {
                     callback.accept(results);
+                    future.complete(null);
                 }
             });
         }
+        return future;
     }
 
     public boolean sendData(String type, String server, Map<?, ?> map, Consumer<DataResult> result) {
+        return sendData(type, server, new JSONObject(map), result);
+    }
+
+    public boolean sendData(String type, String server, JSONObject object, Consumer<DataResult> result) {
         RegisteredServer registration = registeredServers.get(server);
         if (registration == null) {
             return false;
         }
-        JSONObject object = new JSONObject(map);
         object.put("data-type", type);
         Map<String, String> headers = HTTPManager.headers("X-Authorization", registration.getToken());
         Runnable runnable = () -> {

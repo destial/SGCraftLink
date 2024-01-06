@@ -70,6 +70,7 @@ public class OnePersonDeath extends Module implements Listener, CommandExecutor,
         config.set("use-party-hook", true);
         config.set("everyone", false);
         config.set("same-world", true);
+        config.set("keep-inventory", true);
     }
 
     @Override
@@ -118,6 +119,14 @@ public class OnePersonDeath extends Module implements Listener, CommandExecutor,
         return config.getBoolean("same-world", true);
     }
 
+    public boolean isKeepInventory() {
+        if (!config.contains("keep-inventory")) {
+            config.set("keep-inventory", true);
+            save();
+        }
+        return config.getBoolean("keep-inventory", true);
+    }
+
     public OPDGroup getGroup(Player player) {
         if (isEveryone()) {
             OPDGroup group = new OPDGroup();
@@ -158,7 +167,9 @@ public class OnePersonDeath extends Module implements Listener, CommandExecutor,
             return;
 
         if (dyingCache.remove(e.getPlayer().getUniqueId())) {
-            e.setKeepInventory(true);
+            e.setKeepInventory(isKeepInventory());
+            e.setKeepLevel(isKeepInventory());
+            e.setShouldDropExperience(isKeepInventory());
             return;
         }
 

@@ -5,7 +5,6 @@ import express.utils.Status;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.plugin.RegisteredListener;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -100,10 +99,11 @@ public class DataModule extends Module implements CommandExecutor {
                             response.sendStatus(Status._201);
                         } else {
                             DataReceiveEvent event = new DataReceiveEvent(json);
-                            for (RegisteredListener listener : event.getHandlers().getRegisteredListeners()) {
-                                plugin.getLogger().info("Passing DataReceiveEvent to " + listener);
+                            try {
+                                plugin.getServer().getPluginManager().callEvent(event);
+                            } catch (Exception e) {
+                                e.printStackTrace();
                             }
-                            plugin.getServer().getPluginManager().callEvent(event);
                             if (event.getResponse() == null) {
                                 response.sendStatus(event.getStatus());
                             } else {

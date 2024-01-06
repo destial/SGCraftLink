@@ -37,6 +37,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -251,10 +252,10 @@ public class DiscordProvider {
         return linkListener;
     }
 
-    public void updateRankStatus(PlayerProvider player, Member member) {
+    public CompletableFuture<Void> updateRankStatus(PlayerProvider player, Member member) {
         Map<String, Object> body = createDataMap("uuid", player.getUUID().toString());
         Set<String> ranks = ConcurrentHashMap.newKeySet();
-        plugin.getDataManager().sendDataToAll(null, SGCraftLinkCommon.DATA_GET_RANKS, body, (mappings) -> {
+        return plugin.getDataManager().sendDataToAll(null, SGCraftLinkCommon.DATA_GET_RANKS, body, (mappings) -> {
             for (DataResult result : mappings.values()) {
                 if (!result.isSuccess())
                     continue;
@@ -276,9 +277,25 @@ public class DiscordProvider {
         });
     }
 
+    public void sendLinkedToDiscordSRV(String username, String id) {
+        JSONObject object = new JSONObject();
+        JSONArray linked = new JSONArray();
+        linked.put(new JSONObject().put("username", username).put("id", id));
+        object.put("linked", linked);
+        plugin.getDataManager().sendDataToAll(null, SGCraftLinkCommon.DATA_LINK_DISCORDSRV, object, (result) -> {});
+    }
+
+    public void sendUnlinkedToDiscordSRV(String id) {
+        JSONObject object = new JSONObject();
+        JSONArray linked = new JSONArray();
+        linked.put(new JSONObject().put("id", id));
+        object.put("linked", linked);
+        plugin.getDataManager().sendDataToAll(null, SGCraftLinkCommon.DATA_UNLINK_DISCORDSRV, object, (result) -> {});
+    }
+
     public void link(PlayerProvider player, User user) {
         linkedRole.getGuild().retrieveMember(user).queue(m -> {
-            updateRankStatus(player, m);
+            updateRankStatus(player, m).whenComplete((v, err) -> sendLinkedToDiscordSRV(player.getName(), user.getId()));
             player.sendPluginMessage(SGCraftLinkCommon.GET_FIRSTJOIN);
 
             plugin.getLuckPermsManager().getApi().getUserManager().modifyUser(player.getUUID(), u -> {
@@ -308,6 +325,8 @@ public class DiscordProvider {
     }
 
     public void unlink(Member m, boolean left) {
+        sendUnlinkedToDiscordSRV(m.getId());
+
         if (left)
             return;
 

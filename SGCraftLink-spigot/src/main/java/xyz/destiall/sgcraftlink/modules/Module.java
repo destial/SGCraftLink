@@ -42,7 +42,12 @@ public abstract class Module {
         }
     }
 
-    public SGCraftLinkSpigot getPlugin() {
+    @Override
+    public String toString() {
+        return getClass().getSimpleName();
+    }
+
+    public final SGCraftLinkSpigot getPlugin() {
         return plugin;
     }
 

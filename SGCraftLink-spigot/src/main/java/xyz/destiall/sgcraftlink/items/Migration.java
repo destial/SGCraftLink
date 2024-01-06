@@ -13,10 +13,7 @@ import net.luckperms.api.LuckPermsProvider;
 import net.luckperms.api.model.data.NodeMap;
 import net.luckperms.api.model.user.User;
 import net.luckperms.api.node.Node;
-import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.Statistic;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.modules.DataModule;
@@ -59,76 +56,6 @@ public class Migration {
         if (source.getName() == null || target == null) {
             module.getPlugin().getLogger().warning("Both players must be cached!");
             return false;
-        }
-
-        for (Statistic statistic : Statistic.values()) {
-            switch (statistic) {
-                case MINE_BLOCK: {
-                    for (Material material : Material.values()) {
-                        if (!material.isBlock())
-                            continue;
-
-                        int i = source.getStatistic(statistic, material);
-                        if (i == 0)
-                            continue;
-
-                        target.setStatistic(statistic, material, i);
-                    }
-
-                    continue;
-                }
-                case BREAK_ITEM:
-                case USE_ITEM: {
-                    for (Material material : Material.values()) {
-                        if (!material.isItem())
-                            continue;
-
-                        int i = source.getStatistic(statistic, material);
-                        if (i == 0)
-                            continue;
-
-                        target.setStatistic(statistic, material, i);
-                    }
-
-                    continue;
-                }
-                case PICKUP:
-                case DROP:
-                case CRAFT_ITEM: {
-                    for (Material material : Material.values()) {
-                        int i = source.getStatistic(statistic, material);
-                        if (i == 0)
-                            continue;
-
-                        target.setStatistic(statistic, material, i);
-                    }
-
-                    continue;
-                }
-                case KILL_ENTITY:
-                case ENTITY_KILLED_BY: {
-                    for (EntityType entityType : EntityType.values()) {
-                        if (entityType == EntityType.UNKNOWN)
-                            continue;
-
-                        int i = source.getStatistic(statistic, entityType);
-                        if (i == 0)
-                            continue;
-
-                        target.setStatistic(statistic, entityType, i);
-                    }
-
-                    continue;
-                }
-
-                default: break;
-            }
-
-            int i = source.getStatistic(statistic);
-            if (i == 0)
-                continue;
-
-            target.setStatistic(statistic, i);
         }
 
         if (module.hasCmi()) {

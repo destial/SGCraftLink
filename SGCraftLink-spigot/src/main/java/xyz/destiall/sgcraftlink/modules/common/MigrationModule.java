@@ -15,6 +15,7 @@ import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.events.DataReceiveEvent;
 import xyz.destiall.sgcraftlink.items.Migration;
+import xyz.destiall.sgcraftlink.modules.DataModule;
 import xyz.destiall.sgcraftlink.modules.Module;
 
 import java.util.List;
@@ -91,8 +92,16 @@ public class MigrationModule extends Module implements Listener, CommandExecutor
         if (!e.getDataType().equals(SGCraftLinkCommon.DATA_PLAYER_MIGRATE))
             return;
 
-        String oldName = e.getJson().getString("old_name");
-        String newName = e.getJson().getString("new_name");
+        JSONObject json = e.getJson();
+        String oldName = json.getString("old_name");
+        String newName = json.getString("new_name");
+        if (json.has("remove") && json.getBoolean("remove")) {
+            config.set(oldName, null);
+            config.set(newName, null);
+            awaitingMigration.removeIf(m -> m.getNewName().equalsIgnoreCase(newName) || m.getOldName().equalsIgnoreCase(oldName));
+            e.setResponse(new JSONObject().put("success", true));
+            return;
+        }
         Migration migration = addMigration(oldName, newName);
         if (migration.hasMigrated() && !migration.migrate(true))
             return;
@@ -131,11 +140,34 @@ public class MigrationModule extends Module implements Listener, CommandExecutor
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length < 2) {
-            sender.sendMessage(color("&cUsage: /migrate [source] [target]"));
+            sender.sendMessage(color("&cUsage: /migrate [source|-remove] [target]"));
             return false;
         }
         String sourceName = args[0];
         String targetName = args[1];
+
+        if (sourceName.equalsIgnoreCase("-remove")) {
+            if (awaitingMigration.removeIf(m -> {
+                if (m.getNewName().equalsIgnoreCase(targetName)) {
+                    config.set(m.getNewName(), null);
+                    return true;
+                }
+                if (m.getOldName().equalsIgnoreCase(targetName)) {
+                    config.set(m.getOldName(), null);
+                    return true;
+                }
+                return false;
+            })) {
+                sender.sendMessage(color("&aRemoved awaiting migration of " + targetName));
+                DataModule dataModule = plugin.getModule(DataModule.class);
+                if (dataModule != null) {
+                    dataModule.sendProxyData(SGCraftLinkCommon.DATA_PLAYER_MIGRATE, SGCraftLinkCommon.createDataMap("old_name", targetName, "new_name", targetName, "remove", true), (r) -> {});
+                }
+                return false;
+            }
+            sender.sendMessage(color("&c" + targetName + " is not awaiting migration"));
+            return false;
+        }
 
         Migration migration = addMigration(sourceName, targetName);
         if (migration.migrate(false)) {

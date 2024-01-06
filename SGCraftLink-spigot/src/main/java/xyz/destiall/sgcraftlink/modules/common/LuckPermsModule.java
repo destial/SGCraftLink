@@ -84,13 +84,13 @@ public class LuckPermsModule extends Module implements Listener {
 
     public Collection<String> getPermissions(Player sender) {
         try {
-            User user = api.getUserManager().loadUser(sender.getUniqueId()).get();
-            List<String> perms = user.getDistinctNodes().stream().map(Node::getKey).collect(Collectors.toList());
-            Collection<Group> groups = api.getUserManager().loadUser(sender.getUniqueId()).get().getInheritedGroups(user.getQueryOptions());
-            for (Group group : groups) {
-                perms.addAll(group.getDistinctNodes().stream().map(Node::getKey).collect(Collectors.toList()));
+            User user;
+            if (api.getUserManager().isLoaded(sender.getUniqueId())) {
+                user = api.getUserManager().getUser(sender.getUniqueId());
+            } else {
+                user = api.getUserManager().loadUser(sender.getUniqueId()).get();
             }
-            return perms.stream().distinct().collect(Collectors.toList());
+            return user.data().toCollection().stream().map(Node::getKey).distinct().collect(Collectors.toList());
         } catch (Exception e) {
             e.printStackTrace();
         }

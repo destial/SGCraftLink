@@ -1,6 +1,9 @@
 package xyz.destiall.sgcraftlink.proxy.commands;
 
 import net.dv8tion.jda.api.entities.User;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.providers.ColorProvider;
 import xyz.destiall.sgcraftlink.providers.CommandProvider;
 import xyz.destiall.sgcraftlink.providers.PlayerProvider;
@@ -85,6 +88,18 @@ public class DiscordCommand implements CommandProvider, TabProvider {
 
             plugin.getLinkProvider().unlink(player);
             ComponentProvider<?> message = ComponentProvider.of("You have unlinked your account!");
+            message.setColor(ColorProvider.ChatColor.RED);
+            player.sendMessageComponent(message);
+        } else if (args[0].equalsIgnoreCase("adminupdate") && player.hasPermission("sgcdiscord.admin")) {
+            JSONObject object = new JSONObject();
+            JSONArray linked = new JSONArray();
+            for (String username : plugin.getLinkProvider().getDatabase()) {
+                String id = plugin.getLinkProvider().getId(username);
+                linked.put(new JSONObject().put("username", username).put("id", id));
+            }
+            object.put("linked", linked);
+            plugin.getDataManager().sendDataToAll(null, SGCraftLinkCommon.DATA_LINK_DISCORDSRV, object, (result) -> {});
+            ComponentProvider<?> message = ComponentProvider.of("Updated individual servers' DiscordSRV linked accounts!");
             message.setColor(ColorProvider.ChatColor.RED);
             player.sendMessageComponent(message);
         } else {

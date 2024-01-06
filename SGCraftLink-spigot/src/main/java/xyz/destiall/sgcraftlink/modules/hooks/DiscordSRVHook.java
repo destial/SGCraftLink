@@ -10,17 +10,24 @@ import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.chat.hover.content.Text;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 import org.jetbrains.annotations.NotNull;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
+import xyz.destiall.sgcraftlink.events.DataReceiveEvent;
 import xyz.destiall.sgcraftlink.modules.Module;
 
 import java.awt.*;
 
-public class DiscordSRVHook extends Module implements CommandExecutor {
+public class DiscordSRVHook extends Module implements Listener, CommandExecutor {
     private final String announcementsId;
 
     public DiscordSRVHook(SGCraftLinkSpigot plugin) {
@@ -28,6 +35,36 @@ public class DiscordSRVHook extends Module implements CommandExecutor {
         announcementsId = config.getString("news-channel-id");
         DiscordSRV.api.subscribe(this);
         plugin.getCommand("sgcdiscord").setExecutor(this);
+    }
+
+    @EventHandler
+    public void onDataReceive(DataReceiveEvent e) {
+        JSONObject json = e.getJson();
+        switch (e.getDataType()) {
+            case SGCraftLinkCommon.DATA_LINK_DISCORDSRV: {
+                JSONArray linked = json.getJSONArray("linked");
+
+                for (int i = 0; i < linked.length(); i++) {
+                    JSONObject link = linked.getJSONObject(i);
+                    String username = link.getString("username");
+                    String userId = link.getString("id");
+                    OfflinePlayer player = plugin.getServer().getOfflinePlayer(username);
+                    DiscordSRV.getPlugin().getAccountLinkManager().link(userId, player.getUniqueId());
+                }
+                break;
+            }
+            case SGCraftLinkCommon.DATA_UNLINK_DISCORDSRV: {
+                JSONArray linked = json.getJSONArray("unlinked");
+
+                for (int i = 0; i < linked.length(); i++) {
+                    JSONObject link = linked.getJSONObject(i);
+                    String userId = link.getString("id");
+                    DiscordSRV.getPlugin().getAccountLinkManager().unlink(userId);
+                }
+                break;
+            }
+            default: break;
+        }
     }
 
     @Subscribe
