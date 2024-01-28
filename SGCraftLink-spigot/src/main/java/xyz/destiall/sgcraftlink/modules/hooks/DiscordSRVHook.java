@@ -49,8 +49,10 @@ public class DiscordSRVHook extends Module implements Listener, CommandExecutor 
                     String username = link.getString("username");
                     String userId = link.getString("id");
                     OfflinePlayer player = plugin.getServer().getOfflinePlayer(username);
-                    DiscordSRV.getPlugin().getAccountLinkManager().link(userId, player.getUniqueId());
+                    DiscordSRV.getPlugin().getAccountLinkManager().getLinkedAccounts().put(userId, player.getUniqueId());
                 }
+
+                DiscordSRV.getPlugin().getAccountLinkManager().save();
                 break;
             }
             case SGCraftLinkCommon.DATA_UNLINK_DISCORDSRV: {
@@ -59,8 +61,10 @@ public class DiscordSRVHook extends Module implements Listener, CommandExecutor 
                 for (int i = 0; i < linked.length(); i++) {
                     JSONObject link = linked.getJSONObject(i);
                     String userId = link.getString("id");
-                    DiscordSRV.getPlugin().getAccountLinkManager().unlink(userId);
+                    DiscordSRV.getPlugin().getAccountLinkManager().getLinkedAccounts().remove(userId);
                 }
+
+                DiscordSRV.getPlugin().getAccountLinkManager().save();
                 break;
             }
             default: break;
@@ -98,7 +102,7 @@ public class DiscordSRVHook extends Module implements Listener, CommandExecutor 
     }
 
     private TextComponent color(String s) {
-        return new TextComponent(SGCraftLinkSpigot.color( s));
+        return new TextComponent(SGCraftLinkSpigot.color(s));
     }
 
     @Override
@@ -118,7 +122,7 @@ public class DiscordSRVHook extends Module implements Listener, CommandExecutor 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String s, @NotNull String[] args) {
         if (args.length < 2) {
-            sender.sendMessage("Usage: /sgcdiscord [rankup|rankdown] [player] [rank]");
+            sender.sendMessage("Usage: /sgcdiscord [rankup|rankdown|saveaccounts] [player] [rank]");
             return false;
         }
 
@@ -142,7 +146,13 @@ public class DiscordSRVHook extends Module implements Listener, CommandExecutor 
             return false;
         }
 
-        sender.sendMessage("Usage: /sgcdiscord [rankup|rankdown] [player] [rank]");
+        if (args[0].equalsIgnoreCase("saveaccounts")) {
+            DiscordSRV.getPlugin().getAccountLinkManager().save();
+            sender.sendMessage(color("&bSaved linked accounts!"));
+            return false;
+        }
+
+        sender.sendMessage("Usage: /sgcdiscord [rankup|rankdown|saveaccounts] [player] [rank]");
         return false;
     }
 }

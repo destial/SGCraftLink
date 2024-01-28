@@ -252,6 +252,10 @@ public class DiscordProvider {
         return linkListener;
     }
 
+    public DiscordCommandListener getDiscordCommands() {
+        return dcl;
+    }
+
     public CompletableFuture<Void> updateRankStatus(PlayerProvider player, Member member) {
         Map<String, Object> body = createDataMap("uuid", player.getUUID().toString());
         Set<String> ranks = ConcurrentHashMap.newKeySet();

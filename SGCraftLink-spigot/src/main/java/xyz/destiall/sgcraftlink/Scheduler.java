@@ -9,20 +9,22 @@ import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /// Utility class for wrapping the Bukkit scheduler to add support for Folia
 public final class Scheduler {
     private final Plugin plugin;
     private boolean folia = false;
-    private List<Task> foliaTasks;
+    private Set<Task> foliaTasks;
     private boolean isCancellingAll = false;
 
     public Scheduler(Plugin plugin) {
         this.plugin = plugin;
         try {
             Class.forName("io.papermc.paper.threadedregions.scheduler.RegionScheduler");
-            foliaTasks = new CopyOnWriteArrayList<>();
+            foliaTasks = ConcurrentHashMap.newKeySet();
             folia = true;
             plugin.getLogger().warning("Using Folia scheduler!");
         } catch (ClassNotFoundException ignored) {

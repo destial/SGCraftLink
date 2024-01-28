@@ -34,6 +34,7 @@ public final class DataManager {
     private final PluginProvider plugin;
     private final Express express;
     private final HTTPManager manager;
+    private final PanelManager panelManager;
     private final Map<String, RegisteredServer> registeredServers;
     private final List<LuckPermsManager.ProxyRestMessenger> messengers;
 
@@ -76,16 +77,21 @@ public final class DataManager {
                     case SGCraftLinkCommon.DATA_SERVER_REGISTER: {
                         int serverport = json.getInt("port");
                         String auth = json.getString("auth");
-                        RegisteredServer registration = new RegisteredServer(serverport, auth);
+                        String panelId = "null";
+                        if (json.has("panel_id"))
+                            panelId = json.getString("panel_id");
+                        RegisteredServer registration = new RegisteredServer(serverport, auth, panelId);
                         registeredServers.put(server, registration);
                         String ip = json.has("ip") ? json.getString("ip") : registration.getIp();
                         registration.setIp(ip);
                         plugin.getLoggerProvider().info("Registered server " + server + " to " + registration.getIp() + ":" + serverport);
+                        plugin.getDiscordProvider().getDiscordCommands().addPanelServer(server);
                         response.sendStatus(Status._200);
                         break;
                     }
                     case SGCraftLinkCommon.DATA_SERVER_UNREGISTER: {
                         plugin.getLoggerProvider().info("Unregistered server " + server);
+                        plugin.getDiscordProvider().getDiscordCommands().removePanelServer(server);
                         registeredServers.remove(server);
                         response.sendStatus(Status._200);
                         break;
@@ -202,6 +208,7 @@ public final class DataManager {
         });
 
         express.listen(port);
+        panelManager = new PanelManager(plugin, manager);
     }
 
     public List<LuckPermsManager.ProxyRestMessenger> getMessengers() {
@@ -225,6 +232,10 @@ public final class DataManager {
 
     public Collection<String> getServers() {
         return registeredServers.keySet();
+    }
+
+    public RegisteredServer getRegisteredServer(String server) {
+        return registeredServers.get(server);
     }
 
     public CompletableFuture<Void> sendDataToAll(@Nullable String origin, String type, Map<?, ?> map, Consumer<Map<String, DataResult>> callback) {
@@ -260,7 +271,7 @@ public final class DataManager {
             return false;
         }
         object.put("data-type", type);
-        Map<String, String> headers = HTTPManager.headers("X-Authorization", registration.getToken());
+        Map<String, String> headers = HTTPManager.asMap("X-Authorization", registration.getToken());
         Runnable runnable = () -> {
             try {
                 plugin.getLoggerProvider().warning("Sending " + type + " to " + server);
@@ -288,6 +299,10 @@ public final class DataManager {
         }
 
         return true;
+    }
+
+    public PanelManager getPanelManager() {
+        return panelManager;
     }
 
     public PluginProvider getPlugin() {

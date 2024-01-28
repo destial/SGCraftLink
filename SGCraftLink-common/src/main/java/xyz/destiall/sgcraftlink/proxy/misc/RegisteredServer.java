@@ -3,17 +3,17 @@ package xyz.destiall.sgcraftlink.proxy.misc;
 public class RegisteredServer {
     private final int port;
     private final String token;
+    private final String panelId;
     private String ip = "192.168.1.99";
 
-    public RegisteredServer(int port, String token) {
+    public RegisteredServer(int port, String token, String panelId) {
         this.port = port;
         this.token = token;
+        this.panelId = panelId;
     }
 
-    public RegisteredServer(int port, String token, String ip) {
-        this.port = port;
-        this.token = token;
-        this.ip = ip;
+    public String getPanelId() {
+        return panelId;
     }
 
     public void setIp(String ip) {

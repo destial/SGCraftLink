@@ -82,8 +82,9 @@ public class DataModule extends Module implements CommandExecutor {
                     case SGCraftLinkCommon.DATA_SERVER_UNREGISTER: {
                         plugin.getLogger().warning("Proxy has unregistered this server! This is probably due to a proxy plugin reload!");
                         plugin.getLogger().warning("We will try to register this server again!");
-                        registerServer();
                         response.sendStatus(Status._200);
+
+                        plugin.getScheduler().runTaskLaterAsync(this::registerServer, 20L * 15L);
                         break;
                     }
                     case SGCraftLinkCommon.DATA_LUCKPERMS_SERVICE: {
@@ -125,7 +126,7 @@ public class DataModule extends Module implements CommandExecutor {
 
     public void registerServer() {
         String authToken = getAuthToken();
-        Map<String, Object> data = createDataMap("port", config.getInt("port", 1034), "auth", authToken);
+        Map<String, Object> data = createDataMap("port", config.getInt("port", 1034), "auth", authToken, "panel_id", config.getString("panel_id", "null"));
         tryRegisterServer(data);
     }
 
@@ -144,7 +145,7 @@ public class DataModule extends Module implements CommandExecutor {
                 if (currentRegistrationTask != null) {
                     currentRegistrationTask.cancel();
                 }
-                currentRegistrationTask = plugin.getScheduler().runTaskLaterAsync(() -> tryRegisterServer(data), 20L * 60L);
+                currentRegistrationTask = plugin.getScheduler().runTaskLaterAsync(() -> tryRegisterServer(data), 20L * 15L);
                 return;
             }
             if (currentRegistrationTask != null) {
@@ -161,14 +162,18 @@ public class DataModule extends Module implements CommandExecutor {
                 return;
             }
             plugin.getLogger().info("Unregistered server with proxy");
-        });
+        }, true);
     }
 
     public void sendProxyData(String type, Map<?, ?> map, Consumer<DataResult> result) {
+        sendProxyData(type, map, result, false);
+    }
+
+    public void sendProxyData(String type, Map<?, ?> map, Consumer<DataResult> result, boolean now) {
         JSONObject object = new JSONObject(map);
         object.put("data-type", type);
         object.put("server", config.getString("server-name", "lobby"));
-        Map<String, String> headers = HTTPManager.headers("X-Authorization", config.getString("authentication-key"));
+        Map<String, String> headers = HTTPManager.asMap("X-Authorization", config.getString("authentication-key"));
         Runnable runnable = () -> {
             try {
                 plugin.getLogger().warning("Sending " + type + " to proxy");
@@ -188,7 +193,7 @@ public class DataModule extends Module implements CommandExecutor {
                 result.accept(new DataResult(404, null));
             }
         };
-        if (plugin.getScheduler().isNotAccepting()) {
+        if (plugin.getScheduler().isNotAccepting() || now) {
             runnable.run();
         } else {
             try {

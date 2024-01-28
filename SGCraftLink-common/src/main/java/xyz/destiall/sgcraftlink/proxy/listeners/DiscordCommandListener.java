@@ -12,7 +12,11 @@ import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
+import net.dv8tion.jda.api.interactions.components.ActionRow;
+import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.interactions.components.buttons.ButtonStyle;
 import net.dv8tion.jda.api.utils.MarkdownUtil;
 import net.dv8tion.jda.api.utils.TimeFormat;
 import org.jetbrains.annotations.NotNull;
@@ -23,11 +27,14 @@ import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
 import xyz.destiall.sgcraftlink.proxy.litebans.LitebansDatabase;
 import xyz.destiall.sgcraftlink.proxy.litebans.Punishment;
-import xyz.destiall.sgcraftlink.proxy.misc.Pair;
+import xyz.destiall.sgcraftlink.utils.Pair;
+import xyz.destiall.sgcraftlink.proxy.misc.RegisteredServer;
+import xyz.destiall.sgcraftlink.utils.ButtonCollector;
 import xyz.destiall.sgcraftlink.utils.DataResult;
 
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -36,17 +43,20 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class DiscordCommandListener extends ListenerAdapter {
     private JDA jda;
     private final PluginProvider plugin;
-    private final List<Command> slashCommands;
+    private final List<SlashCommandData> slashCommands;
+    private final List<Command> commands;
 
     public DiscordCommandListener(PluginProvider plugin) {
         this.plugin = plugin;
         slashCommands = new ArrayList<>();
+        commands = new ArrayList<>();
     }
 
     public void registerCommands(JDA jda) {
@@ -71,18 +81,51 @@ public class DiscordCommandListener extends ListenerAdapter {
                 .addOption(OptionType.STRING, "player", "The player to check", true)
                 .addOption(OptionType.STRING, "password", "The new password", false);
 
-        jda.updateCommands().addCommands(chatHistory, history, alts, firstjoin, ipwhitelist, changepw).queue(slashCommands::addAll);
+        SlashCommandData server = Commands.slash("panel", "Access the server control panel")
+                .addOption(OptionType.STRING, "server", "The server to access", true, true);
+
+        slashCommands.addAll(Arrays.asList(chatHistory, history, alts, firstjoin, ipwhitelist, changepw, server));
+
+        jda.updateCommands().addCommands(slashCommands).queue(commands::addAll);
 
         plugin.getScheduler().schedule(() -> {
-            plugin.getDiscordProvider().getJda().retrieveCommandById(slashCommands.get(0).getId()).queue(command -> {},
+            plugin.getDiscordProvider().getJda().retrieveCommandById(commands.get(0).getId()).queue(command -> {},
                     error -> registerCommands(jda));
         }, 3, 3, TimeUnit.HOURS);
     }
 
     public void unregisterCommands() {
-        for (Command command : slashCommands) {
+        for (Command command : commands) {
             jda.deleteCommandById(command.getId()).queue();
         }
+    }
+
+    public void addPanelServer(String server) {
+        SlashCommandData serverCmd = slashCommands.stream().filter(cmd -> cmd.getName().equalsIgnoreCase("server")).findFirst().orElse(null);
+        if (serverCmd == null)
+            return;
+
+        OptionData optionData = serverCmd.getOptions().get(0);
+        optionData.addChoice(server, server);
+
+        jda.updateCommands().addCommands(slashCommands).queue(cc -> {
+            commands.clear();
+            commands.addAll(cc);
+        });
+    }
+
+    public void removePanelServer(String server) {
+        SlashCommandData serverCmd = slashCommands.stream().filter(cmd -> cmd.getName().equalsIgnoreCase("server")).findFirst().orElse(null);
+        if (serverCmd == null)
+            return;
+
+        OptionData optionData = serverCmd.getOptions().get(0);
+        optionData.getChoices().removeIf(c -> c.getName().equalsIgnoreCase(server));
+
+        jda.updateCommands().addCommands(slashCommands).queue(cc -> {
+            commands.clear();
+            commands.addAll(cc);
+        });
     }
 
     @Override
@@ -92,7 +135,7 @@ public class DiscordCommandListener extends ListenerAdapter {
             return;
         }
 
-        Command command = slashCommands.stream().filter(c -> c.getId().equalsIgnoreCase(e.getCommandId())).findFirst().orElse(null);
+        Command command = commands.stream().filter(c -> c.getId().equalsIgnoreCase(e.getCommandId())).findFirst().orElse(null);
         if (command == null) {
             super.onSlashCommandInteraction(e);
             return;
@@ -127,8 +170,12 @@ public class DiscordCommandListener extends ListenerAdapter {
             case "changepw": {
                 String playerName = e.getOption("player", OptionMapping::getAsString);
                 String password = e.getOption("password", (map) -> map == null ? "changepassword" : map.getAsString());
+                if (password == null) {
+                    password = "changepassword";
+                }
+                String finalPassword = password;
                 e.deferReply(true).queue(r ->
-                    sendChangePW(plugin, playerName, password, (consumer) ->
+                    sendChangePW(plugin, playerName, finalPassword, (consumer) ->
                         r.editOriginalEmbeds(consumer.build()).queue()
                     )
                 );
@@ -142,6 +189,61 @@ public class DiscordCommandListener extends ListenerAdapter {
                         r.editOriginalEmbeds(consumer).queue()
                     )
                 );
+                break;
+            }
+            case "panel": {
+                if (!e.getMember().hasPermission(Permission.MANAGE_SERVER)) {
+                    e.reply("You do not have permission to use this command!").setEphemeral(true).queue();
+                    break;
+                }
+                String server = e.getOption("server", OptionMapping::getAsString);
+                RegisteredServer registeredServer = plugin.getDataManager().getRegisteredServer(server);
+                if (registeredServer == null) {
+                    e.reply("That is not a registered server!").setEphemeral(true).queue();
+                    break;
+                }
+                EmbedBuilder embed = new EmbedBuilder();
+                embed.setAuthor("Panel Control Settings for " + server);
+                ActionRow row = ActionRow.of(
+                        Button.of(ButtonStyle.PRIMARY, "panel-start-" + server, "Start"),
+                        Button.of(ButtonStyle.SECONDARY, "panel-stop-" + server, "Stop"),
+                        Button.of(ButtonStyle.PRIMARY, "panel-restart-" + server, "Restart"),
+                        Button.of(ButtonStyle.DANGER, "panel-kill-" + server, "Kill")
+                );
+                e.replyEmbeds(embed.build()).addActionRows(row).queue(ih -> {
+                    ih.retrieveOriginal().queue(message ->  {
+                        ButtonCollector collector = new ButtonCollector(message);
+                        collector.setFilter(event -> event.getUser().getId().equalsIgnoreCase(e.getUser().getId()));
+                        collector.setTime(60000L);
+
+                        collector.onCollect(button -> {
+                            BiConsumer<DataResult, Throwable> callback = (dr, ex) -> {
+                                button.deferEdit().queue();
+                                if (ex != null) {
+                                    ex.printStackTrace();
+                                    return;
+                                }
+                                plugin.getLoggerProvider().warning("Response from panel: " + dr.getContent());
+                            };
+                            if (("panel-start-" + server).equalsIgnoreCase(button.getButton().getId())) {
+                                plugin.getDataManager().getPanelManager().start(registeredServer).whenComplete(callback);
+                            } else if (("panel-stop-" + server).equalsIgnoreCase(button.getButton().getId())) {
+                                plugin.getDataManager().getPanelManager().stop(registeredServer).whenComplete(callback);
+                            } else if (("panel-restart-" + server).equalsIgnoreCase(button.getButton().getId())) {
+                                plugin.getDataManager().getPanelManager().restart(registeredServer).whenComplete(callback);
+                            } else if (("panel-kill-" + server).equalsIgnoreCase(button.getButton().getId())) {
+                                plugin.getDataManager().getPanelManager().kill(registeredServer).whenComplete(callback);
+                            } else {
+                                button.reply("You pressed " + button.getButton().getId()).setEphemeral(true).queue();
+                            }
+                        });
+
+                        collector.onEnd(l -> message.editMessageComponents(row.asDisabled()).queue());
+
+                        collector.start();
+                    });
+                });
+
                 break;
             }
             default: {
@@ -210,10 +312,14 @@ public class DiscordCommandListener extends ListenerAdapter {
             consumer.accept(new EmbedBuilder().setColor(Color.RED).setTitle("Invalid user!"));
             return;
         }
-        Map<String, Object> data = SGCraftLinkCommon.createCommandsData("authme password " + playerName + " " + pw);
+        if (pw == null) {
+            pw = "changepassword";
+        }
+        String finalPw = pw;
+        Map<String, Object> data = SGCraftLinkCommon.createCommandsData("authme password " + playerName + " " + finalPw);
         if (!plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, "lobby", data, (result) -> {
             if (result.isSuccess()) {
-                consumer.accept(new EmbedBuilder().setTitle("Changed password of " + playerName + " to ||" + pw + "||").setColor(Color.GREEN));
+                consumer.accept(new EmbedBuilder().setTitle("Changed password of " + playerName + " to ||" + finalPw + "||").setColor(Color.GREEN));
                 return;
             }
             consumer.accept(new EmbedBuilder().setTitle("Unable to change password of " + playerName).setColor(Color.RED));
