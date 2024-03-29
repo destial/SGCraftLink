@@ -58,6 +58,11 @@ public class BungeePlayer extends PlayerProvider {
     }
 
     @Override
+    public String getIP() {
+        return player.getAddress().getAddress().getHostAddress();
+    }
+
+    @Override
     public String getSuffix() {
         String suffix = super.getSuffix();
         return suffix == null ? null : ChatColor.stripColor(ChatColor.translateAlternateColorCodes('&', suffix));

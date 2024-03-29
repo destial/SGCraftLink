@@ -10,6 +10,7 @@ import xyz.destiall.sgcraftlink.proxy.misc.JSONContentProvider;
 import java.net.HttpCookie;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +68,11 @@ public class HTTPManager {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public CompletableFuture<DataResult> fetch(String url, Method method, JSONObject... body) {
+        Request builder = client.newRequest(url).method(method.name());
+        return buildRequest(builder, method, Collections.emptyMap(), body);
     }
 
     public CompletableFuture<DataResult> fetch(String url, Method method, Map<String, String> headers, JSONObject... body) {

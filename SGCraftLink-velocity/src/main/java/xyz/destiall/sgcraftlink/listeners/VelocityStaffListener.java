@@ -1,6 +1,7 @@
 package xyz.destiall.sgcraftlink.listeners;
 
 import com.velocitypowered.api.event.Subscribe;
+import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.event.player.ServerConnectedEvent;
 import xyz.destiall.sgcraftlink.SGCraftLinkVelocity;
 import xyz.destiall.sgcraftlink.providers.PlayerProvider;
@@ -28,5 +29,11 @@ public class VelocityStaffListener {
                 err.printStackTrace();
             }
         });
+    }
+
+    @Subscribe
+    public void onPlayerQuit(DisconnectEvent e) {
+        PlayerProvider player = new VelocityPlayer(e.getPlayer());
+        plugin.getDiscordProvider().getLinkListener().onPlayerQuit(player);
     }
 }

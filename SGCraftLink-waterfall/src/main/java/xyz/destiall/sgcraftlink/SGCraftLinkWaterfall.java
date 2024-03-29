@@ -24,7 +24,6 @@ import xyz.destiall.sgcraftlink.providers.PluginProvider;
 import xyz.destiall.sgcraftlink.proxy.commands.BirthdayCommand;
 import xyz.destiall.sgcraftlink.proxy.commands.DiscordCommand;
 import xyz.destiall.sgcraftlink.proxy.commands.StaffCommand;
-import xyz.destiall.sgcraftlink.proxy.commands.TempVoteCommand;
 import xyz.destiall.sgcraftlink.proxy.luckperms.LuckPermsManager;
 import xyz.destiall.sgcraftlink.proxy.misc.BirthdayManager;
 import xyz.destiall.sgcraftlink.proxy.misc.DataManager;
@@ -141,7 +140,7 @@ public final class SGCraftLinkWaterfall extends Plugin implements PluginProvider
         getProxy().getPluginManager().registerCommand(this, new BungeeCommand(this, "discord", new DiscordCommand(this)));
         getProxy().getPluginManager().registerCommand(this, new BungeeCommand(this, "sgc", new StaffCommand(this)));
         getProxy().getPluginManager().registerCommand(this, new BungeeCommand(this, "birthday", new BirthdayCommand(this)));
-        getProxy().getPluginManager().registerCommand(this, new BungeeCommand(this, "vote", new TempVoteCommand(this)));
+        //getProxy().getPluginManager().registerCommand(this, new BungeeCommand(this, "vote", new TempVoteCommand(this)));
     }
 
     @Override

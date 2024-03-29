@@ -1,5 +1,6 @@
 package xyz.destiall.sgcraftlink.listeners;
 
+import net.md_5.bungee.api.event.PlayerDisconnectEvent;
 import net.md_5.bungee.api.event.ServerConnectedEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.event.EventHandler;
@@ -28,5 +29,11 @@ public class BungeeStaffListener implements Listener {
                 err.printStackTrace();
             }
         });
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerDisconnectEvent e) {
+        PlayerProvider player = new BungeePlayer(e.getPlayer());
+        plugin.getDiscordProvider().getLinkListener().onPlayerQuit(player);
     }
 }

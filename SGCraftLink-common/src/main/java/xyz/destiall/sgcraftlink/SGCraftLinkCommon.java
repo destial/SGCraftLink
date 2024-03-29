@@ -37,6 +37,8 @@ public class SGCraftLinkCommon {
     public static final String DATA_LINK_DISCORDSRV = "SGC_LINK_DISCORDSRV";
     public static final String DATA_UNLINK_DISCORDSRV = "SGC_UNLINK_DISCORDSRV";
 
+    public static final String[] BLACKLISTED_PERMISSIONS = {"*", "luckperms", "owner", "admin"};
+
     private static final Map<String, Object> emptyMap = Collections.emptyMap();
 
     public static Map<String, Object> createCommandsData(String... commands) {

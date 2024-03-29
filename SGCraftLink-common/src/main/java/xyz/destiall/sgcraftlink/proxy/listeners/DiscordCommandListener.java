@@ -27,10 +27,10 @@ import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
 import xyz.destiall.sgcraftlink.proxy.litebans.LitebansDatabase;
 import xyz.destiall.sgcraftlink.proxy.litebans.Punishment;
-import xyz.destiall.sgcraftlink.utils.Pair;
 import xyz.destiall.sgcraftlink.proxy.misc.RegisteredServer;
 import xyz.destiall.sgcraftlink.utils.ButtonCollector;
 import xyz.destiall.sgcraftlink.utils.DataResult;
+import xyz.destiall.sgcraftlink.utils.Pair;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -82,7 +82,7 @@ public class DiscordCommandListener extends ListenerAdapter {
                 .addOption(OptionType.STRING, "password", "The new password", false);
 
         SlashCommandData server = Commands.slash("panel", "Access the server control panel")
-                .addOption(OptionType.STRING, "server", "The server to access", true, true);
+                .addOption(OptionType.STRING, "server", "The server to access", true);
 
         slashCommands.addAll(Arrays.asList(chatHistory, history, alts, firstjoin, ipwhitelist, changepw, server));
 
@@ -192,7 +192,7 @@ public class DiscordCommandListener extends ListenerAdapter {
                 break;
             }
             case "panel": {
-                if (!e.getMember().hasPermission(Permission.MANAGE_SERVER)) {
+                if (!e.getMember().hasPermission(Permission.MANAGE_SERVER) && e.getMember().getRoles().stream().noneMatch(r -> r.getId().equalsIgnoreCase("1081409659459604480"))) {
                     e.reply("You do not have permission to use this command!").setEphemeral(true).queue();
                     break;
                 }
@@ -336,7 +336,7 @@ public class DiscordCommandListener extends ListenerAdapter {
         if (nameOrIp.matches("^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$")) {
             cmd += "add " + nameOrIp;
         } else {
-            cmd += "usernames add " + nameOrIp;
+            cmd += "usernames add " + nameOrIp.toLowerCase();
         }
         plugin.dispatchCommand(cmd);
         return new EmbedBuilder().setColor(Color.GREEN).setTitle("Whitelisted " + nameOrIp);
@@ -345,7 +345,7 @@ public class DiscordCommandListener extends ListenerAdapter {
     public static EmbedBuilder sendPlaytime(PluginProvider plugin, String name) {
         UUID uuid = checkUserExists(name);
         if (uuid == null)
-            return new EmbedBuilder().setTitle("Invalid user!").setColor(Color.RED);;
+            return new EmbedBuilder().setTitle("Invalid user!").setColor(Color.RED);
 
         long firstJoin = LitebansDatabase.getFirstJoin(name);
         if (firstJoin != Long.MAX_VALUE) {
@@ -399,9 +399,9 @@ public class DiscordCommandListener extends ListenerAdapter {
                     "\n-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-";
             builder.addField(title, field, false);
         }
-        if (page == 1 && builder.getFields().isEmpty()) {
+        if (page == 1 && builder.getFields().isEmpty())
             builder.addField("None", "This player has not been punished!", false);
-        }
+
         return embeds;
     }
 
@@ -420,9 +420,8 @@ public class DiscordCommandListener extends ListenerAdapter {
 
     public static EmbedBuilder sendAlts(String playerName) {
         UUID uuid = checkUserExists(playerName);
-        if (uuid == null) {
+        if (uuid == null)
             return new EmbedBuilder().setTitle("Invalid user!").setColor(Color.RED);
-        }
 
         Set<String> alts = LitebansDatabase.getAlts(uuid.toString());
         EmbedBuilder builder = new EmbedBuilder();
@@ -451,17 +450,18 @@ public class DiscordCommandListener extends ListenerAdapter {
         List<MessageEmbed> embeds = new ArrayList<>();
         plugin.getDataManager().sendDataToAll(null, SGCraftLinkCommon.DATA_CHATS, data, (result) -> {
             for (Map.Entry<String, DataResult> serverResults : result.entrySet()) {
-                if (serverResults.getValue().isSuccess()) {
-                    JSONObject obj = serverResults.getValue().getJSON();
-                    JSONArray array = obj.getJSONArray("messages");
-                    for (int i = 0; i < array.length(); i++) {
-                        JSONObject msg = array.getJSONObject(i);
-                        long time = msg.getLong("time");
-                        chatMessages.add(new Pair<>(time, TimeFormat.RELATIVE.format(time) + " [" + serverResults.getKey() + "] " + msg.getString("user") + ": " + msg.getString("msg")));
-                    }
+                if (!serverResults.getValue().isSuccess())
+                    continue;
 
-                    chatMessages.sort(Comparator.comparingLong(Pair<Long,String>::getKey).reversed());
+                JSONObject obj = serverResults.getValue().getJSON();
+                JSONArray array = obj.getJSONArray("messages");
+                for (int i = 0; i < array.length(); i++) {
+                    JSONObject msg = array.getJSONObject(i);
+                    long time = msg.getLong("time");
+                    chatMessages.add(new Pair<>(time, TimeFormat.RELATIVE.format(time) + " [" + serverResults.getKey() + "] " + msg.getString("user") + ": " + msg.getString("msg")));
                 }
+
+                chatMessages.sort(Comparator.comparingLong(Pair<Long,String>::getKey).reversed());
             }
 
             EmbedBuilder embed = new EmbedBuilder();

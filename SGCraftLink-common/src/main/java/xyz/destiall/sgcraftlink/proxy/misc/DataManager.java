@@ -301,6 +301,10 @@ public final class DataManager {
         return true;
     }
 
+    public HTTPManager getHttpManager() {
+        return manager;
+    }
+
     public PanelManager getPanelManager() {
         return panelManager;
     }

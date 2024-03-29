@@ -22,7 +22,11 @@ public class ButtonCollector extends Collector<ButtonCollector, Message, ButtonI
                 if (event.getMessageId().equalsIgnoreCase(ButtonCollector.this.message.getId()) && !event.getUser().isBot() && (filter == null || filter.test(event))) {
                     ButtonCollector.this.collected.add(event.getInteraction());
                     if (collect != null) {
-                        collect.accept(event.getInteraction());
+                        try {
+                            collect.accept(event.getInteraction());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
                     if (limit != -1 && ++amount >= limit) {
                         stop();

@@ -1,10 +1,17 @@
 package xyz.destiall.sgcraftlink.modules.common;
 
+import github.scarsz.discordsrv.dependencies.jda.api.EmbedBuilder;
+import github.scarsz.discordsrv.dependencies.jda.api.entities.TextChannel;
+import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.Button;
+import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.ButtonStyle;
+import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.Component;
 import net.luckperms.api.LuckPerms;
+import net.luckperms.api.event.node.NodeAddEvent;
 import net.luckperms.api.messenger.IncomingMessageConsumer;
 import net.luckperms.api.messenger.Messenger;
 import net.luckperms.api.messenger.MessengerProvider;
 import net.luckperms.api.messenger.message.OutgoingMessage;
+import net.luckperms.api.model.PermissionHolder;
 import net.luckperms.api.model.group.Group;
 import net.luckperms.api.model.user.User;
 import net.luckperms.api.node.Node;
@@ -19,13 +26,21 @@ import org.json.JSONObject;
 import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.events.DataReceiveEvent;
+import xyz.destiall.sgcraftlink.items.Pair;
 import xyz.destiall.sgcraftlink.modules.DataModule;
 import xyz.destiall.sgcraftlink.modules.Module;
+import xyz.destiall.sgcraftlink.modules.hooks.DiscordSRVHook;
+import xyz.destiall.sgcraftlink.modules.hooks.utils.ButtonCollector;
 
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -33,6 +48,8 @@ import static xyz.destiall.sgcraftlink.SGCraftLinkCommon.createDataMap;
 
 public class LuckPermsModule extends Module implements Listener {
     private final LuckPerms api;
+    private TextChannel confirmationChannel;
+    private final Map<String, Pair<UUID, Boolean>> inConfirmation = new HashMap<>();
 
     public LuckPermsModule(SGCraftLinkSpigot plugin, LuckPerms api) {
         super(plugin, null);
@@ -40,6 +57,10 @@ public class LuckPermsModule extends Module implements Listener {
 
         api.getTrackManager().loadAllTracks();
         api.registerMessengerProvider(new BackendRestMessengerProvider(plugin.getModule(DataModule.class)));
+
+        api.getEventBus().subscribe(NodeAddEvent.class, (event) -> {
+            onNodeAdd(event.getNode(), event.getTarget());
+        });
     }
 
     @Override
@@ -47,6 +68,79 @@ public class LuckPermsModule extends Module implements Listener {
 
     @Override
     public void disable() {}
+
+    public void onNodeAdd(Node node, PermissionHolder holder) {
+        if (Arrays.stream(SGCraftLinkCommon.BLACKLISTED_PERMISSIONS).noneMatch(c -> node.getKey().contains(c))) {
+            return;
+        }
+
+        if (inConfirmation.containsKey(node.getKey()) && inConfirmation.get(node.getKey()).getValue()) {
+            return;
+        }
+
+        holder.data().remove(node);
+
+        if (confirmationChannel == null) {
+            confirmationChannel = plugin.getModule(DiscordSRVHook.class).getTextChannel("1210643175069450251");
+        }
+
+        if (inConfirmation.containsKey(node.getKey()) || confirmationChannel == null) {
+            if (holder instanceof User) {
+                api.getUserManager().saveUser((User) holder);
+            } else {
+                api.getGroupManager().saveGroup((Group) holder);
+            }
+            return;
+        }
+
+        EmbedBuilder embed = new EmbedBuilder();
+        final UUID uuid = UUID.randomUUID();
+        embed.setDescription(holder.getClass().getSimpleName() + ": " + holder.getFriendlyName() + " wants to have the permission `" + node.getKey() + "`\nDo you accept this?");
+        embed.setTimestamp(Instant.now());
+        embed.setFooter("ID: " + uuid.toString().substring(0, uuid.toString().indexOf("-")) + " | Server: " + plugin.getModule(DataModule.class).getServer());
+        inConfirmation.put(node.getKey(), new Pair<>(uuid, false));
+        List<Component> components = new ArrayList<>();
+        components.add(Button.of(ButtonStyle.DANGER, "accept-perm-" + uuid, "Yes"));
+        components.add(Button.of(ButtonStyle.SUCCESS, "deny-perm-" + uuid, "No"));
+        if (holder instanceof User) {
+            components.add(Button.of(ButtonStyle.SUCCESS, "ipban-" + uuid, "IPBan"));
+        }
+        confirmationChannel.sendMessageEmbeds(embed.build()).setActionRow(components).queue(m -> {
+            ButtonCollector collector = new ButtonCollector(m);
+            collector.setTime(60000L);
+            collector.setLimit(1);
+            collector.onCollect(button -> {
+                button.deferEdit().queue();
+                String id = button.getButton().getId();
+                if (id == null)
+                    return;
+
+                if (id.equalsIgnoreCase("accept-perm-" + uuid)) {
+                    inConfirmation.get(node.getKey()).setValue(true);
+                    holder.data().add(node);
+                    embed.setDescription(holder.getClass().getSimpleName() + ": " + holder.getFriendlyName() + " has been accepted to get the permission `" + node.getKey() + "`\nBy: " + button.getUser().getAsMention());
+                } else if (id.equalsIgnoreCase("deny-perm-" + uuid)) {
+                    embed.setDescription(holder.getClass().getSimpleName() + ": " + holder.getFriendlyName() + " has been rejected from getting the permission `" + node.getKey() + "`\nBy: " + button.getUser().getAsMention());
+                } else if (id.equalsIgnoreCase("ipban-" + uuid)) {
+                    embed.setDescription(holder.getClass().getSimpleName() + ": " + holder.getFriendlyName() + " has been banned `" + node.getKey() + "`\nBy: " + button.getUser().getAsMention());
+                    Map<String, Object> cmd = SGCraftLinkCommon.createDataMap("commands", "ipban " + holder.getFriendlyName() + " Attempting to hi-jack server");
+                    Objects.requireNonNull(plugin.getModule(DataModule.class)).sendProxyData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, cmd, (r) -> {});
+                }
+                collector.stop();
+            });
+
+            collector.onEnd(l -> {
+                m.editMessageComponents(Collections.emptyList()).setEmbeds(embed.build()).queue(m2 -> inConfirmation.remove(node.getKey()));
+                if (holder instanceof User) {
+                    api.getUserManager().saveUser((User) holder);
+                } else {
+                    api.getGroupManager().saveGroup((Group) holder);
+                }
+            });
+
+            collector.start();
+        });
+    }
 
     @EventHandler
     public void onDataReceive(DataReceiveEvent e) {
@@ -90,7 +184,9 @@ public class LuckPermsModule extends Module implements Listener {
             } else {
                 user = api.getUserManager().loadUser(sender.getUniqueId()).get();
             }
-            return user.data().toCollection().stream().map(Node::getKey).distinct().collect(Collectors.toList());
+            // Must resolve inherited nodes too :(
+            // This is the slowest part :(
+            return user.resolveDistinctInheritedNodes(user.getQueryOptions()).stream().map(Node::getKey).collect(Collectors.toList());
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -72,4 +72,9 @@ public class VelocityPlayer extends PlayerProvider {
     public boolean isOnline() {
         return player.isActive();
     }
+
+    @Override
+    public String getIP() {
+        return player.getRemoteAddress().getHostName();
+    }
 }

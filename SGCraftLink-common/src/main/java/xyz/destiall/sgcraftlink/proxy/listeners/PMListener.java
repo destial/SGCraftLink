@@ -22,9 +22,8 @@ public abstract class PMListener {
             if (type.equals(SGCraftLinkCommon.SET_FIRSTJOIN)) {
                 String playerName = input.readUTF();
                 long first = input.readLong();
-                if (plugin.getPlaytimeProvider().setFirstJoin(playerName, first)) {
+                if (plugin.getPlaytimeProvider().setFirstJoin(playerName, first))
                     plugin.getLoggerProvider().info("Setting first join playtime of " + playerName + " to " + first);
-                }
             }
 
         } catch (IOException ex) {

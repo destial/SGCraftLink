@@ -45,7 +45,7 @@ public class StaffAppListener extends ListenerAdapter {
             return;
 
         GuildMessageChannel channel = event.getGuildChannel();
-        if (!channel.getId().equals("1081249158331113502"))
+        if (!channel.getId().equals(plugin.getConfigProvider().getConfig().getString("staff-app-channel", "1210647944060080139")))
             return;
 
         MessageEmbed embed = event.getMessage().getEmbeds().stream().findFirst().orElse(null);
@@ -150,7 +150,7 @@ public class StaffAppListener extends ListenerAdapter {
         if (id == null)
             return;
 
-        if (!event.getChannel().getId().equals("1081249158331113502"))
+        if (!event.getChannel().getId().equals(plugin.getConfigProvider().getConfig().getString("staff-app-channel", "1210647944060080139")))
             return;
 
         String[] args = id.split("-");

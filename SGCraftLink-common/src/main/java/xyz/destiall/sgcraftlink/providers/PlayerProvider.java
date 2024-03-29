@@ -32,6 +32,8 @@ public abstract class PlayerProvider {
         return true;
     }
 
+    public abstract String getIP();
+
     public void sendPluginMessage(String... data) {
         if (!isOnline())
             return;

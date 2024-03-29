@@ -230,8 +230,11 @@ public class DiscordProvider {
             consoleLogger = null;
         }
 
-        dcl.unregisterCommands();
-        jda.shutdown();
+        try {
+            jda.shutdownNow();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         jda = null;
         if (punishmentListener != null) {
             punishmentListener.close();
@@ -325,7 +328,9 @@ public class DiscordProvider {
             member.modifyNickname(nickname).queue(q -> {
             }, err -> {
             });
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+            plugin.getLoggerProvider().error("Unable to change discord nickname of " + member.getUser().getName() + " (IGN: " + player.getName() + ")");
+        }
     }
 
     public void unlink(Member m, boolean left) {

@@ -25,7 +25,6 @@ import xyz.destiall.sgcraftlink.providers.PluginProvider;
 import xyz.destiall.sgcraftlink.proxy.commands.BirthdayCommand;
 import xyz.destiall.sgcraftlink.proxy.commands.DiscordCommand;
 import xyz.destiall.sgcraftlink.proxy.commands.StaffCommand;
-import xyz.destiall.sgcraftlink.proxy.commands.TempVoteCommand;
 import xyz.destiall.sgcraftlink.proxy.luckperms.LuckPermsManager;
 import xyz.destiall.sgcraftlink.proxy.misc.BirthdayManager;
 import xyz.destiall.sgcraftlink.proxy.misc.DataManager;
@@ -243,7 +242,7 @@ public class SGCraftLinkVelocity implements PluginProvider {
         commands.add(new VelocityCommand(this, "discord", new DiscordCommand(this)));
         commands.add(new VelocityCommand(this, "sgc", new StaffCommand(this)));
         commands.add(new VelocityCommand(this, "birthday", new BirthdayCommand(this)));
-        commands.add(new VelocityCommand(this, "vote", new TempVoteCommand(this)));
+        //commands.add(new VelocityCommand(this, "vote", new TempVoteCommand(this)));
     }
 
     @Override

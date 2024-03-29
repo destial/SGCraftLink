@@ -36,7 +36,7 @@ public class AppealListener extends ListenerAdapter {
             return;
 
         GuildMessageChannel channel = event.getGuildChannel();
-        if (!channel.getId().equals("1082233423537639475"))
+        if (!channel.getId().equals(plugin.getConfigProvider().getConfig().getString("appeal-channel", "1210647585094631434")))
             return;
 
         MessageEmbed embed = event.getMessage().getEmbeds().stream().findFirst().orElse(null);
@@ -79,9 +79,8 @@ public class AppealListener extends ListenerAdapter {
         }
         if (user == null) {
             String linkId = plugin.getLinkProvider().getId(username);
-            if (linkId != null) {
+            if (linkId != null)
                 user = plugin.getDiscordProvider().getMember(linkId);
-            }
         }
         String id = user != null ? user.getId() : "null";
 
@@ -97,9 +96,9 @@ public class AppealListener extends ListenerAdapter {
         MessageEmbed.Field reasonField = embed.getFields().stream()
                 .filter(f -> f != null && f.getName() != null && f.getName().equalsIgnoreCase("Why were you punished?"))
                 .findFirst().orElse(null);
-        if ( reasonField != null &&  reasonField.getValue() != null) {
+        if ( reasonField != null &&  reasonField.getValue() != null)
             appealReason =  reasonField.getValue().toLowerCase();
-        }
+
 
         String args = username + "-" + id + "-" + server;
 
@@ -137,7 +136,7 @@ public class AppealListener extends ListenerAdapter {
             return;
         }
 
-        if (!event.getChannel().getId().equals("1082233423537639475")) {
+        if (!event.getChannel().getId().equals(plugin.getConfigProvider().getConfig().getString("appeal-channel", "1210647585094631434"))) {
             super.onButtonInteraction(event);
             return;
         }
@@ -156,15 +155,13 @@ public class AppealListener extends ListenerAdapter {
         try {
             MiscUtil.parseSnowflake(userId);
             Member member = plugin.getDiscordProvider().getMember(userId);
-            if (member != null) {
+            if (member != null)
                 pm = member.getUser().openPrivateChannel().complete();
-            }
         } catch (Exception ignored) {}
 
         String executor = plugin.getLinkProvider().getUsername(event.getUser());
-        if (executor == null) {
+        if (executor == null)
             executor = event.getUser().getName();
-        }
 
         switch (args[0]) {
             case "unban":

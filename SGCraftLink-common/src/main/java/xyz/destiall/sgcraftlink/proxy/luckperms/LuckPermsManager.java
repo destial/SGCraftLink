@@ -1,12 +1,23 @@
 package xyz.destiall.sgcraftlink.proxy.luckperms;
 
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.interactions.components.ItemComponent;
+import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.interactions.components.buttons.ButtonStyle;
+import net.dv8tion.jda.api.utils.MarkdownUtil;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.LuckPermsProvider;
 import net.luckperms.api.context.ImmutableContextSet;
+import net.luckperms.api.event.node.NodeAddEvent;
 import net.luckperms.api.messenger.IncomingMessageConsumer;
 import net.luckperms.api.messenger.Messenger;
 import net.luckperms.api.messenger.MessengerProvider;
 import net.luckperms.api.messenger.message.OutgoingMessage;
+import net.luckperms.api.model.PermissionHolder;
+import net.luckperms.api.model.group.Group;
+import net.luckperms.api.model.user.User;
+import net.luckperms.api.node.Node;
 import net.luckperms.api.track.Track;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
@@ -14,9 +25,18 @@ import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.providers.PlayerProvider;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
 import xyz.destiall.sgcraftlink.proxy.misc.DataManager;
+import xyz.destiall.sgcraftlink.utils.ButtonCollector;
+import xyz.destiall.sgcraftlink.utils.Pair;
 
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import static xyz.destiall.sgcraftlink.SGCraftLinkCommon.createDataMap;
@@ -24,12 +44,92 @@ import static xyz.destiall.sgcraftlink.SGCraftLinkCommon.createDataMap;
 public class LuckPermsManager {
     private final PluginProvider plugin;
     private final LuckPerms api;
+    private TextChannel confirmationChannel = null;
+    private final Map<String, Pair<UUID, Boolean>> inConfirmation = new HashMap<>();
 
     public LuckPermsManager(PluginProvider plugin) {
         this.plugin = plugin;
         api = LuckPermsProvider.get();
         api.getTrackManager().loadAllTracks();
         api.registerMessengerProvider(new ProxyRestMessengerProvider(plugin.getDataManager()));
+
+        api.getEventBus().subscribe(NodeAddEvent.class, (event) -> {
+            onNodeAdd(Collections.singletonList(event.getNode()), event.getTarget());
+        });
+    }
+
+    public void onNodeAdd(Collection<Node> nodes, PermissionHolder holder) {
+        for (Node node : nodes) {
+            if (Arrays.stream(SGCraftLinkCommon.BLACKLISTED_PERMISSIONS).noneMatch(c -> node.getKey().contains(c))) {
+                continue;
+            }
+
+            if (inConfirmation.containsKey(node.getKey()) && inConfirmation.get(node.getKey()).getValue()) {
+                continue;
+            }
+
+            holder.data().remove(node);
+
+            if (confirmationChannel == null) {
+                confirmationChannel = plugin.getDiscordProvider().getJda().getTextChannelById("1210643175069450251");
+            }
+
+            if (inConfirmation.containsKey(node.getKey()) || confirmationChannel == null) {
+                if (holder instanceof User) {
+                    api.getUserManager().saveUser((User) holder);
+                } else if (holder instanceof Group) {
+                    api.getGroupManager().saveGroup((Group) holder);
+                }
+                continue;
+            }
+
+            EmbedBuilder embed = new EmbedBuilder();
+            final UUID uuid = UUID.randomUUID();
+            embed.setDescription(holder.getClass().getSimpleName() + ": " + holder.getFriendlyName() + " wants to have the permission " + MarkdownUtil.monospace(node.getKey()) + "\nDo you accept this?");
+            embed.setTimestamp(Instant.now());
+            embed.setFooter("ID: " + uuid.toString().substring(0, uuid.toString().indexOf("-")) + " | Server: Proxy");
+            inConfirmation.put(node.getKey(), new Pair<>(uuid, false));
+            List<ItemComponent> components = new ArrayList<>();
+            components.add(Button.of(ButtonStyle.DANGER, "accept-perm-" + uuid, "Yes"));
+            components.add(Button.of(ButtonStyle.SUCCESS, "deny-perm-" + uuid, "No"));
+            if (holder instanceof User) {
+                components.add(Button.of(ButtonStyle.SUCCESS, "ipban-" + uuid, "IPBan"));
+            }
+            confirmationChannel.sendMessageEmbeds(embed.build()).setActionRow(components).queue(m -> {
+                ButtonCollector collector = new ButtonCollector(m);
+                collector.setTime(60000L);
+                collector.setLimit(1);
+                collector.onCollect(button -> {
+                    button.deferEdit().queue();
+                    String id = button.getButton().getId();
+                    if (id == null)
+                        return;
+
+                    if (id.equalsIgnoreCase("accept-perm-" + uuid)) {
+                        inConfirmation.get(node.getKey()).setValue(true);
+                        holder.data().add(node);
+                        embed.setDescription(holder.getClass().getSimpleName() + ": " + holder.getFriendlyName() + " has been accepted to get the permission " + MarkdownUtil.monospace(node.getKey()) + "\nBy: " + button.getUser().getAsMention());
+                    } else if (id.equalsIgnoreCase("deny-perm-" + uuid)) {
+                        embed.setDescription(holder.getClass().getSimpleName() + ": " + holder.getFriendlyName() + " has been rejected from getting the permission " + MarkdownUtil.monospace(node.getKey()) + "\nBy: " + button.getUser().getAsMention());
+                    } else if (id.equalsIgnoreCase("ipban-" + uuid)) {
+                        embed.setDescription(holder.getClass().getSimpleName() + ": " + holder.getFriendlyName() + " has been banned `" + node.getKey() + "`\nBy: " + button.getUser().getAsMention());
+                        plugin.dispatchCommand("ipban " + holder.getFriendlyName() + " Attempting to hi-jack server");
+                    }
+                    collector.stop();
+                });
+
+                collector.onEnd(l -> {
+                    m.editMessageComponents(Collections.emptyList()).setEmbeds(embed.build()).queue(mm -> inConfirmation.remove(node.getKey()));
+                    if (holder instanceof User) {
+                        api.getUserManager().saveUser((User) holder);
+                    } else if (holder instanceof Group) {
+                        api.getGroupManager().saveGroup((Group) holder);
+                    }
+                });
+
+                collector.start();
+            });
+        }
     }
 
     public LuckPerms getApi() {

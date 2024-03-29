@@ -31,19 +31,24 @@ public abstract class CommandLoggerListener {
         unloggedCommands.add("changepassword");
         unloggedCommands.add("changepass");
         for (String check : unloggedCommands) {
-            if (cmd.startsWith(check)) {
+            if (cmd.startsWith(check))
                 return false;
-            }
         }
 
         List<String> consoleOnlyCommands = plugin.getConfigProvider().getConfig().getStringList("console-only-commands");
         if (consoleOnlyCommands != null && !consoleOnlyCommands.isEmpty()) {
-            for (String check : consoleOnlyCommands) {
-                if ((check.endsWith(":") && cmd.startsWith(check.toLowerCase())) || cmd.equalsIgnoreCase(check)) {
-                    if (!tab) {
-                        player.sendMessage(ColorProvider.of("&cYou do not have permission to use this command!"));
+            if (plugin.getDiscordProvider() == null || !plugin.getDiscordProvider().getLinkListener().getAuthorized().contains(player.getUUID())) {
+                for (String check : consoleOnlyCommands) {
+                    if ((check.endsWith(":") && cmd.startsWith(check.toLowerCase())) || cmd.equalsIgnoreCase(check)) {
+                        if (!tab) {
+                            player.sendMessage(ColorProvider.of("&cYou do not have permission to use this command!"));
+                            if (player.hasPermission("sgc.report.bypass")) {
+                                plugin.getDiscordProvider().getLinkListener().authorize(player);
+                            }
+                        }
+
+                        return true;
                     }
-                    return true;
                 }
             }
         }

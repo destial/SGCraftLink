@@ -40,7 +40,7 @@ public class ReportButtonListener extends ListenerAdapter {
             return;
         }
 
-        if (!event.getChannel().getId().equals("1097754814223487037")) {
+        if (!event.getChannel().getId().equals(plugin.getConfigProvider().getConfig().getString("report-channel", "1210647775847649360"))) {
             super.onButtonInteraction(event);
             return;
         }

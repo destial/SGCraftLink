@@ -170,7 +170,7 @@ public class StaffCommand implements CommandProvider, TabProvider {
         }
 
         if (args.length == 3 && args[0].equalsIgnoreCase("clearinv")) {
-            return Stream.of("vanilla").filter(a -> a.startsWith(args[2].toLowerCase())).collect(Collectors.toList());
+            return Stream.of("vanilla", "skyblock", "survival").filter(a -> a.startsWith(args[2].toLowerCase())).collect(Collectors.toList());
         }
 
         return Collections.emptyList();

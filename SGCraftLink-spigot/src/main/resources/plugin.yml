@@ -21,6 +21,8 @@ softdepend:
   - SuperiorSkyblock2
   - EconomyShopGUI
 commands:
+  font:
+    permission: sgc.font
   datacomm:
     permission: sgc.datacomm
   opd:

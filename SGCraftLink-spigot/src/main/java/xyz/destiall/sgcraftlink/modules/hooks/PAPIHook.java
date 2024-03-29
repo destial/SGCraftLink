@@ -1,5 +1,6 @@
 package xyz.destiall.sgcraftlink.modules.hooks;
 
+import me.clip.placeholderapi.PlaceholderAPI;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -12,6 +13,7 @@ import xyz.destiall.sgcraftlink.items.Tag;
 import xyz.destiall.sgcraftlink.modules.common.HeadHunt;
 import xyz.destiall.sgcraftlink.modules.common.LuckPermsModule;
 import xyz.destiall.sgcraftlink.modules.common.Tags;
+import xyz.destiall.sgcraftlink.modules.hooks.utils.Font;
 import xyz.destiall.sgcraftlink.modules.vanilla.PiggyBankModule;
 import xyz.destiall.sgcraftlink.modules.vanilla.ReputationModule;
 
@@ -24,9 +26,11 @@ import java.util.stream.Collectors;
 
 public class PAPIHook extends PlaceholderExpansion {
     private final SGCraftLinkSpigot plugin;
+    private final Fonter fonter;
 
     public PAPIHook(SGCraftLinkSpigot plugin) {
         this.plugin = plugin;
+        this.fonter = plugin.getModule(Fonter.class);
     }
 
     @Override
@@ -55,50 +59,94 @@ public class PAPIHook extends PlaceholderExpansion {
         if (params.equalsIgnoreCase("sleeping") && online != null) {
             return online.isSleeping() ? "True" : "False";
         }
-        PiggyBankModule piggyBank = plugin.getModule(PiggyBankModule.class);
 
-        if (piggyBank != null) {
-            if (params.startsWith("baltop_")) {
-                String number = params.substring(params.lastIndexOf("_") + 1);
-                int i = Integer.parseInt(number);
-                int index = i - 1;
-                Map.Entry<String, Double> entry = piggyBank.getBaltop(index);
-                if (entry == null)
-                    return null;
+        if (params.startsWith("baltop_")) {
+            PiggyBankModule piggyBank = plugin.getModule(PiggyBankModule.class);
+            if (piggyBank == null) {
+                return "N/A";
+            }
 
-                if (params.startsWith("baltop_amount_")) {
-                    return String.valueOf(entry.getValue().intValue());
-                } else if (params.startsWith("baltop_name_")) {
-                    return plugin.getServer().getOfflinePlayer(UUID.fromString(entry.getKey())).getName();
+            String number = params.substring(params.lastIndexOf("_") + 1);
+            int i = Integer.parseInt(number);
+            int index = i - 1;
+            Map.Entry<String, Double> entry = piggyBank.getBaltop(index);
+            if (entry == null)
+                return null;
+
+            if (params.startsWith("baltop_amount_")) {
+                return String.valueOf(entry.getValue().intValue());
+            } else if (params.startsWith("baltop_name_")) {
+                return plugin.getServer().getOfflinePlayer(UUID.fromString(entry.getKey())).getName();
+            }
+        }
+
+
+        if (params.equalsIgnoreCase("eggs")) {
+            HeadHunt headHunt = plugin.getModule(HeadHunt.class);
+            if (headHunt == null)
+                return "0";
+            return String.valueOf(headHunt.getAmount(player.getName()));
+        }
+
+        if (params.equalsIgnoreCase("eggsleft")) {
+            HeadHunt headHunt = plugin.getModule(HeadHunt.class);
+            if (headHunt == null)
+                return "0";
+            return String.valueOf(headHunt.getRemaining());
+        }
+
+        if (params.toLowerCase().startsWith("eggs_top")) {
+            HeadHunt headHunt = plugin.getModule(HeadHunt.class);
+            if (headHunt == null)
+                return "N/A";
+
+            String number = params.substring(params.lastIndexOf("_") + 1);
+            int rank = Integer.parseInt(number);
+
+            Map.Entry<String, Integer> entry = headHunt.getAmountRank(rank);
+            if (entry == null)
+                return null;
+
+            if (params.toLowerCase().contains("name")) {
+                return entry.getKey() != null ? entry.getKey() : "N/A";
+            } else if (params.toLowerCase().contains("amount")) {
+                return entry.getValue() != null ? String.valueOf(entry.getValue()) : "N/A";
+            }
+
+            return "N/A";
+        }
+
+        if (params.startsWith("font_")) {
+            String source = params.substring("font_".length());
+            Fonter fonter = plugin.getModule(Fonter.class);
+            if (fonter == null)
+                return source;
+
+            for (Font font : fonter.getFonts()) {
+                if (source.startsWith(font.getName().toLowerCase())) {
+                    source = source.substring(font.getName().length() + 1);
+                    if (source.startsWith("+") && source.endsWith("+")) {
+                        source = PlaceholderAPI.setPlaceholders(player, "%" + source.substring(1, source.length() - 1) + "%");
+                    }
+                    return font.format(source);
                 }
             }
         }
 
-        HeadHunt headHunt = plugin.getModule(HeadHunt.class);
-        if (headHunt != null) {
-            if (params.equalsIgnoreCase("eggs")) {
-                return String.valueOf(headHunt.getAmount(player.getName()));
+        if (params.startsWith("fontuser_")) {
+            String source = params.substring("fontuser_".length());
+            Fonter fonter = plugin.getModule(Fonter.class);
+            if (fonter == null)
+                return source;
+
+            if (source.startsWith("+") && source.endsWith("+")) {
+                source = PlaceholderAPI.setPlaceholders(player, "%" + source.substring(1, source.length() - 1) + "%");
             }
+            Font font = fonter.getUsers().get(player.getUniqueId());
+            if (font == null)
+                return source;
 
-            if (params.equalsIgnoreCase("eggsleft")) {
-                return String.valueOf(headHunt.getRemaining());
-            }
-
-            if (params.toLowerCase().startsWith("eggs_top")) {
-                String number = params.substring(params.lastIndexOf("_") + 1);
-                int rank = Integer.parseInt(number);
-                Map.Entry<String, Integer> entry = headHunt.getAmountRank(rank);
-                if (entry == null)
-                    return null;
-
-                if (params.toLowerCase().contains("name")) {
-                    return entry.getKey() != null ? entry.getKey() : "N/A";
-                } else if (params.toLowerCase().contains("amount")) {
-                    return entry.getValue() != null ? String.valueOf(entry.getValue()) : "N/A";
-                }
-
-                return "N/A";
-            }
+            return font.format(source);
         }
 
         return online != null ? this.onPlaceholderRequest(online, params) : "null";

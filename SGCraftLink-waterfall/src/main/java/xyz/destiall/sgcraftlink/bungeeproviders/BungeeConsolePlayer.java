@@ -48,4 +48,9 @@ public class BungeeConsolePlayer extends PlayerProvider {
     public void sendMessageComponent(ComponentProvider<?>... componentProviders) {
         server.getConsole().sendMessage(Arrays.stream(componentProviders).map(componentProvider -> ((BungeeTextComponent) componentProvider).getComponent()).toArray(TextComponent[]::new));
     }
+
+    @Override
+    public String getIP() {
+        return "localhost";
+    }
 }

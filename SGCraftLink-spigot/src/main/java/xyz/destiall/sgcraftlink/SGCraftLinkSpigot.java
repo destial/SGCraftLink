@@ -31,6 +31,7 @@ import xyz.destiall.sgcraftlink.modules.common.Triggers;
 import xyz.destiall.sgcraftlink.modules.hooks.CoreProtectHook;
 import xyz.destiall.sgcraftlink.modules.hooks.DiscordSRVHook;
 import xyz.destiall.sgcraftlink.modules.hooks.DynmapHook;
+import xyz.destiall.sgcraftlink.modules.hooks.Fonter;
 import xyz.destiall.sgcraftlink.modules.hooks.PAPIHook;
 import xyz.destiall.sgcraftlink.modules.skyblock.NovaEconomyGUIModule;
 import xyz.destiall.sgcraftlink.modules.skyblock.NovaSkyblockModule;
@@ -146,6 +147,13 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         } catch (Exception e) {
             e.printStackTrace();
             getLogger().warning("This version cannot run Data Communication!");
+        }
+        try {
+            testPaperOr1_8Above();
+            modules.add(new Fonter(this));
+        } catch (Exception e) {
+            e.printStackTrace();
+            getLogger().warning("This version cannot run Fonter!");
         }
 
         modules.add(new PlayerListener(this));

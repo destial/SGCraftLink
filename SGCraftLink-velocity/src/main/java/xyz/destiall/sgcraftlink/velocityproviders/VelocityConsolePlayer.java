@@ -50,4 +50,9 @@ public class VelocityConsolePlayer extends PlayerProvider {
             server.getConsoleCommandSource().sendMessage(((VelocityTextComponent) component).getComponent());
         }
     }
+
+    @Override
+    public String getIP() {
+        return "localhost";
+    }
 }
