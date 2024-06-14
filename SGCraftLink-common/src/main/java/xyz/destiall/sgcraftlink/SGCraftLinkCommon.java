@@ -36,6 +36,8 @@ public class SGCraftLinkCommon {
     public static final String DATA_JAILED = "SGC_JAILED_EVENT";
     public static final String DATA_LINK_DISCORDSRV = "SGC_LINK_DISCORDSRV";
     public static final String DATA_UNLINK_DISCORDSRV = "SGC_UNLINK_DISCORDSRV";
+    public static final String DATA_GET_WHITELISTED_PERMS = "SGC_GET_WHITELISTED_PERMS";
+    public static final String DATA_SET_WHITELISTED_PERMS = "SGC_SET_WHITELISTED_PERMS";
 
     public static final String[] BLACKLISTED_PERMISSIONS = {"*", "luckperms", "owner", "admin"};
 

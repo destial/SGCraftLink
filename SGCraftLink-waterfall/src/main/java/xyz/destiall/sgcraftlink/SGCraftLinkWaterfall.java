@@ -1,9 +1,12 @@
 package xyz.destiall.sgcraftlink;
 
+import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Plugin;
 import xyz.destiall.sgcraftlink.bungeeproviders.BungeeClickEvent;
 import xyz.destiall.sgcraftlink.bungeeproviders.BungeeColor;
+import xyz.destiall.sgcraftlink.bungeeproviders.BungeeConnectedServer;
+import xyz.destiall.sgcraftlink.bungeeproviders.BungeeConsolePlayer;
 import xyz.destiall.sgcraftlink.bungeeproviders.BungeeHoverEvent;
 import xyz.destiall.sgcraftlink.bungeeproviders.BungeeLogger;
 import xyz.destiall.sgcraftlink.bungeeproviders.BungeePlayer;
@@ -21,6 +24,7 @@ import xyz.destiall.sgcraftlink.providers.DiscordProvider;
 import xyz.destiall.sgcraftlink.providers.PlayerProvider;
 import xyz.destiall.sgcraftlink.providers.PluginMessageProvider;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
+import xyz.destiall.sgcraftlink.providers.ServerProvider;
 import xyz.destiall.sgcraftlink.proxy.commands.BirthdayCommand;
 import xyz.destiall.sgcraftlink.proxy.commands.DiscordCommand;
 import xyz.destiall.sgcraftlink.proxy.commands.StaffCommand;
@@ -75,6 +79,11 @@ public final class SGCraftLinkWaterfall extends Plugin implements PluginProvider
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public Collection<ServerProvider> getServers() {
+        return getProxy().getServersCopy().values().stream().map(BungeeConnectedServer::new).collect(Collectors.toList());
     }
 
     @Override
@@ -158,6 +167,11 @@ public final class SGCraftLinkWaterfall extends Plugin implements PluginProvider
     public BungeePlayer getPlayer(UUID uuid) {
         ProxiedPlayer player = getProxy().getPlayer(uuid);
         return player != null ? new BungeePlayer(player) : null;
+    }
+
+    @Override
+    public PlayerProvider getConsole() {
+        return new BungeeConsolePlayer(getProxy());
     }
 
     @Override

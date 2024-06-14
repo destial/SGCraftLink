@@ -16,6 +16,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.json.JSONArray;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.items.Redeemable;
 import xyz.destiall.sgcraftlink.modules.Module;
@@ -30,6 +31,7 @@ import static xyz.destiall.sgcraftlink.SGCraftLinkSpigot.color;
 
 public class Redeemables extends Module implements Listener, CommandExecutor, TabExecutor {
     private List<Redeemable> redeemables = new ArrayList<>();
+    private boolean dirty;
 
     public Redeemables(SGCraftLinkSpigot plugin) {
         super(plugin, "redeemables.yml");
@@ -45,6 +47,8 @@ public class Redeemables extends Module implements Listener, CommandExecutor, Ta
                 redeemables.add(redeemable);
             }
         }
+
+        plugin.getLogger().info("Registered " + redeemables.size() + " redeemables " + new JSONArray(redeemables.stream().map(Redeemable::getName).collect(Collectors.toList())).toString().replace("\"", ""));
     }
 
     @Override
@@ -98,8 +102,13 @@ public class Redeemables extends Module implements Listener, CommandExecutor, Ta
 
     @Override
     public void disable() {
+        if (dirty) {
+            for (Redeemable redeemable : redeemables) {
+                config.set(redeemable.getName(), redeemable.toYaml(config));
+            }
+            dirty = false;
+        }
         redeemables.clear();
-
         plugin.getCommand("redeemables").setExecutor(null);
     }
 
@@ -116,6 +125,7 @@ public class Redeemables extends Module implements Listener, CommandExecutor, Ta
         for (Redeemable redeemable : redeemables) {
             if (redeemable.redeem(e.getPlayer(), item)) {
                 e.getPlayer().sendMessage(color("&aYou have successfully redeemed " + redeemable.getName()));
+                e.getPlayer().sendTitle(color("&aYou have successfully redeemed " + redeemable.getName()), color("&aYou are welcome!"));
                 break;
             }
         }
@@ -136,7 +146,29 @@ public class Redeemables extends Module implements Listener, CommandExecutor, Ta
         Player player = (Player) sender;
 
         if (args.length == 0) {
-            player.sendMessage(color("&cUsage: /redeemables [item]"));
+            player.sendMessage(color("&cUsage: /redeemables [item|create] [name]"));
+            return false;
+        }
+
+        if (args[0].equalsIgnoreCase("create")) {
+            if (args.length > 1) {
+                String name = args[1];
+                ItemStack holding = player.getInventory().getItemInMainHand();
+                if (holding.getType() == Material.AIR) {
+                    player.sendMessage(color("&cPlease hold the item you want to make a redeemable!"));
+                    return false;
+                }
+
+                holding = holding.clone();
+                holding.setAmount(1);
+                Redeemable redeemable = new Redeemable(name, holding, new ArrayList<>(), true);
+                redeemables.add(redeemable);
+                dirty = true;
+                player.sendMessage(color("&aCreated redeemable " + name + ". Open 'plugins/SGCraftLink/redeemables.yml' to edit the commands."));
+                return false;
+            }
+
+            player.sendMessage(color("&cUsage: /redeemables create [name]"));
             return false;
         }
 

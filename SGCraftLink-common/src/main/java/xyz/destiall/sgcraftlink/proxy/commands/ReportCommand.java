@@ -72,11 +72,11 @@ public class ReportCommand implements CommandProvider, TabProvider {
 
     @Override
     public List<String> tab(PlayerProvider sender, String[] args) {
-        if (args.length == 1) {
+        if (args == null || args[0].isEmpty() || args.length == 1) {
             return plugin.getPlayers().stream()
                     .filter(s -> !s.hasPermission("sgc.report.bypass"))
                     .map(PlayerProvider::getName)
-                    .filter(s -> s.toLowerCase().startsWith(args[0].toLowerCase()))
+                    .filter(s -> args == null || args[0].isEmpty() || s.toLowerCase().startsWith(args[0].toLowerCase()))
                     .collect(Collectors.toList());
         }
 

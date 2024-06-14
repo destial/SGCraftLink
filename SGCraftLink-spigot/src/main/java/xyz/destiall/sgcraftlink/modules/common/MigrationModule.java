@@ -10,6 +10,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
@@ -52,6 +53,8 @@ public class MigrationModule extends Module implements Listener, CommandExecutor
             Migration migration = new Migration(this, oldName, newName);
             awaitingMigration.add(migration);
         }
+
+        plugin.getLogger().info("Registered " + awaitingMigration.size() + " awaiting migration " + new JSONArray(awaitingMigration.stream().map(m -> m.getOldName() + "->" + m.getNewName()).collect(Collectors.toList())).toString().replace("\"", ""));
     }
 
     @Override

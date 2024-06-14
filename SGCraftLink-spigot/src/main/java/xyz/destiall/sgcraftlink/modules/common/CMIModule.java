@@ -34,7 +34,7 @@ public class CMIModule extends Module implements Listener, CommandExecutor {
     private final Map<Player, List<Long>> repetitiveAfk = new ConcurrentHashMap<>();
 
     public CMIModule(SGCraftLinkSpigot plugin) {
-        super(plugin, null);
+        super(plugin);
 
         plugin.getCommand("sgcwake").setExecutor(this);
     }

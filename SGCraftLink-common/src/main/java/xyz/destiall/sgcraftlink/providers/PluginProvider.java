@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.UUID;
 
 public interface PluginProvider {
+
     DiscordProvider getDiscordProvider();
     ConfigProvider<?> getConfigProvider();
     LinkProvider getLinkProvider();
@@ -25,9 +26,11 @@ public interface PluginProvider {
 
     PlayerProvider getPlayer(String name);
     PlayerProvider getPlayer(UUID uuid);
+    PlayerProvider getConsole();
 
     Collection<PlayerProvider> getPlayers();
     void dispatchCommand(String command);
+    Collection<ServerProvider> getServers();
 
     File getDataFolder();
 

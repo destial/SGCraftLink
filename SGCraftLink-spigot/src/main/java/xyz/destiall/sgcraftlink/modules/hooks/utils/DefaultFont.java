@@ -1,12 +1,12 @@
 package xyz.destiall.sgcraftlink.modules.hooks.utils;
 
-public class DefaultFont extends Font {
+public final class DefaultFont extends Font {
     public DefaultFont() {
-        super(null, null);
+        super("default", null);
     }
 
     @Override
-    public String format(String text) {
+    public String format(String text, boolean checkChar) {
         return text;
     }
 }

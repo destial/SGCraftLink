@@ -18,6 +18,7 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.json.JSONArray;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.items.CasinoSlot;
 import xyz.destiall.sgcraftlink.modules.Module;
@@ -78,6 +79,8 @@ public class Casino extends Module implements Listener, CommandExecutor, TabExec
                 slots.add(slot);
             }
         }
+
+        plugin.getLogger().info("Registered " + slots.size() + " casino slots " + new JSONArray(slots.stream().map(CasinoSlot::getId).collect(Collectors.toList())).toString().replace("\"", ""));
     }
 
     public boolean deleteSlot(int id) {

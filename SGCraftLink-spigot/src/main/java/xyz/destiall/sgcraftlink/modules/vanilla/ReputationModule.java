@@ -98,7 +98,13 @@ public class ReputationModule extends Module implements Listener, CommandExecuto
     }
 
     public List<PlayerReputation> getOrderedReputations() {
-        reputations.sort((a, b) -> Float.compare(b.getRating(), a.getRating()));
+        reputations.sort((a, b) -> {
+            int compare = Float.compare(b.getRating(), a.getRating());
+            if (compare == 0) {
+                return Integer.compare(b.getTotalRatings(), a.getTotalRatings());
+            }
+            return compare;
+        });
         return reputations;
     }
 

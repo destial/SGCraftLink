@@ -59,8 +59,8 @@ public class BirthdayCommand implements CommandProvider, TabProvider {
 
     @Override
     public List<String> tab(PlayerProvider sender, String[] args) {
-        if (args.length == 1) {
-            return Arrays.stream(Birthday.Month.values()).map(Birthday.Month::getName).filter(s -> s.toLowerCase().startsWith(args[0].toLowerCase())).collect(Collectors.toList());
+        if (args == null || args.length == 1) {
+            return Arrays.stream(Birthday.Month.values()).map(Birthday.Month::getName).filter(s -> args == null || args[0].isEmpty() || s.toLowerCase().startsWith(args[0].toLowerCase())).collect(Collectors.toList());
         }
 
         if (args.length == 2) {

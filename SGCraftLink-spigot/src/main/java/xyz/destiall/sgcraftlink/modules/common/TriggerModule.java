@@ -4,6 +4,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.json.JSONArray;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.modules.Module;
 
@@ -11,16 +12,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-public class Triggers extends Module implements Listener {
+public class TriggerModule extends Module implements Listener {
     private final Map<Pattern, String> triggers;
 
-    public Triggers(SGCraftLinkSpigot plugin) {
+    public TriggerModule(SGCraftLinkSpigot plugin) {
         super(plugin, "triggers.yml");
         triggers = new HashMap<>();
 
         ConfigurationSection triggerSection = config.getConfigurationSection("triggers");
         if (triggerSection == null)
             return;
+
         for (String key : triggerSection.getKeys(false)) {
             String pattern = triggerSection.getString(key + ".pattern");
             boolean caseInsensitive = triggerSection.getBoolean(key + ".case-insensitive");
@@ -30,6 +32,8 @@ public class Triggers extends Module implements Listener {
             Pattern p = Pattern.compile(pattern, caseInsensitive ? Pattern.CASE_INSENSITIVE : 0);
             triggers.put(p, target);
         }
+
+        plugin.getLogger().info("Registered " + triggers.size() + " triggers " + new JSONArray(triggers.values()).toString().replace("\"", ""));
     }
 
     @EventHandler(ignoreCancelled = true)

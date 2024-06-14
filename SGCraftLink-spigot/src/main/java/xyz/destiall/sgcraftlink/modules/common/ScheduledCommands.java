@@ -37,6 +37,8 @@ public class ScheduledCommands extends Module implements CommandExecutor {
             scheduleCommand(date, commands);
         }
 
+        plugin.getLogger().info("Registered " + scheduledCommands.size() + " scheduled commands");
+
         plugin.getCommand("schedulecmd").setExecutor(this);
     }
 

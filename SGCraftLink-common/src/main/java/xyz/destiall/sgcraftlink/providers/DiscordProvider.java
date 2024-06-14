@@ -314,13 +314,15 @@ public class DiscordProvider {
                 }
             });
 
-            updateNickname(player, m);
+            updateNickname(m, player);
         }, e -> {});
     }
 
-    public void updateNickname(PlayerProvider player, Member member) {
-        String nickname = player.getName();
-        String suffix = player.getSuffix();
+    public void updateNickname(Member member, PlayerProvider player) {
+        updateNickname(member, player.getName(), player.getSuffix());
+    }
+
+    public void updateNickname(Member member, String nickname, String suffix) {
         if (suffix != null) {
             nickname += " " + suffix;
         }
@@ -329,7 +331,7 @@ public class DiscordProvider {
             }, err -> {
             });
         } catch (Exception ignored) {
-            plugin.getLoggerProvider().error("Unable to change discord nickname of " + member.getUser().getName() + " (IGN: " + player.getName() + ")");
+            plugin.getLoggerProvider().error("Unable to change discord nickname of " + member.getUser().getName() + " (IGN: " + nickname + ")");
         }
     }
 

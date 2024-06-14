@@ -28,6 +28,11 @@ public class BungeeTextComponent extends ComponentProvider<TextComponent> {
     }
 
     @Override
+    public void addExtra(ComponentProvider<?> other) {
+        component.addExtra((TextComponent) other.getComponent());
+    }
+
+    @Override
     public void setColor(ColorProvider.ChatColor color) {
         component.setColor(ChatColor.of(color.name()));
     }

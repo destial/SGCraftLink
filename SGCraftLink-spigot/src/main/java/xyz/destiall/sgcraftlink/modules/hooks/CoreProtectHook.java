@@ -24,7 +24,7 @@ import java.util.List;
 public class CoreProtectHook extends Module implements Listener {
     private CoreProtectAPI api;
     public CoreProtectHook(SGCraftLinkSpigot plugin) {
-        super(plugin, null);
+        super(plugin);
 
         Plugin cp = plugin.getServer().getPluginManager().getPlugin("CoreProtect");
         if (!(cp instanceof CoreProtect)) {

@@ -1,7 +1,6 @@
 package xyz.destiall.sgcraftlink.velocityproviders;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.TextColor;
@@ -11,12 +10,12 @@ import xyz.destiall.sgcraftlink.providers.component.ComponentClickProvider;
 import xyz.destiall.sgcraftlink.providers.component.ComponentHoverProvider;
 import xyz.destiall.sgcraftlink.providers.component.ComponentProvider;
 
-public class VelocityTextComponent extends ComponentProvider<TextComponent> {
+public class VelocityTextComponent extends ComponentProvider<Component> {
     static {
         ComponentProvider.setProvider(VelocityTextComponent::new);
     }
 
-    public VelocityTextComponent(TextComponent component) {
+    public VelocityTextComponent(Component component) {
         super(component);
     }
 
@@ -27,6 +26,11 @@ public class VelocityTextComponent extends ComponentProvider<TextComponent> {
     @Override
     public void setMessage(String message) {
         component = LegacyComponentSerializer.legacyAmpersand().deserialize(message);
+    }
+
+    @Override
+    public void addExtra(ComponentProvider<?> other) {
+        component = component.append(((VelocityTextComponent) other).getComponent());
     }
 
     @Override

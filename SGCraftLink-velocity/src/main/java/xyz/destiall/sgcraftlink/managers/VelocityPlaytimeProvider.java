@@ -1,17 +1,17 @@
 package xyz.destiall.sgcraftlink.managers;
 
-import ninja.leaping.configurate.ConfigurationNode;
-import ninja.leaping.configurate.yaml.YAMLConfigurationLoader;
+import org.spongepowered.configurate.ConfigurationNode;
+import org.spongepowered.configurate.yaml.YamlConfigurationLoader;
 import xyz.destiall.sgcraftlink.providers.PlaytimeProvider;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityConfiguration;
 
 public class VelocityPlaytimeProvider extends PlaytimeProvider {
-    private final YAMLConfigurationLoader provider;
+    private final YamlConfigurationLoader provider;
 
     public VelocityPlaytimeProvider(PluginProvider plugin) {
         super(plugin);
-        provider = YAMLConfigurationLoader.builder().setPath(databaseFile.toPath()).build();
+        provider = YamlConfigurationLoader.builder().path(databaseFile.toPath()).build();
         try {
             database = new VelocityConfiguration(provider.load());
         } catch (Exception e) {

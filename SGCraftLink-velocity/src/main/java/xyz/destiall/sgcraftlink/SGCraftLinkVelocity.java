@@ -11,6 +11,7 @@ import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.messages.ChannelIdentifier;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import org.slf4j.Logger;
+import xyz.destiall.sgcraftlink.commands.GList;
 import xyz.destiall.sgcraftlink.commands.VelocityCommand;
 import xyz.destiall.sgcraftlink.listeners.VelocityCommandListener;
 import xyz.destiall.sgcraftlink.listeners.VelocityPMListener;
@@ -22,6 +23,7 @@ import xyz.destiall.sgcraftlink.managers.VelocityPluginMessager;
 import xyz.destiall.sgcraftlink.providers.DiscordProvider;
 import xyz.destiall.sgcraftlink.providers.PlayerProvider;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
+import xyz.destiall.sgcraftlink.providers.ServerProvider;
 import xyz.destiall.sgcraftlink.proxy.commands.BirthdayCommand;
 import xyz.destiall.sgcraftlink.proxy.commands.DiscordCommand;
 import xyz.destiall.sgcraftlink.proxy.commands.StaffCommand;
@@ -30,6 +32,8 @@ import xyz.destiall.sgcraftlink.proxy.misc.BirthdayManager;
 import xyz.destiall.sgcraftlink.proxy.misc.DataManager;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityClickEvent;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityColor;
+import xyz.destiall.sgcraftlink.velocityproviders.VelocityConnectedServer;
+import xyz.destiall.sgcraftlink.velocityproviders.VelocityConsolePlayer;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityHoverEvent;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityLogger;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityPlayer;
@@ -78,7 +82,7 @@ public class SGCraftLinkVelocity implements PluginProvider {
     }
 
     @Subscribe
-    public void onProxyInitialization(ProxyInitializeEvent event) {
+    public void onProxyInitialization(ProxyInitializeEvent ignored) {
         new VelocityColor();
         new VelocityTextComponent();
         new VelocityClickEvent();
@@ -162,6 +166,11 @@ public class SGCraftLinkVelocity implements PluginProvider {
     }
 
     @Override
+    public PlayerProvider getConsole() {
+        return new VelocityConsolePlayer(server);
+    }
+
+    @Override
     public Collection<PlayerProvider> getPlayers() {
         return server.getAllPlayers().stream().map(VelocityPlayer::new).collect(Collectors.toList());
     }
@@ -173,6 +182,11 @@ public class SGCraftLinkVelocity implements PluginProvider {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public Collection<ServerProvider> getServers() {
+        return server.getAllServers().stream().map(VelocityConnectedServer::new).collect(Collectors.toList());
     }
 
     @Override
@@ -242,7 +256,10 @@ public class SGCraftLinkVelocity implements PluginProvider {
         commands.add(new VelocityCommand(this, "discord", new DiscordCommand(this)));
         commands.add(new VelocityCommand(this, "sgc", new StaffCommand(this)));
         commands.add(new VelocityCommand(this, "birthday", new BirthdayCommand(this)));
-        //commands.add(new VelocityCommand(this, "vote", new TempVoteCommand(this)));
+
+        // Mimic BungeeCord commands
+        commands.add(new VelocityCommand(this, "glist", new GList(this)));
+        //commands.add(new VelocityCommand(this, "send", new Send(this)));
     }
 
     @Override

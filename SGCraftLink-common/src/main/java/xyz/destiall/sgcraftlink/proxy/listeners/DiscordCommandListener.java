@@ -24,7 +24,9 @@ import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
+import xyz.destiall.sgcraftlink.providers.PlayerProvider;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
+import xyz.destiall.sgcraftlink.providers.ServerProvider;
 import xyz.destiall.sgcraftlink.proxy.litebans.LitebansDatabase;
 import xyz.destiall.sgcraftlink.proxy.litebans.Punishment;
 import xyz.destiall.sgcraftlink.proxy.misc.RegisteredServer;
@@ -35,6 +37,7 @@ import xyz.destiall.sgcraftlink.utils.Pair;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -84,7 +87,9 @@ public class DiscordCommandListener extends ListenerAdapter {
         SlashCommandData server = Commands.slash("panel", "Access the server control panel")
                 .addOption(OptionType.STRING, "server", "The server to access", true);
 
-        slashCommands.addAll(Arrays.asList(chatHistory, history, alts, firstjoin, ipwhitelist, changepw, server));
+        SlashCommandData globalList = Commands.slash("globallist", "View the current players online on all servers");
+
+        slashCommands.addAll(Arrays.asList(chatHistory, history, alts, firstjoin, ipwhitelist, changepw, server, globalList));
 
         jda.updateCommands().addCommands(slashCommands).queue(commands::addAll);
 
@@ -131,13 +136,24 @@ public class DiscordCommandListener extends ListenerAdapter {
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent e) {
         if (!e.isFromGuild()) {
-            super.onSlashCommandInteraction(e);
             return;
         }
 
         Command command = commands.stream().filter(c -> c.getId().equalsIgnoreCase(e.getCommandId())).findFirst().orElse(null);
         if (command == null) {
-            super.onSlashCommandInteraction(e);
+            return;
+        }
+
+        if (command.getName().equalsIgnoreCase("globallist")) {
+            StringBuilder builder = new StringBuilder("```");
+            for (ServerProvider server : plugin.getServers()) {
+                Collection<PlayerProvider> connected = server.getPlayers();
+                builder.append("[").append(server.getName()).append("] ").append("(").append(connected.size()).append("): ")
+                        .append(connected.stream().map(PlayerProvider::getName).collect(Collectors.joining(", ")))
+                        .append("\n");
+            }
+            builder.append("```");
+            e.reply(builder.toString()).queue();
             return;
         }
 
@@ -213,7 +229,6 @@ public class DiscordCommandListener extends ListenerAdapter {
                 e.replyEmbeds(embed.build()).addActionRows(row).queue(ih -> {
                     ih.retrieveOriginal().queue(message ->  {
                         ButtonCollector collector = new ButtonCollector(message);
-                        collector.setFilter(event -> event.getUser().getId().equalsIgnoreCase(e.getUser().getId()));
                         collector.setTime(60000L);
 
                         collector.onCollect(button -> {

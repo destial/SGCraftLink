@@ -7,9 +7,14 @@ import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
+import xyz.destiall.sgcraftlink.providers.ColorProvider;
 import xyz.destiall.sgcraftlink.providers.ConfigProvider;
+import xyz.destiall.sgcraftlink.providers.ConfigSectionProvider;
 import xyz.destiall.sgcraftlink.providers.PlayerProvider;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
+import xyz.destiall.sgcraftlink.providers.component.ComponentClickProvider;
+import xyz.destiall.sgcraftlink.providers.component.ComponentHoverProvider;
+import xyz.destiall.sgcraftlink.providers.component.ComponentProvider;
 import xyz.destiall.sgcraftlink.proxy.litebans.Punishment;
 import xyz.destiall.sgcraftlink.proxy.litebans.PunishmentType;
 import xyz.destiall.sgcraftlink.proxy.luckperms.LuckPermsManager;
@@ -23,14 +28,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static xyz.destiall.sgcraftlink.SGCraftLinkCommon.convertStreamToString;
 import static xyz.destiall.sgcraftlink.SGCraftLinkCommon.emptyDataMap;
 
 public final class DataManager {
+    private static DataManager instance;
     private final PluginProvider plugin;
     private final Express express;
     private final HTTPManager manager;
@@ -38,8 +46,13 @@ public final class DataManager {
     private final Map<String, RegisteredServer> registeredServers;
     private final List<LuckPermsManager.ProxyRestMessenger> messengers;
 
+    public static DataManager get() {
+        return instance;
+    }
+
     public DataManager(PluginProvider plugin) {
         this.plugin = plugin;
+        instance = this;
         express = new Express();
         manager = new HTTPManager();
 
@@ -73,6 +86,7 @@ public final class DataManager {
                     }
                 }
 
+                String serverName = server.substring(0, 1).toUpperCase() + server.substring(1);
                 switch (datatype) {
                     case SGCraftLinkCommon.DATA_SERVER_REGISTER: {
                         int serverport = json.getInt("port");
@@ -80,6 +94,7 @@ public final class DataManager {
                         String panelId = "null";
                         if (json.has("panel_id"))
                             panelId = json.getString("panel_id");
+                        boolean whitelisted = json.has("whitelisted") && json.getBoolean("whitelisted");
                         RegisteredServer registration = new RegisteredServer(serverport, auth, panelId);
                         registeredServers.put(server, registration);
                         String ip = json.has("ip") ? json.getString("ip") : registration.getIp();
@@ -87,6 +102,11 @@ public final class DataManager {
                         plugin.getLoggerProvider().info("Registered server " + server + " to " + registration.getIp() + ":" + serverport);
                         plugin.getDiscordProvider().getDiscordCommands().addPanelServer(server);
                         response.sendStatus(Status._200);
+
+                        ComponentProvider<?> component = ColorProvider.ofComponent("&b&lꜱᴇʀᴠᴇʀ &8&l» &a" + serverName + " is now online! " + (whitelisted ? "(Whitelisted)" : ""));
+                        component.setHover(ComponentHoverProvider.of(ComponentHoverProvider.Action.SHOW_TEXT, ColorProvider.ofComponent("&eClick to join " + server)));
+                        component.setClick(ComponentClickProvider.of(ComponentClickProvider.Action.RUN_COMMAND, "/server " + server));
+                        plugin.getPlayers().forEach(p -> p.sendMessageComponent(component));
                         break;
                     }
                     case SGCraftLinkCommon.DATA_SERVER_UNREGISTER: {
@@ -94,6 +114,11 @@ public final class DataManager {
                         plugin.getDiscordProvider().getDiscordCommands().removePanelServer(server);
                         registeredServers.remove(server);
                         response.sendStatus(Status._200);
+
+                        ComponentProvider<?> component = ColorProvider.ofComponent("&b&lꜱᴇʀᴠᴇʀ &8&l» &c" + serverName + " is now offline!");
+                        component.setHover(ComponentHoverProvider.of(ComponentHoverProvider.Action.SHOW_TEXT, ColorProvider.ofComponent("&cJoin back later!")));
+                        plugin.getPlayers().forEach(p -> p.sendMessageComponent(component));
+                        plugin.getConsole().sendMessageComponent(component);
                         break;
                     }
                     case SGCraftLinkCommon.DATA_EXECUTE_COMMAND: {
@@ -160,11 +185,44 @@ public final class DataManager {
                     case SGCraftLinkCommon.DATA_SECURITY_CHECK: {
                         UUID uuid = UUID.fromString(json.getString("uuid"));
                         PlayerProvider player = plugin.getPlayer(uuid);
-                        if (player != null && player.getServer().toLowerCase().contains(server)) {
+                        if (player != null) {
+                            plugin.getLoggerProvider().info(player.getName() + " is currently connected to: " + player.getServer());
                             response.sendStatus(Status._200);
                         } else {
                             response.sendStatus(Status._203);
                         }
+                        break;
+                    }
+                    case SGCraftLinkCommon.DATA_GET_WHITELISTED_PERMS: {
+                        String username = json.getString("username");
+                        ConfigSectionProvider<?> data = plugin.getLinkProvider().getData(username);
+                        JSONObject obj = new JSONObject();
+                        JSONArray perms = new JSONArray();
+                        if (data == null || !data.contains("perms")) {
+                            response.send(obj.put("perms", perms).toString());
+                            break;
+                        }
+
+                        for (String perm : data.getStringList("perms")) {
+                            perms.put(perm);
+                        }
+
+                        plugin.getLoggerProvider().info(username + " has whitelisted perms " + perms);
+                        response.send(obj.put("perms", perms).toString());
+                        break;
+                    }
+                    case SGCraftLinkCommon.DATA_SET_WHITELISTED_PERMS: {
+                        String username = json.getString("username");
+                        ConfigSectionProvider<?> data = plugin.getLinkProvider().getData(username);
+                        if (data == null) {
+                            response.sendStatus(Status._203);
+                            break;
+                        }
+                        List<String> perms = data.contains("perms") ? new ArrayList<>(data.getStringList("perms")) : new ArrayList<>();
+                        perms.addAll(json.getJSONArray("perms").toList().stream().map(Object::toString).collect(Collectors.toList()));
+                        data.set("perms", perms);
+                        plugin.getLinkProvider().updateUser(username, data);
+                        response.sendStatus(Status._202);
                         break;
                     }
                     case SGCraftLinkCommon.DATA_PLAYER_MIGRATE: {
@@ -238,6 +296,10 @@ public final class DataManager {
         return registeredServers.get(server);
     }
 
+    public Collection<RegisteredServer> getRegisteredServers() {
+        return registeredServers.values();
+    }
+
     public CompletableFuture<Void> sendDataToAll(@Nullable String origin, String type, Map<?, ?> map, Consumer<Map<String, DataResult>> callback) {
         return sendDataToAll(origin, type, new JSONObject(map), callback);
     }
@@ -245,7 +307,7 @@ public final class DataManager {
     public CompletableFuture<Void> sendDataToAll(@Nullable String origin, String type, JSONObject object, Consumer<Map<String, DataResult>> callback) {
         CompletableFuture<Void> future = new CompletableFuture<>();
         AtomicInteger i = new AtomicInteger(registeredServers.size() - (origin != null ? 1 : 0));
-        Map<String, DataResult> results = new HashMap<>();
+        Map<String, DataResult> results = new ConcurrentHashMap<>();
         for (String server : registeredServers.keySet()) {
             if (server.equalsIgnoreCase(origin))
                 continue;

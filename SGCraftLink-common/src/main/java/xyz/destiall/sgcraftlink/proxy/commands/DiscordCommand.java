@@ -31,7 +31,7 @@ public class DiscordCommand implements CommandProvider, TabProvider {
         if (args == null || args.length == 0) {
             String link = plugin.getConfigProvider().getString("invite-url");
             if (link == null) {
-                link = "https://discord.gg/DpGKMW7qbG";
+                link = "https://discord.sgcraft.net";
             }
             ComponentProvider<?> message = ComponentProvider.of("Join our discord! " + link);
             message.setColor(ColorProvider.ChatColor.AQUA);
@@ -52,7 +52,7 @@ public class DiscordCommand implements CommandProvider, TabProvider {
         if (args[0].equalsIgnoreCase("link")) {
             if (plugin.getLinkProvider().isLinked(player.getName())) {
                 User user = plugin.getLinkProvider().getUser(player.getName());
-                ComponentProvider<?> message = ComponentProvider.of("You are already linked to " + user.getAsTag());
+                ComponentProvider<?> message = ComponentProvider.of("You are already linked to " + user.getName() + " (Id:" + user.getId() + ")");
                 message.setColor(ColorProvider.ChatColor.RED);
                 player.sendMessageComponent(message);
                 return;
@@ -112,10 +112,9 @@ public class DiscordCommand implements CommandProvider, TabProvider {
     @Override
     public List<String> tab(PlayerProvider sender, String[] args) {
         List<String> usage = Arrays.asList("link", "unlink");
-        if (args == null || args.length == 0) {
-            return usage;
-        }
-        if (args.length > 1) return Collections.emptyList();
-        return usage.stream().filter(a -> a.startsWith(args[0].toLowerCase())).collect(Collectors.toList());
+        if (args != null && args.length > 1)
+            return Collections.emptyList();
+
+        return usage.stream().filter(a -> args == null || args[0].isEmpty() || a.startsWith(args[0].toLowerCase())).collect(Collectors.toList());
     }
 }

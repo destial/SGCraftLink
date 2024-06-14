@@ -20,7 +20,10 @@ public class ButtonCollector extends Collector<ButtonCollector, Message, ButtonI
                 if (limit != -1 && amount > limit)
                     return;
 
-                if (event.getMessageId().equalsIgnoreCase(ButtonCollector.this.message.getId()) && !event.getUser().isBot() && (filter == null || filter.test(event))) {
+                if (!event.getMessageId().equalsIgnoreCase(ButtonCollector.this.message.getId()))
+                    return;
+
+                if (!event.getUser().isBot() && (filter == null || filter.test(event))) {
                     ButtonCollector.this.collected.add(event.getInteraction());
                     if (collect != null) {
                         collect.accept(event.getInteraction());

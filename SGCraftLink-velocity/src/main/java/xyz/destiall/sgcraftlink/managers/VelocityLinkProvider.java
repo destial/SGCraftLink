@@ -1,16 +1,19 @@
 package xyz.destiall.sgcraftlink.managers;
 
-import ninja.leaping.configurate.ConfigurationNode;
-import ninja.leaping.configurate.yaml.YAMLConfigurationLoader;
+import org.spongepowered.configurate.BasicConfigurationNode;
+import org.spongepowered.configurate.ConfigurationNode;
+import org.spongepowered.configurate.yaml.YamlConfigurationLoader;
 import xyz.destiall.sgcraftlink.providers.LinkProvider;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityConfiguration;
 
+import java.util.Map;
+
 public class VelocityLinkProvider extends LinkProvider {
-    private final YAMLConfigurationLoader provider;
+    private final YamlConfigurationLoader provider;
     public VelocityLinkProvider(PluginProvider plugin) {
         super(plugin);
-        provider = YAMLConfigurationLoader.builder().setPath(databaseFile.toPath()).build();
+        provider = YamlConfigurationLoader.builder().path(databaseFile.toPath()).build();
         try {
             database = new VelocityConfiguration(provider.load());
         } catch (Exception e) {
@@ -34,13 +37,25 @@ public class VelocityLinkProvider extends LinkProvider {
         ConfigurationNode map;
         if (data instanceof String) {
             String id = (String) data;
-            map = ConfigurationNode.root();
-            map.getNode("id").setValue(id);
-            map.getNode("messages").setValue(0);
+            map = BasicConfigurationNode.root();
+            try {
+                map.node("id").set(id);
+                map.node("messages").set(0);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             database.set(user, map);
             save();
         } else {
-            map = (ConfigurationNode) data;
+            map = BasicConfigurationNode.factory().createNode();
+            Map<String, Object> hashMap = (Map<String, Object>) data;
+            try {
+                map.node("id").set(hashMap.get("id"));
+                map.node("messages").set(hashMap.get("messages"));
+                map.node("ip").set(hashMap.get("ip"));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
         return new VelocityConfiguration(map);
     }

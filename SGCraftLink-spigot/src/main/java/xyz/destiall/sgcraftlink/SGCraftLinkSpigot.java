@@ -11,30 +11,39 @@ import org.bukkit.event.Listener;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
+import org.json.JSONArray;
 import xyz.destiall.sgcraftlink.gamemode.OnePersonDeath;
 import xyz.destiall.sgcraftlink.listeners.AirBlockPlaceListener;
 import xyz.destiall.sgcraftlink.listeners.PML;
 import xyz.destiall.sgcraftlink.listeners.PlayerListener;
 import xyz.destiall.sgcraftlink.modules.DataModule;
 import xyz.destiall.sgcraftlink.modules.Module;
-import xyz.destiall.sgcraftlink.modules.common.BetaTestModule;
 import xyz.destiall.sgcraftlink.modules.common.BirthdayModule;
 import xyz.destiall.sgcraftlink.modules.common.CMIModule;
 import xyz.destiall.sgcraftlink.modules.common.ChatBubble;
+import xyz.destiall.sgcraftlink.modules.common.Fonter;
 import xyz.destiall.sgcraftlink.modules.common.HeadHunt;
-import xyz.destiall.sgcraftlink.modules.common.LuckPermsModule;
 import xyz.destiall.sgcraftlink.modules.common.MigrationModule;
 import xyz.destiall.sgcraftlink.modules.common.Redeemables;
 import xyz.destiall.sgcraftlink.modules.common.ScheduledCommands;
-import xyz.destiall.sgcraftlink.modules.common.Tags;
-import xyz.destiall.sgcraftlink.modules.common.Triggers;
+import xyz.destiall.sgcraftlink.modules.common.TagModule;
+import xyz.destiall.sgcraftlink.modules.common.TriggerModule;
 import xyz.destiall.sgcraftlink.modules.hooks.CoreProtectHook;
 import xyz.destiall.sgcraftlink.modules.hooks.DiscordSRVHook;
 import xyz.destiall.sgcraftlink.modules.hooks.DynmapHook;
-import xyz.destiall.sgcraftlink.modules.hooks.Fonter;
+import xyz.destiall.sgcraftlink.modules.hooks.EconomyHook;
+import xyz.destiall.sgcraftlink.modules.hooks.LuckPermsHook;
 import xyz.destiall.sgcraftlink.modules.hooks.PAPIHook;
 import xyz.destiall.sgcraftlink.modules.skyblock.NovaEconomyGUIModule;
 import xyz.destiall.sgcraftlink.modules.skyblock.NovaSkyblockModule;
+import xyz.destiall.sgcraftlink.modules.survival.AuraSkillsHook;
+import xyz.destiall.sgcraftlink.modules.survival.CustomRecipes;
+import xyz.destiall.sgcraftlink.modules.survival.InvisFrames;
+import xyz.destiall.sgcraftlink.modules.survival.MusicHook;
+import xyz.destiall.sgcraftlink.modules.survival.MythicItemAbilities;
+import xyz.destiall.sgcraftlink.modules.survival.ProtectionStonesModule;
+import xyz.destiall.sgcraftlink.modules.survival.ResourcePackModule;
+import xyz.destiall.sgcraftlink.modules.survival.VanillaAddon;
 import xyz.destiall.sgcraftlink.modules.vanilla.Casino;
 import xyz.destiall.sgcraftlink.modules.vanilla.LastLocation;
 import xyz.destiall.sgcraftlink.modules.vanilla.PiggyBankModule;
@@ -47,6 +56,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecutor {
     private List<Module> modules;
@@ -83,6 +93,13 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
 
     public void enable() {
         modules = new ArrayList<>();
+        if (getServer().getPluginManager().getPlugin("Vault") != null) {
+            try {
+                modules.add(new EconomyHook(this));
+            } catch (Exception e) {
+                getLogger().warning("This version cannot run Economy Hook!");
+            }
+        }
         try {
             testPaperOr1_8Above();
             modules.add(new HeadHunt(this));
@@ -91,7 +108,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         }
         try {
             testPaperOr1_8Above();
-            modules.add(new Tags(this));
+            modules.add(new TagModule(this));
         } catch (Exception e) {
             getLogger().warning("This version cannot run Tags!");
         }
@@ -102,7 +119,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             getLogger().warning("This version cannot run LastLocation!");
         }
         try {
-            modules.add(new Triggers(this));
+            modules.add(new TriggerModule(this));
         } catch (Exception e) {
             getLogger().warning("This version cannot run Triggers!");
         }
@@ -131,13 +148,6 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         }
         try {
             testPaperOr1_8Above();
-            modules.add(new BetaTestModule(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run BetaTestModule!");
-            e.printStackTrace();
-        }
-        try {
-            testPaperOr1_8Above();
             modules.add(new MigrationModule(this));
         } catch (Exception e) {
             getLogger().warning("This version cannot run Birthdays!");
@@ -147,13 +157,6 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         } catch (Exception e) {
             e.printStackTrace();
             getLogger().warning("This version cannot run Data Communication!");
-        }
-        try {
-            testPaperOr1_8Above();
-            modules.add(new Fonter(this));
-        } catch (Exception e) {
-            e.printStackTrace();
-            getLogger().warning("This version cannot run Fonter!");
         }
 
         modules.add(new PlayerListener(this));
@@ -175,8 +178,21 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             testPaperOr1_8Above();
             modules.add(new OnePersonDeath(this));
         } catch (Exception e) {
-            e.printStackTrace();
             getLogger().warning("This version cannot run OnePersonDeath!");
+        }
+
+        try {
+            testPaperOr1_8Above();
+            modules.add(new InvisFrames(this));
+        } catch (Exception e) {
+            getLogger().warning("This version cannot run InvisFrames!");
+        }
+
+        try {
+            testPaperOr1_8Above();
+            modules.add(new ResourcePackModule(this));
+        } catch (Exception e) {
+            getLogger().warning("This version cannot run ResourcePack!");
         }
 
         if (getServer().getPluginManager().getPlugin("ProtocolLib") != null) {
@@ -186,6 +202,12 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             } catch (Exception e) {
                 getLogger().warning("This version cannot run ChatBubbles!");
             }
+            try {
+                testPaperOr1_8Above();
+                modules.add(new Fonter(this));
+            } catch (Exception e) {
+                getLogger().warning("This version cannot run Fonter!");
+            }
         }
 
         if (getServer().getPluginManager().getPlugin("CMI") != null) {
@@ -193,7 +215,6 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
                 modules.add(new CMIModule(this));
             } catch (Exception e) {
                 getLogger().warning("This version cannot run CMIModule!");
-                e.printStackTrace();
             }
         }
 
@@ -205,10 +226,10 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
 
         if (getServer().getPluginManager().getPlugin("PiggyBank") != null) {
             try {
+                testPaperOr1_8Above();
                 modules.add(new PiggyBankModule(this));
             } catch (Exception e) {
                 getLogger().warning("This version cannot run PiggyBankModule!");
-                e.printStackTrace();
             }
         }
 
@@ -219,21 +240,10 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
                     .getRegistration(LuckPerms.class);
             if (provider != null) {
                 try {
-                    modules.add(new LuckPermsModule(this, provider.getProvider()));
+                    modules.add(new LuckPermsHook(this, provider.getProvider()));
                 } catch (Exception e) {
                     getLogger().warning("This version cannot run LuckPermsModule!");
-                    e.printStackTrace();
                 }
-            }
-        }
-
-        if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
-            try {
-                papiHook = new PAPIHook(this);
-                papiHook.register();
-            } catch (Exception e) {
-                getLogger().warning("This version cannot run PAPI Hook!");
-                e.printStackTrace();
             }
         }
 
@@ -243,7 +253,6 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
                 modules.add(new DiscordSRVHook(this));
             } catch (Exception e) {
                 getLogger().warning("This version cannot run DiscordSRV Hook!");
-                e.printStackTrace();
             }
         }
 
@@ -253,7 +262,6 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
                 modules.add(new CoreProtectHook(this));
             } catch (Exception e) {
                 getLogger().warning("This version cannot run CoreProtect Hook!");
-                e.printStackTrace();
             }
         }
 
@@ -262,7 +270,6 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
                 modules.add(new DynmapHook(this));
             } catch (Exception e) {
                 getLogger().warning("This version cannot run Dynmap Hook!");
-                e.printStackTrace();
             }
         }
 
@@ -272,7 +279,6 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
                     modules.add(new NovaSkyblockModule(this));
                 } catch (Exception e) {
                     getLogger().warning("This version cannot run Nova & SuperiorSkyblock Hook!");
-                    e.printStackTrace();
                 }
             }
             if (getServer().getPluginManager().getPlugin("EconomyShopGUI") != null) {
@@ -280,8 +286,64 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
                     modules.add(new NovaEconomyGUIModule(this));
                 } catch (Exception e) {
                     getLogger().warning("This version cannot run Nova & EconomyShopGUI Hook!");
-                    e.printStackTrace();
                 }
+            }
+        }
+
+        if (getServer().getPluginManager().getPlugin("AuraSkills") != null) {
+            try {
+                modules.add(new AuraSkillsHook(this));
+            } catch (Exception e) {
+                getLogger().warning("This version cannot run MythicItemAbilities Hook!");
+            }
+        }
+
+        if (getServer().getPluginManager().getPlugin("MythicMobs") != null) {
+            try {
+                modules.add(new MythicItemAbilities(this));
+            } catch (Exception e) {
+                getLogger().warning("This version cannot run MythicItemAbilities Hook!");
+            }
+        }
+
+        if (getServer().getPluginManager().getPlugin("ProtectionStones") != null) {
+            try {
+                modules.add(new ProtectionStonesModule(this));
+            } catch (Exception e) {
+                getLogger().warning("This version cannot run ProtectionStonesHook!");
+            }
+        }
+
+        if (getServer().getPluginManager().getPlugin("NoteBlockMusicPlayer") != null) {
+            try {
+                modules.add(new MusicHook(this));
+            } catch (Exception e) {
+                getLogger().warning("This version cannot run MusicHook!");
+            }
+        }
+
+        if (getServer().getPluginManager().getPlugin("MythicCrucible") != null) {
+            try {
+                testPaperOr1_8Above();
+                modules.add(new CustomRecipes(this));
+            } catch (Exception e) {
+                getLogger().warning("This version cannot run CustomRecipes!");
+            }
+        }
+
+        try {
+            testPaperOr1_8Above();
+            modules.add(new VanillaAddon(this));
+        } catch (Exception e) {
+            getLogger().warning("This version cannot run VanillaAddon!");
+        }
+
+        if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
+            try {
+                papiHook = new PAPIHook(this);
+                papiHook.register();
+            } catch (Exception e) {
+                getLogger().warning("This version cannot run PAPI Hook!");
             }
         }
 
@@ -293,8 +355,10 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
                     e.printStackTrace();
                 }
             }
-            getLogger().info("Registered module " + module.getClass().getSimpleName());
         }
+
+
+        getLogger().info("Registered " + modules.size() + " modules " + new JSONArray(modules.stream().map(m -> m.getClass().getSimpleName()).collect(Collectors.toList())).toString().replace("\"", ""));
     }
 
     @Override
@@ -323,8 +387,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label,
-            @NotNull String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         disable();
         reloadConfig();
         enable();

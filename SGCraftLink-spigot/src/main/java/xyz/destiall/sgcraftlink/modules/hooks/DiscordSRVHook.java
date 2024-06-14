@@ -26,13 +26,11 @@ import xyz.destiall.sgcraftlink.events.DataReceiveEvent;
 import xyz.destiall.sgcraftlink.modules.Module;
 
 import java.awt.*;
+import java.io.IOException;
 
 public class DiscordSRVHook extends Module implements Listener, CommandExecutor {
-    private final String announcementsId;
-
     public DiscordSRVHook(SGCraftLinkSpigot plugin) {
         super(plugin, "news.yml");
-        announcementsId = config.getString("news-channel-id");
         DiscordSRV.api.subscribe(this);
         plugin.getCommand("sgcdiscord").setExecutor(this);
     }
@@ -52,7 +50,11 @@ public class DiscordSRVHook extends Module implements Listener, CommandExecutor 
                     DiscordSRV.getPlugin().getAccountLinkManager().getLinkedAccounts().put(userId, player.getUniqueId());
                 }
 
-                DiscordSRV.getPlugin().getAccountLinkManager().save();
+                try {
+                    DiscordSRV.getPlugin().getAccountLinkManager().save();
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
                 break;
             }
             case SGCraftLinkCommon.DATA_UNLINK_DISCORDSRV: {
@@ -64,7 +66,11 @@ public class DiscordSRVHook extends Module implements Listener, CommandExecutor 
                     DiscordSRV.getPlugin().getAccountLinkManager().getLinkedAccounts().remove(userId);
                 }
 
-                DiscordSRV.getPlugin().getAccountLinkManager().save();
+                try {
+                    DiscordSRV.getPlugin().getAccountLinkManager().save();
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
                 break;
             }
             default: break;
@@ -73,10 +79,10 @@ public class DiscordSRVHook extends Module implements Listener, CommandExecutor 
 
     @Subscribe
     public void discordMessageReceived(DiscordGuildMessageReceivedEvent event) {
-        if (announcementsId == null)
+        if (config.getString("news-channel-id") == null)
             return;
 
-        if (!event.getMessage().getChannel().getId().equals(announcementsId))
+        if (!event.getMessage().getChannel().getId().equals(config.getString("news-channel-id")))
             return;
 
         TextComponent message = format(event.getMessage(), config.getString("news-message", "&c&l[NEWS] &bThere is a new announcement on #{channel}!"));
@@ -87,7 +93,9 @@ public class DiscordSRVHook extends Module implements Listener, CommandExecutor 
         }
 
         plugin.getServer().getOnlinePlayers().forEach(player -> {
-            player.playSound(player.getLocation(), Sound.ENTITY_ARROW_HIT_PLAYER, 1.5f, 1);
+            try {
+                player.playSound(player.getLocation(), Sound.ENTITY_ARROW_HIT_PLAYER, 1.5f, 1);
+            } catch (Exception ignored) {}
             player.spigot().sendMessage(message);
         });
     }
@@ -122,7 +130,7 @@ public class DiscordSRVHook extends Module implements Listener, CommandExecutor 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String s, @NotNull String[] args) {
         if (args.length < 2) {
-            sender.sendMessage("Usage: /sgcdiscord [rankup|rankdown|saveaccounts] [player] [rank]");
+            sender.sendMessage("Usage: /sgcdiscord [rankup|rankdown|saveaccounts|reload] [player] [rank]");
             return false;
         }
 
@@ -147,12 +155,21 @@ public class DiscordSRVHook extends Module implements Listener, CommandExecutor 
         }
 
         if (args[0].equalsIgnoreCase("saveaccounts")) {
-            DiscordSRV.getPlugin().getAccountLinkManager().save();
+            try {
+                DiscordSRV.getPlugin().getAccountLinkManager().save();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
             sender.sendMessage(color("&bSaved linked accounts!"));
             return false;
         }
 
-        sender.sendMessage("Usage: /sgcdiscord [rankup|rankdown|saveaccounts] [player] [rank]");
+        if (args[0].equalsIgnoreCase("reload")) {
+            load();
+            return false;
+        }
+
+        sender.sendMessage("Usage: /sgcdiscord [rankup|rankdown|saveaccounts|reload] [player] [rank]");
         return false;
     }
 }

@@ -8,12 +8,14 @@ import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import java.util.List;
 
 public class Redeemable {
+    private final SGCraftLinkSpigot plugin;
     private final String name;
     private final ItemStack item;
     private final boolean executeAsServer;
     private final List<String> commands;
 
     public Redeemable(String name, ItemStack item, List<String> commands, boolean executeAsServer) {
+        plugin = ((SGCraftLinkSpigot) SGCraftLinkSpigot.getProvidingPlugin(SGCraftLinkSpigot.class));
         this.name = name;
         this.item = item;
         this.commands = commands;
@@ -21,10 +23,11 @@ public class Redeemable {
     }
 
     public Redeemable(String name, ConfigurationSection config) {
+        plugin = ((SGCraftLinkSpigot) SGCraftLinkSpigot.getProvidingPlugin(SGCraftLinkSpigot.class));
         this.name = name;
-        this.item = config.getItemStack("item");
         this.commands = config.getStringList("commands");
         this.executeAsServer = config.getBoolean("execute-as-server");
+        this.item = config.getItemStack("item");
     }
 
     public String getName() {
@@ -51,9 +54,9 @@ public class Redeemable {
                 String cmd = command.replace("{player}", player.getName());
 
                 if (executeAsServer) {
-                    SGCraftLinkSpigot.getPlugin(SGCraftLinkSpigot.class).dispatchCommand(cmd, false);
+                    plugin.dispatchCommand(cmd, false);
                 } else {
-                    SGCraftLinkSpigot.getPlugin(SGCraftLinkSpigot.class).dispatchCommand(player, cmd, false);
+                    plugin.dispatchCommand(player, cmd, false);
                 }
             }
 

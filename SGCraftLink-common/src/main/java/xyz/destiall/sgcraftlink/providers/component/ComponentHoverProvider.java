@@ -15,6 +15,13 @@ public abstract class ComponentHoverProvider<T> {
         return component;
     }
 
+    public static ComponentHoverProvider<?> of(Action action, ComponentProvider<?> textComponent) {
+        ComponentHoverProvider<?> component = (ComponentHoverProvider<?>) provider.get();
+        component.setAction(action);
+        component.setText(textComponent);
+        return component;
+    }
+
     protected T hover;
 
     public ComponentHoverProvider(T hover) {
@@ -23,6 +30,7 @@ public abstract class ComponentHoverProvider<T> {
 
     public abstract void setAction(Action action);
     public abstract void setText(String text);
+    public abstract void setText(ComponentProvider<?> component);
 
     public T getHover() {
         return hover;

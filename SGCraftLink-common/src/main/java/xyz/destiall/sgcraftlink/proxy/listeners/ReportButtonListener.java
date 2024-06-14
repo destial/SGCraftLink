@@ -30,18 +30,15 @@ public class ReportButtonListener extends ListenerAdapter {
     @Override
     public void onButtonInteraction(@NotNull ButtonInteractionEvent event) {
         if (!event.isFromGuild() && !event.getMessage().getAuthor().getId().equals(event.getJDA().getSelfUser().getId())) {
-            super.onButtonInteraction(event);
             return;
         }
 
         String id = event.getButton().getId();
         if (id == null) {
-            super.onButtonInteraction(event);
             return;
         }
 
         if (!event.getChannel().getId().equals(plugin.getConfigProvider().getConfig().getString("report-channel", "1210647775847649360"))) {
-            super.onButtonInteraction(event);
             return;
         }
 

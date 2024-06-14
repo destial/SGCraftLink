@@ -21,6 +21,7 @@ import net.luckperms.api.node.types.InheritanceNode;
 import net.luckperms.api.util.Tristate;
 import org.jetbrains.annotations.NotNull;
 import xyz.destiall.sgcraftlink.providers.ColorProvider;
+import xyz.destiall.sgcraftlink.providers.ConfigSectionProvider;
 import xyz.destiall.sgcraftlink.providers.PlayerProvider;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
 import xyz.destiall.sgcraftlink.providers.tasks.Task;
@@ -50,7 +51,8 @@ public class LinkListener extends ListenerAdapter {
                 return;
 
             PlayerProvider player = plugin.getPlayer(event.getTarget().getFriendlyName());
-            User user = plugin.getLinkProvider().getUser(player.getName());
+            String playerName = player != null ? player.getName() : event.getTarget().getFriendlyName();
+            User user = plugin.getLinkProvider().getUser(playerName);
             if (user == null)
                 return;
 
@@ -64,7 +66,10 @@ public class LinkListener extends ListenerAdapter {
             if (!node.getKey().startsWith("suffix"))
                 return;
 
-            plugin.getScheduler().schedule(() -> plugin.getDiscordProvider().updateNickname(player, member), 1L, TimeUnit.SECONDS);
+            String[] args = node.getKey().split("//.");
+            String suffix = ColorProvider.ChatColor.strip(args[args.length - 1]);
+
+            plugin.getScheduler().schedule(() -> plugin.getDiscordProvider().updateNickname(member, playerName, suffix), 1L, TimeUnit.SECONDS);
         });
     }
 
@@ -86,6 +91,16 @@ public class LinkListener extends ListenerAdapter {
         return authorized.keySet();
     }
 
+    public void setAuthorized(PlayerProvider player) {
+        authorized.put(player.getUUID(), plugin.getScheduler().schedule(() -> {
+            if (!player.isOnline()) {
+                authorized.remove(player.getUUID());
+            } else {
+                setAuthorized(player);
+            }
+        }, 10L, TimeUnit.MINUTES));
+    }
+
     public void authorize(PlayerProvider player) {
         String id = plugin.getLinkProvider().getId(player.getName());
         if (id == null)
@@ -97,6 +112,15 @@ public class LinkListener extends ListenerAdapter {
 
         plugin.getScheduler().schedule(() -> {
             if (player.isOnline() && player.hasPermission("sgc.report.bypass")) {
+                ConfigSectionProvider<?> data = plugin.getLinkProvider().getData(player.getName());
+                if (data != null && data.contains("ip")) {
+                    String oldIp = data.getString("ip");
+                    if (player.getIP().equals(oldIp)) {
+                        setAuthorized(player);
+                        return;
+                    }
+                }
+
                 plugin.getLoggerProvider().info("Asking " + player.getName() + " for authorization!");
                 member.getUser().openPrivateChannel().queue(pm -> {
                     EmbedBuilder embed = new EmbedBuilder();
@@ -124,11 +148,13 @@ public class LinkListener extends ListenerAdapter {
 
                         collector.onCollect(button -> {
                             if (button.getButton().getId().startsWith("yes")) {
-                                embed.setDescription("You authorized your login!\nIGN: " + player.getName() + "\nIP: ||" + player.getIP() + "||");
+                                embed.setDescription("You authorized your login from this IP!\nIGN: " + player.getName() + "\nIP: ||" + player.getIP() + "||");
                                 embed.setColor(Color.GREEN);
-                                authorized.put(player.getUUID(), plugin.getScheduler().schedule(() -> {
-                                    authorized.remove(player.getUUID());
-                                }, 10L, TimeUnit.MINUTES));
+                                setAuthorized(player);
+                                if (data != null) {
+                                    data.set("ip", player.getIP());
+                                    plugin.getLinkProvider().updateUser(player.getName(), data);
+                                }
                             } else {
                                 embed.setDescription("You unauthorized your login!nIGN: " + player.getName() + "\nIP: ||" + player.getIP() + "||");
                                 authorized.remove(player.getUUID());
@@ -183,7 +209,7 @@ public class LinkListener extends ListenerAdapter {
             }
         });
 
-        plugin.getDiscordProvider().updateNickname(player, member);
+        plugin.getDiscordProvider().updateNickname(member, player);
         plugin.getDiscordProvider().updateRankStatus(player, member);
     }
 

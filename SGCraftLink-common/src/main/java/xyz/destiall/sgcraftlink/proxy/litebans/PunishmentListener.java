@@ -27,7 +27,11 @@ public class PunishmentListener extends Events.Listener {
 
     public TextChannel getChannel() {
         if (channel == null) {
-            channel = plugin.getDiscordProvider().getJda().getTextChannelById("1190320716080480276");
+            if (!plugin.getConfigProvider().getConfig().contains("offence-log")) {
+                plugin.getConfigProvider().getConfig().set("offence-log", "1210766223080427591");
+                plugin.getConfigProvider().save();
+            }
+            channel = plugin.getDiscordProvider().getJda().getTextChannelById(plugin.getConfigProvider().getConfig().getString("offence-log"));
         }
         return channel;
     }

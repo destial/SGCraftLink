@@ -265,11 +265,13 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
             amount++;
             players.put(e.getPlayer().getName(), amount);
             e.getPlayer().sendMessage(color("&eYou have claimed this egg!\n&eYou claimed " + amount + " eggs!" + (!hunts.isEmpty() ? " There are " + hunts.size() + " more to go!" : "")));
+            e.getPlayer().sendTitle(color("&eYou claimed " + amount + " eggs!"), color(!hunts.isEmpty() ? " There are " + hunts.size() + " more to go!" : "All is collected!"));
             plugin.getServer().getOnlinePlayers().forEach(player -> {
                 if (player == e.getPlayer())
                     return;
 
                 player.sendMessage(color("&e" + e.getPlayer().getName() + " has claimed an egg!" + (!hunts.isEmpty() ? " There are " + hunts.size() + " more to go!" : "")));
+                player.sendTitle(color("&e" + e.getPlayer().getName() + " has claimed an egg!"), color(!hunts.isEmpty() ? " There are " + hunts.size() + " more to go!" : "All is collected!"));
                 if (checkOtherServers && hunts.isEmpty()) {
                     player.sendMessage(color("&aAll eggs in this server have been collected! Check out the other servers to see if there are any eggs!"));
                 }
@@ -388,6 +390,7 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
     public void announceWinner() {
         plugin.getServer().getOnlinePlayers().forEach(player -> {
             player.sendMessage(color("&eAll the eggs have been collected!"));
+            player.sendTitle(color("&eAll the eggs have been collected!"), color("&aThank you for playing!"));
         });
 
         DataModule module = plugin.getModule(DataModule.class);
@@ -406,6 +409,7 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
 
                 plugin.getServer().getOnlinePlayers().forEach(player -> {
                     player.sendMessage(color("&eThe winner is " + first.getKey() + " with " + first.getValue() + " collected!"));
+                    player.sendTitle(color("&eWinner: " + first.getKey()), color("Collected: " + first.getValue() + "!"));
                 });
             }
         });

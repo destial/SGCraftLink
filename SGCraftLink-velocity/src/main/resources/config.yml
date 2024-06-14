@@ -45,5 +45,14 @@ logged-commands-channel: "792291139201925130"
 logged-commands:
   - "lp"
   - "/wand"
-  - "lpb"
+  - "lpv"
   - "punish"
+
+console-only-commands:
+  - "lp"
+  - "luckperms"
+  - "lpb"
+  - "permissions"
+  - "perms"
+  - "permission"
+  - "luckpermsbungee"

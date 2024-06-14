@@ -9,7 +9,7 @@ import xyz.destiall.sgcraftlink.modules.Module;
 
 public class TryMeModule extends Module implements CommandExecutor {
     public TryMeModule(SGCraftLinkSpigot plugin) {
-        super(plugin, null);
+        super(plugin);
     }
 
     @Override

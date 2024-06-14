@@ -9,7 +9,6 @@ import xyz.destiall.sgcraftlink.providers.TabProvider;
 import xyz.destiall.sgcraftlink.providers.component.ComponentProvider;
 import xyz.destiall.sgcraftlink.proxy.luckperms.LuckPermsTrackResult;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -149,16 +148,16 @@ public class StaffCommand implements CommandProvider, TabProvider {
 
     @Override
     public List<String> tab(PlayerProvider sender, String[] args) {
+        if (!sender.hasPermission("sgc.admin")) {
+            return Collections.emptyList();
+        }
+
+        if (args == null || args[0].isEmpty() || args.length == 1) {
+            return Stream.of("announce", "promote", "demote", "clearinv", "reload").filter(a -> args == null || args[0].isEmpty() || a.startsWith(args[0].toLowerCase())).collect(Collectors.toList());
+        }
+
         if (args.length == 3 && args[0].equalsIgnoreCase("report")) {
             return reportCommand.tab(sender, Arrays.copyOfRange(args, 1, args.length));
-        }
-
-        if (!sender.hasPermission("sgc.admin")) {
-            return new ArrayList<>();
-        }
-
-        if (args.length == 1) {
-            return Stream.of("announce", "promote", "demote", "clearinv", "reload").filter(a -> a.startsWith(args[0].toLowerCase())).collect(Collectors.toList());
         }
 
         if (args.length == 2) {

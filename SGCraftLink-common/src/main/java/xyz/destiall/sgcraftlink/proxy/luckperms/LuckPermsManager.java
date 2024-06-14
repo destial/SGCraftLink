@@ -22,6 +22,7 @@ import net.luckperms.api.track.Track;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
+import xyz.destiall.sgcraftlink.providers.ConfigSectionProvider;
 import xyz.destiall.sgcraftlink.providers.PlayerProvider;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
 import xyz.destiall.sgcraftlink.proxy.misc.DataManager;
@@ -38,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static xyz.destiall.sgcraftlink.SGCraftLinkCommon.createDataMap;
 
@@ -68,7 +70,21 @@ public class LuckPermsManager {
                 continue;
             }
 
+            if (holder instanceof User) {
+                User user = (User) holder;
+                ConfigSectionProvider<?> data = plugin.getLinkProvider().getData(user.getUsername());
+                if (data != null && data.contains("perms")) {
+                    List<String> perms = data.getStringList("perms");
+                    if (perms.contains(node.getKey())) {
+                        continue;
+                    }
+                }
+            }
+
             holder.data().remove(node);
+            if (holder instanceof User) {
+                api.getMessagingService().ifPresent(s -> s.pushUserUpdate((User) holder));
+            }
 
             if (confirmationChannel == null) {
                 confirmationChannel = plugin.getDiscordProvider().getJda().getTextChannelById("1210643175069450251");
@@ -77,6 +93,7 @@ public class LuckPermsManager {
             if (inConfirmation.containsKey(node.getKey()) || confirmationChannel == null) {
                 if (holder instanceof User) {
                     api.getUserManager().saveUser((User) holder);
+                    api.getMessagingService().ifPresent(s -> s.pushUserUpdate((User) holder));
                 } else if (holder instanceof Group) {
                     api.getGroupManager().saveGroup((Group) holder);
                 }
@@ -96,9 +113,9 @@ public class LuckPermsManager {
                 components.add(Button.of(ButtonStyle.SUCCESS, "ipban-" + uuid, "IPBan"));
             }
             confirmationChannel.sendMessageEmbeds(embed.build()).setActionRow(components).queue(m -> {
+                AtomicBoolean responded = new AtomicBoolean(false);
                 ButtonCollector collector = new ButtonCollector(m);
                 collector.setTime(60000L);
-                collector.setLimit(1);
                 collector.onCollect(button -> {
                     button.deferEdit().queue();
                     String id = button.getButton().getId();
@@ -108,6 +125,19 @@ public class LuckPermsManager {
                     if (id.equalsIgnoreCase("accept-perm-" + uuid)) {
                         inConfirmation.get(node.getKey()).setValue(true);
                         holder.data().add(node);
+                        if (holder instanceof User) {
+                            User user = (User) holder;
+                            ConfigSectionProvider<?> data = plugin.getLinkProvider().getData(user.getUsername());
+                            if (data != null) {
+                                List<String> perms = new ArrayList<>();
+                                if (data.contains("perms")) {
+                                    perms.addAll(data.getStringList("perms"));
+                                }
+                                perms.add(node.getKey());
+                                data.set("perms", perms);
+                                plugin.getLinkProvider().updateUser(user.getUsername(), data);
+                            }
+                        }
                         embed.setDescription(holder.getClass().getSimpleName() + ": " + holder.getFriendlyName() + " has been accepted to get the permission " + MarkdownUtil.monospace(node.getKey()) + "\nBy: " + button.getUser().getAsMention());
                     } else if (id.equalsIgnoreCase("deny-perm-" + uuid)) {
                         embed.setDescription(holder.getClass().getSimpleName() + ": " + holder.getFriendlyName() + " has been rejected from getting the permission " + MarkdownUtil.monospace(node.getKey()) + "\nBy: " + button.getUser().getAsMention());
@@ -115,13 +145,18 @@ public class LuckPermsManager {
                         embed.setDescription(holder.getClass().getSimpleName() + ": " + holder.getFriendlyName() + " has been banned `" + node.getKey() + "`\nBy: " + button.getUser().getAsMention());
                         plugin.dispatchCommand("ipban " + holder.getFriendlyName() + " Attempting to hi-jack server");
                     }
+                    responded.set(true);
                     collector.stop();
                 });
 
                 collector.onEnd(l -> {
+                    if (!responded.get()) {
+                        embed.setDescription(holder.getClass().getSimpleName() + ": " + holder.getFriendlyName() + " wanted to have the permission " + MarkdownUtil.monospace(node.getKey()));
+                    }
                     m.editMessageComponents(Collections.emptyList()).setEmbeds(embed.build()).queue(mm -> inConfirmation.remove(node.getKey()));
                     if (holder instanceof User) {
                         api.getUserManager().saveUser((User) holder);
+                        api.getMessagingService().ifPresent(s -> s.pushUserUpdate((User) holder));
                     } else if (holder instanceof Group) {
                         api.getGroupManager().saveGroup((Group) holder);
                     }

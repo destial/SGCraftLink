@@ -21,6 +21,10 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>8</source>
+                    <target>8</target>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -104,6 +108,12 @@
             <id>xenondevs</id>
             <url>https://repo.xenondevs.xyz/releases/</url>
         </repository>
+        <repository>
+            <id>nexus</id>
+            <name>Lumine Releases</name>
+            <url>https://mvn.lumine.io/repository/maven-public/</url>
+        </repository>
+
     </repositories>
 
     <dependencies>
@@ -122,19 +132,19 @@
         <dependency>
             <groupId>dev.folia</groupId>
             <artifactId>folia-api</artifactId>
-            <version>1.20.2-R0.1-SNAPSHOT</version>
+            <version>1.20.4-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.discordsrv</groupId>
             <artifactId>discordsrv</artifactId>
-            <version>1.26.0</version>
+            <version>1.27.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.comphenix.protocol</groupId>
             <artifactId>ProtocolLib</artifactId>
-            <version>5.0.0-SNAPSHOT</version>
+            <version>5.1.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -237,6 +247,42 @@
             <groupId>com.alessiodp.parties</groupId>
             <artifactId>parties-api</artifactId>
             <version>3.2.9</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.lumine</groupId>
+            <artifactId>Mythic-Dist</artifactId>
+            <version>5.6.1</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.lumine</groupId>
+            <artifactId>MythicCrucible</artifactId>
+            <version>2.0.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>dev.espi</groupId>
+            <artifactId>protectionstones</artifactId>
+            <version>2.10.2</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>dev.aurelium</groupId>
+            <artifactId>auraskills-api-bukkit</artifactId>
+            <version>2.0.7</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>cz.studiodamage</groupId>
+            <artifactId>NoteBlockMusicPlayer</artifactId>
+            <version>1.8.2</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.xxmicloxx</groupId>
+            <artifactId>NoteBlockAPI</artifactId>
+            <version>1.6.2</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

@@ -3,6 +3,7 @@ package xyz.destiall.sgcraftlink.utils;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.json.JSONException;
 import org.json.JSONObject;
+import xyz.destiall.sgcraftlink.proxy.misc.DataManager;
 
 public class DataResult {
     private final int status;
@@ -23,6 +24,7 @@ public class DataResult {
             try {
                 object = new JSONObject(content);
             } catch (JSONException e) {
+                DataManager.get().getPlugin().getLoggerProvider().error("Content Provided: " + content);
                 e.printStackTrace();
                 object = new JSONObject();
             }

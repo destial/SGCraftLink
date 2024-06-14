@@ -1,7 +1,7 @@
 package xyz.destiall.sgcraftlink.managers;
 
 import com.google.common.io.ByteStreams;
-import ninja.leaping.configurate.yaml.YAMLConfigurationLoader;
+import org.spongepowered.configurate.yaml.YamlConfigurationLoader;
 import xyz.destiall.sgcraftlink.SGCraftLinkVelocity;
 import xyz.destiall.sgcraftlink.providers.ConfigProvider;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityConfiguration;
@@ -46,7 +46,7 @@ public class VelocityConfigProvider extends ConfigProvider<VelocityConfiguration
         }
 
         try {
-            config = new VelocityConfiguration(YAMLConfigurationLoader.builder().setPath(configFile.toPath()).build().load());
+            config = new VelocityConfiguration(YamlConfigurationLoader.builder().path(configFile.toPath()).build().load());
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -75,7 +75,7 @@ public class VelocityConfigProvider extends ConfigProvider<VelocityConfiguration
     @Override
     public void save() {
         try {
-            YAMLConfigurationLoader.builder().setPath(new File(getDataFolder(), name).toPath()).build().save(config.getBase());
+            YamlConfigurationLoader.builder().path(new File(getDataFolder(), name).toPath()).build().save(config.getBase());
         } catch (Exception e) {
             e.printStackTrace();
         }

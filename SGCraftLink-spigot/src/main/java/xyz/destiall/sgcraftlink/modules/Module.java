@@ -10,6 +10,10 @@ public abstract class Module {
     protected YamlConfiguration config;
     protected File configFile;
 
+    public Module(SGCraftLinkSpigot plugin) {
+        this(plugin, null);
+    }
+
     public Module(SGCraftLinkSpigot plugin, String configName) {
         this.plugin = plugin;
 
@@ -24,6 +28,10 @@ public abstract class Module {
         } else {
             load();
         }
+    }
+
+    public boolean isEnabled() {
+        return config == null || config.getBoolean("enabled", false);
     }
 
     public void save() {

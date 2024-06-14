@@ -20,7 +20,23 @@ softdepend:
   - GriefPrevention
   - SuperiorSkyblock2
   - EconomyShopGUI
+  - MythicMobs
+  - MythicCrucible
+  - ProtectionStones
+  - Vault
+  - AuraSkills
+  - NoteBlockMusicPlayer
 commands:
+  tags:
+    permission: sgc.tags
+  invisframes:
+    permission: sgc.invisframes
+  rp:
+    permission: sgc.resourcepack
+    aliases:
+      - resourcepack
+      - texturepack
+      - tp
   font:
     permission: sgc.font
   datacomm:
@@ -49,6 +65,8 @@ commands:
     permission: sgc.casino
   migrate:
     permission: sgc.migrate
+  customrecipes:
+    permission: sgc.customrecipes
   reputation:
     permission: sgc.reputation
     aliases:

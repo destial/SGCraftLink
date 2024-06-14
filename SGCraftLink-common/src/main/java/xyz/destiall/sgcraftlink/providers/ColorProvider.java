@@ -3,8 +3,12 @@ package xyz.destiall.sgcraftlink.providers;
 import xyz.destiall.sgcraftlink.providers.component.ComponentProvider;
 
 import java.awt.*;
+import java.util.regex.Pattern;
 
 public abstract class ColorProvider {
+    public static final char COLOR_CHAR = '§';
+    public static final Pattern STRIP_COLOR_PATTERN = Pattern.compile( "(?i)" + COLOR_CHAR + "[0-9A-FK-ORX]" );
+
     private static ColorProvider provider;
     public static void setProvider(ColorProvider provider) {
         ColorProvider.provider = provider;
@@ -47,6 +51,14 @@ public abstract class ColorProvider {
         private final Color color;
         ChatColor(Color color) {
             this.color = color;
+        }
+
+        public static String strip(String input) {
+            if (input == null ) {
+                return null;
+            }
+
+            return STRIP_COLOR_PATTERN.matcher(ColorProvider.of(input)).replaceAll( "" );
         }
 
         public Color getColor() {

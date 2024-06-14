@@ -1,7 +1,7 @@
 package xyz.destiall.sgcraftlink.velocityproviders;
 
 import com.velocitypowered.api.proxy.ProxyServer;
-import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import xyz.destiall.sgcraftlink.providers.ColorProvider;
 import xyz.destiall.sgcraftlink.providers.PlayerProvider;
 import xyz.destiall.sgcraftlink.providers.component.ComponentProvider;
@@ -41,7 +41,7 @@ public class VelocityConsolePlayer extends PlayerProvider {
 
     @Override
     public void sendMessage(String msg) {
-        server.getConsoleCommandSource().sendMessage(Component.text(ColorProvider.of(msg)));
+        server.getConsoleCommandSource().sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize(ColorProvider.of(msg)));
     }
 
     @Override

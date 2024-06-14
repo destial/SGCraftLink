@@ -12,7 +12,7 @@ import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.Scheduler;
 import xyz.destiall.sgcraftlink.events.DataReceiveEvent;
-import xyz.destiall.sgcraftlink.modules.common.LuckPermsModule;
+import xyz.destiall.sgcraftlink.modules.hooks.LuckPermsHook;
 import xyz.destiall.sgcraftlink.utils.DataResult;
 import xyz.destiall.sgcraftlink.utils.HTTPManager;
 
@@ -40,7 +40,7 @@ public class DataModule extends Module implements CommandExecutor {
     private final Express express;
     private final HTTPManager manager;
 
-    private final List<LuckPermsModule.BackendRestMessenger> messengers;
+    private final List<LuckPermsHook.BackendRestMessenger> messengers;
 
     public DataModule(SGCraftLinkSpigot plugin) {
         super(plugin, "comms.yml");
@@ -88,7 +88,7 @@ public class DataModule extends Module implements CommandExecutor {
                         break;
                     }
                     case SGCraftLinkCommon.DATA_LUCKPERMS_SERVICE: {
-                        for (LuckPermsModule.BackendRestMessenger messenger : messengers) {
+                        for (LuckPermsHook.BackendRestMessenger messenger : messengers) {
                             messenger.handleIncomingMessage(json);
                         }
                         response.sendStatus(Status._200);
@@ -126,7 +126,12 @@ public class DataModule extends Module implements CommandExecutor {
 
     public void registerServer() {
         String authToken = getAuthToken();
-        Map<String, Object> data = createDataMap("port", config.getInt("port", 1034), "auth", authToken, "panel_id", config.getString("panel_id", "null"));
+        Map<String, Object> data = createDataMap(
+                "port", config.getInt("port", 1034),
+                "auth", authToken,
+                "panel_id", config.getString("panel_id", "null"),
+                "whitelisted", plugin.getServer().isWhitelistEnforced() || plugin.getServer().hasWhitelist()
+        );
         tryRegisterServer(data);
     }
 
@@ -206,6 +211,7 @@ public class DataModule extends Module implements CommandExecutor {
 
     @Override
     public void loadDefaultConfig() {
+        config.set("enabled", true);
         config.set("server-name", "lobby");
         config.set("port", 1034);
         config.set("proxy-port", 1035);
@@ -224,8 +230,8 @@ public class DataModule extends Module implements CommandExecutor {
             e.printStackTrace();
         }
 
-        List<LuckPermsModule.BackendRestMessenger> copy = new ArrayList<>(messengers);
-        for (LuckPermsModule.BackendRestMessenger c : copy) {
+        List<LuckPermsHook.BackendRestMessenger> copy = new ArrayList<>(messengers);
+        for (LuckPermsHook.BackendRestMessenger c : copy) {
             c.close();
         }
         messengers.clear();
@@ -249,7 +255,7 @@ public class DataModule extends Module implements CommandExecutor {
         return config.getString("server-name", "lobby");
     }
 
-    public List<LuckPermsModule.BackendRestMessenger> getMessengers() {
+    public List<LuckPermsHook.BackendRestMessenger> getMessengers() {
         return messengers;
     }
 
