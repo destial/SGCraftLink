@@ -1,4 +1,4 @@
-package xyz.destiall.sgcraftlink.modules.hooks.utils;
+package xyz.destiall.sgcraftlink.items.font;
 
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.ConfigurationSection;

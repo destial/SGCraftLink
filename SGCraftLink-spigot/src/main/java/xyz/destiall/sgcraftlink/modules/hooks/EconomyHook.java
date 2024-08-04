@@ -33,4 +33,7 @@ public class EconomyHook extends Module {
 
     @Override
     public void disable() {}
+
+    @Override
+    public void enable() {}
 }

@@ -18,9 +18,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CustomRecipes extends Module implements Listener {
-
     public CustomRecipes(SGCraftLinkSpigot plugin) {
-        super(plugin, null);
+        super(plugin);
     }
 
     @Override
@@ -29,9 +28,11 @@ public class CustomRecipes extends Module implements Listener {
     @Override
     public void disable() {}
 
+    @Override
+    public void enable() {}
+
     @EventHandler
-    public void onCraft(CraftItemEvent e) {
-    }
+    public void onCraft(CraftItemEvent e) {}
 
     @EventHandler
     public void onPickUp(EntityPickupItemEvent e) {

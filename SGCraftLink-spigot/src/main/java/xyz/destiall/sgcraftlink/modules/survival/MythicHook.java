@@ -2,20 +2,26 @@ package xyz.destiall.sgcraftlink.modules.survival;
 
 import com.destroystokyo.paper.event.player.PlayerArmorChangeEvent;
 import io.lumine.mythic.bukkit.MythicBukkit;
+import io.lumine.mythic.bukkit.entities.BukkitAllay;
 import io.lumine.mythic.bukkit.events.MythicConditionLoadEvent;
 import io.lumine.mythic.bukkit.events.MythicMechanicLoadEvent;
 import io.lumine.mythic.bukkit.events.MythicReloadedEvent;
 import io.lumine.mythic.bukkit.utils.Events;
 import io.lumine.mythic.core.items.MythicItem;
+import org.bukkit.entity.Allay;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
@@ -30,19 +36,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class MythicItemAbilities extends Module implements Listener {
+public class MythicHook extends Module implements Listener {
     private final MythicBukkit mythic;
     private List<MythicItemAbility> items;
 
-    public MythicItemAbilities(SGCraftLinkSpigot plugin) {
+    public MythicHook(SGCraftLinkSpigot plugin) {
         super(plugin, "item-abilities.yml");
         mythic = MythicBukkit.inst();
-
-        if (plugin.getServer().getPluginManager().getPlugin("MythicCrucible") == null) {
-            loadItems();
-        } else {
-            injectMechanics();
-        }
     }
 
     public void loadItems() {
@@ -52,6 +52,16 @@ public class MythicItemAbilities extends Module implements Listener {
             mitem.ifPresent(mythicItem -> items.add(new MythicItemAbility(mythicItem, config.getConfigurationSection(key))));
         }
         plugin.getLogger().info("Registered " + items.size() + " mythic item abilities");
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onInteractAllay(PlayerInteractAtEntityEvent e) {
+        Entity entity = e.getRightClicked();
+        if (!(entity instanceof Allay))
+            return;
+
+        if (mythic.getMobManager().isMythicMob(entity))
+            e.setCancelled(true);
     }
 
     public void injectMechanics() {
@@ -259,9 +269,19 @@ public class MythicItemAbilities extends Module implements Listener {
     public void disable() {
         if (items == null)
             return;
+
         for (MythicItemAbility item : items) {
             item.clear();
         }
         items.clear();
+    }
+
+    @Override
+    public void enable() {
+        if (plugin.getServer().getPluginManager().getPlugin("MythicCrucible") == null) {
+            loadItems();
+        } else {
+            injectMechanics();
+        }
     }
 }

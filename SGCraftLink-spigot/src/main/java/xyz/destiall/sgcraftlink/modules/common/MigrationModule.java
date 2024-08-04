@@ -45,16 +45,6 @@ public class MigrationModule extends Module implements Listener, CommandExecutor
         parties = plugin.getServer().getPluginManager().isPluginEnabled("Parties");
         griefPrevention = plugin.getServer().getPluginManager().isPluginEnabled("GriefPrevention");
         survivalPlots = plugin.getServer().getPluginManager().isPluginEnabled("SurvivalPlots");
-
-        plugin.getCommand("migrate").setExecutor(this);
-
-        for (String oldName : config.getKeys(false)) {
-            String newName = config.getString(oldName);
-            Migration migration = new Migration(this, oldName, newName);
-            awaitingMigration.add(migration);
-        }
-
-        plugin.getLogger().info("Registered " + awaitingMigration.size() + " awaiting migration " + new JSONArray(awaitingMigration.stream().map(m -> m.getOldName() + "->" + m.getNewName()).collect(Collectors.toList())).toString().replace("\"", ""));
     }
 
     @Override
@@ -138,6 +128,19 @@ public class MigrationModule extends Module implements Listener, CommandExecutor
         }
         save();
         awaitingMigration.clear();
+    }
+
+    @Override
+    public void enable() {
+        plugin.getCommand("migrate").setExecutor(this);
+
+        for (String oldName : config.getKeys(false)) {
+            String newName = config.getString(oldName);
+            Migration migration = new Migration(this, oldName, newName);
+            awaitingMigration.add(migration);
+        }
+
+        plugin.getLogger().info("Registered " + awaitingMigration.size() + " awaiting migration " + new JSONArray(awaitingMigration.stream().map(m -> m.getOldName() + "->" + m.getNewName()).collect(Collectors.toList())).toString().replace("\"", ""));
     }
 
     @Override

@@ -30,6 +30,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -55,7 +56,7 @@ public final class DataManager {
         instance = this;
         express = new Express();
         manager = new HTTPManager();
-
+        panelManager = new PanelManager(plugin, manager);
         ConfigProvider<?> config = plugin.getConfigProvider().createConfig("api-config.yml");
         registeredServers = new HashMap<>();
         messengers = new ArrayList<>();
@@ -102,6 +103,14 @@ public final class DataManager {
                         plugin.getLoggerProvider().info("Registered server " + server + " to " + registration.getIp() + ":" + serverport);
                         plugin.getDiscordProvider().getDiscordCommands().addPanelServer(server);
                         response.sendStatus(Status._200);
+                        panelManager.getServerDetails(registration).whenComplete((details, e) -> {
+                            if (e != null) {
+                                e.printStackTrace();
+                                return;
+                            }
+                            long maxMemory = details.getJSON().getJSONObject("attributes").getJSONObject("limits").getInt("memory") * 1000000L;
+                            registration.setMaxMemory(maxMemory);
+                        });
 
                         ComponentProvider<?> component = ColorProvider.ofComponent("&b&lꜱᴇʀᴠᴇʀ &8&l» &a" + serverName + " is now online! " + (whitelisted ? "(Whitelisted)" : ""));
                         component.setHover(ComponentHoverProvider.of(ComponentHoverProvider.Action.SHOW_TEXT, ColorProvider.ofComponent("&eClick to join " + server)));
@@ -266,7 +275,6 @@ public final class DataManager {
         });
 
         express.listen(port);
-        panelManager = new PanelManager(plugin, manager);
     }
 
     public List<LuckPermsManager.ProxyRestMessenger> getMessengers() {
@@ -308,13 +316,15 @@ public final class DataManager {
         CompletableFuture<Void> future = new CompletableFuture<>();
         AtomicInteger i = new AtomicInteger(registeredServers.size() - (origin != null ? 1 : 0));
         Map<String, DataResult> results = new ConcurrentHashMap<>();
+        AtomicBoolean called = new AtomicBoolean();
         for (String server : registeredServers.keySet()) {
             if (server.equalsIgnoreCase(origin))
                 continue;
 
             sendData(type, server, object, (result) -> {
                 results.put(server, result);
-                if (i.decrementAndGet() <= 0) {
+                if (i.decrementAndGet() <= 0 && !called.get()) {
+                    called.set(true);
                     callback.accept(results);
                     future.complete(null);
                 }

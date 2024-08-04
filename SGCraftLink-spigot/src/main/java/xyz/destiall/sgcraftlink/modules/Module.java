@@ -23,6 +23,7 @@ public abstract class Module {
         this.config = new YamlConfiguration();
         configFile = new File(plugin.getDataFolder(), configName);
         if (!configFile.exists()) {
+            config.set("enabled", false);
             loadDefaultConfig();
             save();
         } else {
@@ -31,7 +32,7 @@ public abstract class Module {
     }
 
     public boolean isEnabled() {
-        return config == null || config.getBoolean("enabled", false);
+        return config == null || config.getBoolean("enabled", true);
     }
 
     public void save() {
@@ -62,4 +63,6 @@ public abstract class Module {
     public abstract void loadDefaultConfig();
 
     public abstract void disable();
+
+    public abstract void enable();
 }

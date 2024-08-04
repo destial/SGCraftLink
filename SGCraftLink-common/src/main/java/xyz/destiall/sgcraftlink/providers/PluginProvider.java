@@ -3,6 +3,8 @@ package xyz.destiall.sgcraftlink.providers;
 import xyz.destiall.sgcraftlink.proxy.luckperms.LuckPermsManager;
 import xyz.destiall.sgcraftlink.proxy.misc.BirthdayManager;
 import xyz.destiall.sgcraftlink.proxy.misc.DataManager;
+import xyz.destiall.sgcraftlink.proxy.misc.PanelManager;
+import xyz.destiall.sgcraftlink.proxy.skins.PerServerSkin;
 
 import java.io.File;
 import java.util.Collection;
@@ -17,12 +19,10 @@ public interface PluginProvider {
     LuckPermsManager getLuckPermsManager();
     PluginMessageProvider getPluginMessager();
     SchedulerProvider<?> getScheduler();
-
     BirthdayManager getBirthdayManager();
-
     LoggerProvider getLoggerProvider();
-
     DataManager getDataManager();
+    PerServerSkin getPerServerSkin();
 
     PlayerProvider getPlayer(String name);
     PlayerProvider getPlayer(UUID uuid);

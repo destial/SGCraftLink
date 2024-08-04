@@ -22,16 +22,16 @@ public class TagModule extends Module implements CommandExecutor {
     public TagModule(SGCraftLinkSpigot plugin) {
         super(plugin, "tags.yml");
         allTags = new ArrayList<>();
-        enable();
-        plugin.getLogger().info("Registered " + allTags.size() + " tags " + new JSONArray(allTags.stream().map(Tag::getName).collect(Collectors.toList())).toString().replace("\"", ""));
-        plugin.getCommand("tags").setExecutor(this);
     }
 
+    @Override
     public void enable() {
         for (String key : config.getKeys(false)) {
             Tag tag = new Tag(key, config.getString(key));
             allTags.add(tag);
         }
+        plugin.getLogger().info("Registered " + allTags.size() + " tags " + new JSONArray(allTags.stream().map(Tag::getName).collect(Collectors.toList())).toString().replace("\"", ""));
+        plugin.getCommand("tags").setExecutor(this);
     }
 
     @Override

@@ -33,4 +33,7 @@ public class ProtectionStonesModule extends Module implements Listener {
 
     @Override
     public void disable() {}
+
+    @Override
+    public void enable() {}
 }

@@ -27,9 +27,6 @@ public class PiggyBankModule extends Module implements Listener {
 
     public PiggyBankModule(SGCraftLinkSpigot plugin) {
         super(plugin, "piggybank.yml");
-        cache();
-
-        plugin.getScheduler().runTaskTimerAsync(this::recacheOnline, 0L, 20L);
     }
 
     public void cache() {
@@ -78,9 +75,6 @@ public class PiggyBankModule extends Module implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onPickUp(EntityPickupItemEvent e) {
-        if (!config.getBoolean("enabled"))
-            return;
-
         if (!(e.getEntity() instanceof Player))
             return;
 
@@ -119,4 +113,10 @@ public class PiggyBankModule extends Module implements Listener {
 
     @Override
     public void disable() {}
+
+    @Override
+    public void enable() {
+        cache();
+        plugin.getScheduler().runTaskTimerAsync(this::recacheOnline, 0L, 20L);
+    }
 }

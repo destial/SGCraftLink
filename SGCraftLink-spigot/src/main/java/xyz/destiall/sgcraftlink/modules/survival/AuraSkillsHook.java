@@ -34,4 +34,7 @@ public class AuraSkillsHook extends Module {
 
     @Override
     public void disable() {}
+
+    @Override
+    public void enable() {}
 }

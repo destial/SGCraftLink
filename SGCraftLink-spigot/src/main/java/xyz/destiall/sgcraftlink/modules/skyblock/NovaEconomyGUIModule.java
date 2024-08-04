@@ -23,9 +23,6 @@ public class NovaEconomyGUIModule extends Module {
 
     public NovaEconomyGUIModule(SGCraftLinkSpigot plugin) {
         super(plugin, "nova-worth.yml");
-        if (!config.getBoolean("enabled"))
-            return;
-        inject();
     }
 
     @Override
@@ -213,5 +210,10 @@ public class NovaEconomyGUIModule extends Module {
         if (!config.getBoolean("enabled"))
             return;
         revert();
+    }
+
+    @Override
+    public void enable() {
+        inject();
     }
 }

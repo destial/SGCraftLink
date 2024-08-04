@@ -23,10 +23,6 @@ import static xyz.destiall.sgcraftlink.SGCraftLinkSpigot.color;
 public class ResourcePackModule extends Module implements CommandExecutor {
     public ResourcePackModule(SGCraftLinkSpigot plugin) {
         super(plugin, "resource-pack.yml");
-        if (!config.getBoolean("enabled"))
-            return;
-
-        plugin.getCommand("rp").setExecutor(this);
     }
 
     @Override
@@ -37,10 +33,12 @@ public class ResourcePackModule extends Module implements CommandExecutor {
 
     @Override
     public void disable() {
-        if (!config.getBoolean("enabled"))
-            return;
-
         plugin.getCommand("rp").setExecutor(null);
+    }
+
+    @Override
+    public void enable() {
+        plugin.getCommand("rp").setExecutor(this);
     }
 
     private static final char[] hexCode = "0123456789ABCDEF".toCharArray();

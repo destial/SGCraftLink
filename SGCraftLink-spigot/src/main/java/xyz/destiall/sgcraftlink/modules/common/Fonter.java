@@ -28,8 +28,8 @@ import org.json.JSONObject;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.items.FontUserSettings;
 import xyz.destiall.sgcraftlink.modules.Module;
-import xyz.destiall.sgcraftlink.modules.hooks.utils.DefaultFont;
-import xyz.destiall.sgcraftlink.modules.hooks.utils.Font;
+import xyz.destiall.sgcraftlink.items.font.DefaultFont;
+import xyz.destiall.sgcraftlink.items.font.Font;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -61,7 +61,6 @@ public class Fonter extends Module implements CommandExecutor, TabExecutor {
     public Fonter(SGCraftLinkSpigot plugin) {
         super(plugin, "fonts.yml");
         plugin.getCommand("font").setExecutor(this);
-        enable();
     }
 
     @Override
@@ -141,6 +140,7 @@ public class Fonter extends Module implements CommandExecutor, TabExecutor {
         return users.getOrDefault(player, new FontUserSettings(defaultFont));
     }
 
+    @Override
     public void enable() {
         if (!config.getBoolean("enabled", true))
             return;
@@ -341,6 +341,7 @@ public class Fonter extends Module implements CommandExecutor, TabExecutor {
                             }
                         }
                     }
+
                     return;
                 }
 
@@ -406,9 +407,18 @@ public class Fonter extends Module implements CommandExecutor, TabExecutor {
             JSONArray extra = object.getJSONArray("extra");
             JSONArray update = new JSONArray();
             for (int i = 0; i < extra.length(); i++) {
-                JSONObject obj = extra.getJSONObject(i);
-                chatComponent(obj, font, checkChar);
-                update.put(obj);
+                try {
+                    JSONObject obj = extra.getJSONObject(i);
+                    chatComponent(obj, font, checkChar);
+                    update.put(obj);
+                } catch (Exception e) {
+                    String string = extra.getString(i);
+                    JSONObject obj = new JSONObject();
+                    obj.put("text", string);
+                    chatComponent(obj, font, checkChar);
+                    update.put(obj);
+                }
+
             }
             object.put("extra", update);
         }

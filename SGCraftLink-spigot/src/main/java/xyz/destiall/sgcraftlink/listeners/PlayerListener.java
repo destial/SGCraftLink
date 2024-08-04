@@ -17,7 +17,7 @@ import static xyz.destiall.sgcraftlink.SGCraftLinkCommon.createDataMap;
 
 public class PlayerListener extends Module implements Listener {
     public PlayerListener(SGCraftLinkSpigot plugin) {
-        super(plugin, null);
+        super(plugin);
     }
 
     @EventHandler
@@ -68,4 +68,7 @@ public class PlayerListener extends Module implements Listener {
 
     @Override
     public void disable() {}
+
+    @Override
+    public void enable() {}
 }

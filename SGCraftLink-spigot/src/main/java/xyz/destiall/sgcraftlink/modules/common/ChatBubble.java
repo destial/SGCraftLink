@@ -77,8 +77,6 @@ public class ChatBubble extends Module implements Listener, CommandExecutor {
 
     public ChatBubble(SGCraftLinkSpigot plugin) {
         super(plugin, "chat-bubble.yml");
-
-        plugin.getCommand("chatbubble").setExecutor(this);
     }
 
     public void disable() {
@@ -86,6 +84,11 @@ public class ChatBubble extends Module implements Listener, CommandExecutor {
         chatBubbles.clear();
 
         plugin.getCommand("chatbubble").setExecutor(null);
+    }
+
+    @Override
+    public void enable() {
+        plugin.getCommand("chatbubble").setExecutor(this);
     }
 
     @EventHandler(ignoreCancelled = true)

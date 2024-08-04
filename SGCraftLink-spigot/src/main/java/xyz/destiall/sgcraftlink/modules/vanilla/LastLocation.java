@@ -31,6 +31,34 @@ public class LastLocation extends Module implements CommandExecutor, Listener {
         super(plugin, "last-locations.yml");
         lastLocations = new ConcurrentHashMap<>();
         pending = new HashMap<>();
+        plugin.getCommand("lastloc").setExecutor(this);
+    }
+
+    public void setLastLocation(Player player) {
+        lastLocations.put(player.getName(), player.getLocation());
+
+        if (config == null) {
+            config = YamlConfiguration.loadConfiguration(configFile);
+        }
+        config.set(player.getName(), lastLocations.get(player.getName()));
+    }
+
+    @Override
+    public void loadDefaultConfig() {
+        config.set("enabled", true);
+    }
+
+    @Override
+    public void disable() {
+        save();
+        lastLocations.clear();
+        pending.clear();
+
+        plugin.getCommand("lastloc").setExecutor(null);
+    }
+
+    @Override
+    public void enable() {
         try {
             for (String name : config.getKeys(false)) {
                 try {
@@ -47,29 +75,6 @@ public class LastLocation extends Module implements CommandExecutor, Listener {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-        plugin.getCommand("lastloc").setExecutor(this);
-    }
-
-    public void setLastLocation(Player player) {
-        lastLocations.put(player.getName(), player.getLocation());
-
-        if (config == null) {
-            config = YamlConfiguration.loadConfiguration(configFile);
-        }
-        config.set(player.getName(), lastLocations.get(player.getName()));
-    }
-
-    @Override
-    public void loadDefaultConfig() {}
-
-    @Override
-    public void disable() {
-        save();
-        lastLocations.clear();
-        pending.clear();
-
-        plugin.getCommand("lastloc").setExecutor(null);
     }
 
     public void teleportLastLocation(Player player) {

@@ -19,6 +19,9 @@ public class TryMeModule extends Module implements CommandExecutor {
     public void disable() {}
 
     @Override
+    public void enable() {}
+
+    @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         return false;
     }

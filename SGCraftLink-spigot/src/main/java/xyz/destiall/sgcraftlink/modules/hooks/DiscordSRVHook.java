@@ -6,6 +6,7 @@ import github.scarsz.discordsrv.api.events.DiscordGuildMessageReceivedEvent;
 import github.scarsz.discordsrv.dependencies.jda.api.EmbedBuilder;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Message;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.TextChannel;
+import jdk.internal.joptsimple.internal.Strings;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -27,12 +28,11 @@ import xyz.destiall.sgcraftlink.modules.Module;
 
 import java.awt.*;
 import java.io.IOException;
+import java.util.Arrays;
 
 public class DiscordSRVHook extends Module implements Listener, CommandExecutor {
     public DiscordSRVHook(SGCraftLinkSpigot plugin) {
         super(plugin, "news.yml");
-        DiscordSRV.api.subscribe(this);
-        plugin.getCommand("sgcdiscord").setExecutor(this);
     }
 
     @EventHandler
@@ -79,11 +79,16 @@ public class DiscordSRVHook extends Module implements Listener, CommandExecutor 
 
     @Subscribe
     public void discordMessageReceived(DiscordGuildMessageReceivedEvent event) {
-        if (config.getString("news-channel-id") == null)
+        if (!config.contains("news-channel-id"))
             return;
 
-        if (!event.getMessage().getChannel().getId().equals(config.getString("news-channel-id")))
-            return;
+        if (config.isString("news-channel-id")) {
+            if (!event.getMessage().getChannel().getId().equals(config.getString("news-channel-id")))
+                return;
+        } else if (config.isList("news-channel-id")) {
+            if (!config.getStringList("news-channel-id").contains(event.getMessage().getChannel().getId()))
+                return;
+        }
 
         TextComponent message = format(event.getMessage(), config.getString("news-message", "&c&l[NEWS] &bThere is a new announcement on #{channel}!"));
         TextComponent hoverMessage = format(event.getMessage(), config.getString("news-message-hover"));
@@ -115,6 +120,7 @@ public class DiscordSRVHook extends Module implements Listener, CommandExecutor 
 
     @Override
     public void loadDefaultConfig() {
+        config.set("enabled", true);
         config.set("news-channel-id", "709232194589163530");
         config.set("news-message", "&c&l[NEWS] &bThere is a new announcement on #{channel}!");
         config.set("news-message-hover", "&bClick to view it!");
@@ -128,9 +134,15 @@ public class DiscordSRVHook extends Module implements Listener, CommandExecutor 
     }
 
     @Override
+    public void enable() {
+        DiscordSRV.api.subscribe(this);
+        plugin.getCommand("sgcdiscord").setExecutor(this);
+    }
+
+    @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String s, @NotNull String[] args) {
         if (args.length < 2) {
-            sender.sendMessage("Usage: /sgcdiscord [rankup|rankdown|saveaccounts|reload] [player] [rank]");
+            sender.sendMessage("Usage: /sgcdiscord [rankup|rankdown|saveaccounts|embed|reload] [player|color] [rank|msg]");
             return false;
         }
 
@@ -150,6 +162,21 @@ public class DiscordSRVHook extends Module implements Listener, CommandExecutor 
             String rank = args[2];
             embed.setAuthor(playerName + " has ranked down to " + rank, null, DiscordSRV.getAvatarUrl(playerName, null));
             embed.setColor(Color.ORANGE);
+            DiscordSRV.getPlugin().getMainTextChannel().sendMessageEmbeds(embed.build()).queue();
+            return false;
+        }
+
+        if (args[0].equalsIgnoreCase("embed")) {
+            EmbedBuilder embed = new EmbedBuilder();
+            int start = 2;
+            try {
+                Color color = Color.decode(args[1]);
+                embed.setColor(color);
+            } catch (Exception e) {
+                start = 1;
+            }
+            String msg = Strings.join(Arrays.copyOfRange(args, start, args.length), " ");
+            embed.setAuthor(msg);
             DiscordSRV.getPlugin().getMainTextChannel().sendMessageEmbeds(embed.build()).queue();
             return false;
         }

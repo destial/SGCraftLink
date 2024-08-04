@@ -38,38 +38,6 @@ public class ReputationModule extends Module implements Listener, CommandExecuto
     public ReputationModule(SGCraftLinkSpigot plugin) {
         super(plugin, "reputation.yml");
         this.reputations = new CopyOnWriteArrayList<>();
-
-        if (!config.getBoolean("module-enabled"))
-            return;
-
-        ConfigurationSection players = config.getConfigurationSection("players");
-        if (players != null) {
-            for (String name : players.getKeys(false)) {
-                getReputation(name);
-            }
-        }
-
-        if (!config.contains("format")) {
-            loadFormatConfig();
-        }
-
-        maxRating = config.getInt("format.max-rating", 5);
-        formatRating = config.getString("format.rating", "{rating}/{max-rating} {icon}");
-        icon = config.getString("format.icon", "★");
-
-        possibleRatings = new ArrayList<>();
-        for (int i = 0; i <= maxRating; i++) {
-            possibleRatings.add(String.valueOf(i));
-        }
-
-        plugin.getCommand("reputation").setExecutor(this);
-
-        saveTask = plugin.getScheduler().runTaskTimerAsync(() -> {
-            if (dirty) {
-                save();
-                dirty = false;
-            }
-        }, 600L, 600L);
     }
 
     public int getMaxRating() {
@@ -188,7 +156,7 @@ public class ReputationModule extends Module implements Listener, CommandExecuto
 
     @Override
     public void loadDefaultConfig() {
-        config.set("module-enabled", true);
+        config.set("enabled", true);
         loadFormatConfig();
     }
 
@@ -212,6 +180,38 @@ public class ReputationModule extends Module implements Listener, CommandExecuto
         plugin.getCommand("reputation").setExecutor(null);
         saveTask.cancel();
         save();
+    }
+
+    @Override
+    public void enable() {
+        ConfigurationSection players = config.getConfigurationSection("players");
+        if (players != null) {
+            for (String name : players.getKeys(false)) {
+                getReputation(name);
+            }
+        }
+
+        if (!config.contains("format")) {
+            loadFormatConfig();
+        }
+
+        maxRating = config.getInt("format.max-rating", 5);
+        formatRating = config.getString("format.rating", "{rating}/{max-rating} {icon}");
+        icon = config.getString("format.icon", "★");
+
+        possibleRatings = new ArrayList<>();
+        for (int i = 0; i <= maxRating; i++) {
+            possibleRatings.add(String.valueOf(i));
+        }
+
+        plugin.getCommand("reputation").setExecutor(this);
+
+        saveTask = plugin.getScheduler().runTaskTimerAsync(() -> {
+            if (dirty) {
+                save();
+                dirty = false;
+            }
+        }, 600L, 600L);
     }
 
     @Override

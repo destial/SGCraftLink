@@ -59,9 +59,9 @@ public abstract class LinkProvider {
     }
 
     public boolean link(String name, User user) {
-        Map<String, Object> map = new HashMap<>();
-        map.put("id", user.getId());
-        map.put("messages", 0);
+        ConfigSectionProvider<?> map = plugin.getConfigProvider().createSection();
+        map.set("id", user.getId());
+        map.set("messages", 0);
         database.set(name, map);
 
         PlayerProvider player = plugin.getPlayer(name);

@@ -21,7 +21,7 @@ public class ReportCommand implements CommandProvider, TabProvider {
             "Xraying", "Begging", "Hacking", "Scamming", "Griefing",
             "Stealing", "TP-Killing", "Advertising", "Spamming", "Racism",
             "Exploiting", "Ban Evading", "Harassing", "Doxxing", "Botting",
-            "Name-Change", "Compromised", "Abusing"
+            "Name-Change", "Compromised", "Abusing", "Autoclicking"
     };
 
     public ReportCommand(PluginProvider plugin) {

@@ -26,6 +26,7 @@ softdepend:
   - Vault
   - AuraSkills
   - NoteBlockMusicPlayer
+  - BetonQuest
 commands:
   tags:
     permission: sgc.tags
@@ -43,6 +44,14 @@ commands:
     permission: sgc.datacomm
   opd:
     permission: opd.gamemode
+  iymyg:
+    permission: iymyg.gamemode
+    aliases:
+      - eos
+  trash:
+    permission: sgc.trash
+    aliases:
+      - t
   betatest:
     permission: betatest.admin
   sgcreload:

@@ -18,22 +18,6 @@ public class TriggerModule extends Module implements Listener {
     public TriggerModule(SGCraftLinkSpigot plugin) {
         super(plugin, "triggers.yml");
         triggers = new HashMap<>();
-
-        ConfigurationSection triggerSection = config.getConfigurationSection("triggers");
-        if (triggerSection == null)
-            return;
-
-        for (String key : triggerSection.getKeys(false)) {
-            String pattern = triggerSection.getString(key + ".pattern");
-            boolean caseInsensitive = triggerSection.getBoolean(key + ".case-insensitive");
-            String target = triggerSection.getString(key + ".replace");
-            if (pattern == null || target == null)
-                continue;
-            Pattern p = Pattern.compile(pattern, caseInsensitive ? Pattern.CASE_INSENSITIVE : 0);
-            triggers.put(p, target);
-        }
-
-        plugin.getLogger().info("Registered " + triggers.size() + " triggers " + new JSONArray(triggers.values()).toString().replace("\"", ""));
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -55,5 +39,25 @@ public class TriggerModule extends Module implements Listener {
     @Override
     public void disable() {
         triggers.clear();
+    }
+
+    @Override
+    public void enable() {
+        ConfigurationSection triggerSection = config.getConfigurationSection("triggers");
+        if (triggerSection == null)
+            return;
+
+        for (String key : triggerSection.getKeys(false)) {
+            String pattern = triggerSection.getString(key + ".pattern");
+            boolean caseInsensitive = triggerSection.getBoolean(key + ".case-insensitive");
+            String target = triggerSection.getString(key + ".replace");
+            if (pattern == null || target == null)
+                continue;
+            Pattern p = Pattern.compile(pattern, caseInsensitive ? Pattern.CASE_INSENSITIVE : 0);
+            triggers.put(p, target);
+        }
+
+        plugin.getLogger().info("Registered " + triggers.size() + " triggers " + new JSONArray(triggers.values()).toString().replace("\"", ""));
+
     }
 }

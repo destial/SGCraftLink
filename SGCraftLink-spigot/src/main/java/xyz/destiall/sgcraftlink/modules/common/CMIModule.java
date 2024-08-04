@@ -35,8 +35,6 @@ public class CMIModule extends Module implements Listener, CommandExecutor {
 
     public CMIModule(SGCraftLinkSpigot plugin) {
         super(plugin);
-
-        plugin.getCommand("sgcwake").setExecutor(this);
     }
 
     @Override
@@ -45,6 +43,11 @@ public class CMIModule extends Module implements Listener, CommandExecutor {
     @Override
     public void disable() {
         plugin.getCommand("sgcwake").setExecutor(null);
+    }
+
+    @Override
+    public void enable() {
+        plugin.getCommand("sgcwake").setExecutor(this);
     }
 
     @EventHandler
@@ -57,10 +60,12 @@ public class CMIModule extends Module implements Listener, CommandExecutor {
             String reason = e.getUser().getJailedReason();
             long until = e.getUser().getJailedUntil();
             long duration = e.getUser().getJailedForTime();
+            CMIUser ex = CMI.getInstance().getPlayerManager().getUser(e.getUser().getJailedBy());
+            String executor = ex != null ? ex.getName() : "Server";
 
             Map<String, Object> json = createDataMap(
                     "username", e.getUser().getName(),
-                    "executor", CMI.getInstance().getPlayerManager().getUser(e.getUser().getJailedBy()).getName(),
+                    "executor", executor,
                     "reason", reason,
                     "until", until,
                     "duration", duration,

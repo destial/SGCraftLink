@@ -29,17 +29,6 @@ public class ScheduledCommands extends Module implements CommandExecutor {
 
     public ScheduledCommands(SGCraftLinkSpigot plugin) {
         super(plugin, "scheduled-commands.yml");
-
-        for (String datekey : config.getKeys(false)) {
-            Date date = new Date(Long.parseLong(datekey));
-            List<String> commands = config.getStringList(datekey);
-
-            scheduleCommand(date, commands);
-        }
-
-        plugin.getLogger().info("Registered " + scheduledCommands.size() + " scheduled commands");
-
-        plugin.getCommand("schedulecmd").setExecutor(this);
     }
 
     @Override
@@ -51,6 +40,16 @@ public class ScheduledCommands extends Module implements CommandExecutor {
                 cmd.commands.addAll(commands);
                 return;
             }
+        }
+
+        Date now = new Date();
+        if (date.before(now)) {
+            plugin.getScheduler().runTaskLater(() -> {
+                for (String command : commands) {
+                    plugin.dispatchCommand(command);
+                }
+            }, 2L);
+            return;
         }
 
         final ScheduledCommand cmd = new ScheduledCommand();
@@ -80,12 +79,27 @@ public class ScheduledCommands extends Module implements CommandExecutor {
     @Override
     public void disable() {
         save();
+
         for (ScheduledCommand cmd : scheduledCommands) {
             cmd.timer.cancel();
         }
         scheduledCommands.clear();
 
         plugin.getCommand("schedulecmd").setExecutor(null);
+    }
+
+    @Override
+    public void enable() {
+        for (String datekey : config.getKeys(false)) {
+            Date date = new Date(Long.parseLong(datekey));
+            List<String> commands = config.getStringList(datekey);
+
+            scheduleCommand(date, commands);
+        }
+
+        plugin.getLogger().info("Registered " + scheduledCommands.size() + " scheduled commands");
+
+        plugin.getCommand("schedulecmd").setExecutor(this);
     }
 
     @Override
@@ -101,7 +115,7 @@ public class ScheduledCommands extends Module implements CommandExecutor {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length < 1) {
-            sender.sendMessage(color("&cUsage: /schedulecmd [list|clear|date]"));
+            sender.sendMessage(color("&cUsage: /schedulecmd [list|date]"));
             return false;
         }
 
@@ -111,16 +125,6 @@ public class ScheduledCommands extends Module implements CommandExecutor {
             for (ScheduledCommand cmd : scheduledCommands) {
                 sender.sendMessage(color("&b" +(++i) + ". " + DateFormat.getDateTimeInstance().format(cmd.date) + ": " + String.join("|", cmd.commands)));
             }
-            return false;
-        }
-
-        if (args[0].equalsIgnoreCase("clear")) {
-            sender.sendMessage(color("&aCleared all scheduled commands."));
-            for (ScheduledCommand cmd : scheduledCommands) {
-                cmd.timer.cancel();
-            }
-            scheduledCommands.clear();
-            save();
             return false;
         }
 
@@ -148,6 +152,7 @@ public class ScheduledCommands extends Module implements CommandExecutor {
         String cmd = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
         scheduleCommand(date, cmd);
         sender.sendMessage(color("&aScheduled command \"" + cmd + "\" to run on " + DateFormat.getDateTimeInstance().format(date)));
+        save();
         return true;
     }
 

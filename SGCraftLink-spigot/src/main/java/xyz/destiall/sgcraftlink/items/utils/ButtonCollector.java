@@ -1,4 +1,4 @@
-package xyz.destiall.sgcraftlink.modules.hooks.utils;
+package xyz.destiall.sgcraftlink.items.utils;
 
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Message;
 import github.scarsz.discordsrv.dependencies.jda.api.events.interaction.ButtonClickEvent;

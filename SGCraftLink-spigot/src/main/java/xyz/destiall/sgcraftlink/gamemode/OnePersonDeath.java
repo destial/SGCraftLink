@@ -40,28 +40,8 @@ public class OnePersonDeath extends Module implements Listener, CommandExecutor,
 
     public OnePersonDeath(SGCraftLinkSpigot plugin) {
         super(plugin, "one-person-death.yml");
-        plugin.getCommand("opd").setExecutor(this);
         this.groups = new HashSet<>();
         this.dyingCache = ConcurrentHashMap.newKeySet();
-
-        ConfigurationSection groupSection = config.getConfigurationSection("groups");
-        if (groupSection == null)
-            return;
-
-        for (String key : groupSection.getKeys(false)) {
-            ConfigurationSection group = groupSection.getConfigurationSection(key);
-            if (group == null)
-                continue;
-
-            OPDGroup opdGroup = new OPDGroup();
-            for (String name : group.getKeys(false)) {
-                UUID uuid = UUID.fromString(group.getString(name));
-                Pair<UUID, String> pair = new Pair<>(uuid, name);
-                opdGroup.getMembers().add(pair);
-            }
-
-            groups.add(opdGroup);
-        }
     }
 
     @Override
@@ -101,6 +81,29 @@ public class OnePersonDeath extends Module implements Listener, CommandExecutor,
     @Override
     public void disable() {
         plugin.getCommand("opd").setExecutor(null);
+    }
+
+    @Override
+    public void enable() {
+        plugin.getCommand("opd").setExecutor(this);
+        ConfigurationSection groupSection = config.getConfigurationSection("groups");
+        if (groupSection == null)
+            return;
+
+        for (String key : groupSection.getKeys(false)) {
+            ConfigurationSection group = groupSection.getConfigurationSection(key);
+            if (group == null)
+                continue;
+
+            OPDGroup opdGroup = new OPDGroup();
+            for (String name : group.getKeys(false)) {
+                UUID uuid = UUID.fromString(group.getString(name));
+                Pair<UUID, String> pair = new Pair<>(uuid, name);
+                opdGroup.getMembers().add(pair);
+            }
+
+            groups.add(opdGroup);
+        }
     }
 
     public boolean isEnabled() {

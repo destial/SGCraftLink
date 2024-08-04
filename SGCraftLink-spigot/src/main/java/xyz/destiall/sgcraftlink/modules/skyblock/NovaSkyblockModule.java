@@ -40,13 +40,30 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class NovaSkyblockModule extends Module implements Listener {
     private static final String NOVA_PREFIX = "NOVA";
-    private final NovaKeyParser parser;
-    private final SkyblockProtectionIntegration prot;
-    private final Set<Location> generatedBlocks;
+    private NovaKeyParser parser;
+    private SkyblockProtectionIntegration prot;
+    private Set<Location> generatedBlocks;
 
     public NovaSkyblockModule(SGCraftLinkSpigot plugin) {
         super(plugin, "nova-skyblock.yml");
+    }
 
+    @Override
+    public void loadDefaultConfig() {
+        config.set("enabled", true);
+    }
+
+    @Override
+    public void disable() {
+        if (generatedBlocks != null) {
+            List<Location> blocks = new ArrayList<>(generatedBlocks);
+            config.set("generated-blocks", blocks);
+        }
+        save();
+    }
+
+    @Override
+    public void enable() {
         parser = new NovaKeyParser();
         prot = new SkyblockProtectionIntegration(plugin);
         generatedBlocks = ConcurrentHashMap.newKeySet();
@@ -88,18 +105,6 @@ public class NovaSkyblockModule extends Module implements Listener {
 
             generatedBlocks.removeIf(removal::contains);
         }, 5L, 2L);
-    }
-
-    @Override
-    public void loadDefaultConfig() {}
-
-    @Override
-    public void disable() {
-        if (generatedBlocks != null) {
-            List<Location> blocks = new ArrayList<>(generatedBlocks);
-            config.set("generated-blocks", blocks);
-        }
-        save();
     }
 
     private static final LazyReference<WorldRecordService> worldRecordService = new LazyReference<WorldRecordService>() {

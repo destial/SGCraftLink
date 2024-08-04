@@ -32,9 +32,9 @@ import org.json.JSONArray;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.Scheduler;
 import xyz.destiall.sgcraftlink.modules.hooks.EconomyHook;
-import xyz.destiall.sgcraftlink.modules.hooks.utils.ExpiryConcurrentHashMap;
+import xyz.destiall.sgcraftlink.items.utils.ExpiryConcurrentHashMap;
 import xyz.destiall.sgcraftlink.modules.survival.AuraSkillsHook;
-import xyz.destiall.sgcraftlink.modules.survival.MythicItemAbilities;
+import xyz.destiall.sgcraftlink.modules.survival.MythicHook;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -635,7 +635,7 @@ public class MythicItemAbility {
                 String entityType = abilities.get("summon");
                 if (entityType.startsWith("mythicmobs:")) {
                     String name = entityType.substring("mythicmobs:".length());
-                    MythicItemAbilities mm = plugin.getModule(MythicItemAbilities.class);
+                    MythicHook mm = plugin.getModule(MythicHook.class);
                     assert mm != null;
                     MythicMob mob = mm.getMythic().getMobManager().getMythicMob(name).orElse(null);
                     if (mob == null) {

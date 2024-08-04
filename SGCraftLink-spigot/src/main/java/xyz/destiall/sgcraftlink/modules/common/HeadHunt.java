@@ -67,90 +67,6 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
 
     public HeadHunt(SGCraftLinkSpigot plugin) {
         super(plugin, "hunt.yml");
-
-        head = config.getItemStack("egg", head);
-        String metaString = head.getItemMeta().getAsString();
-        int index = metaString.indexOf(",display{");
-        blockData = metaString.substring(0, index != -1 ? index : metaString.length());
-        if (index != -1) {
-            blockData += "}";
-        }
-
-        blockData = "minecraft:" + head.getType().name().toLowerCase() + blockData;
-
-        List<?> locations = config.getList("locations");
-        if (locations != null) {
-            for (Object loc : locations) {
-                try {
-                    Location location = (Location) loc;
-                    hunts.add(location);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        ConfigurationSection playersSection = config.getConfigurationSection("players");
-        if (playersSection != null) {
-            for (String key : playersSection.getKeys(false)) {
-                int amount = playersSection.getInt(key, 0);
-                players.put(key, amount);
-            }
-        }
-
-        plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
-            for (Location location : hunts) {
-                World world = location.getWorld();
-                if (world == null)
-                    continue;
-
-                if (!location.getChunk().isLoaded())
-                    continue;
-
-                Location particleLoc = location.clone().add(0.5, 0.5, 0.5);
-                world.spawnParticle(Particle.DUST_COLOR_TRANSITION, particleLoc, 1, new Particle.DustTransition(Color.GREEN, Color.YELLOW, 1));
-            }
-        }, 1L, 2L);
-
-        plugin.getScheduler().runTaskTimer(() -> {
-            Location random = hunts.stream().findAny().orElse(null);
-            if (random == null) {
-                if (checkOtherServers) {
-                    DataModule module = plugin.getModule(DataModule.class);
-                    if (module == null)
-                        return;
-
-                    module.sendProxyData(SGCraftLinkCommon.DATA_GET_HEADHUNT, emptyDataMap(), (result) -> {
-                        if (result.isSuccess()) {
-                            JSONObject obj = result.getJSON();
-                            JSONObject score = obj.getJSONObject("score");
-                            for (String player : score.keySet()) {
-                                otherServerPlayers.put(player, score.getInt(player));
-                            }
-
-                            if (obj.getInt("total") != 0) {
-                                plugin.getServer().getOnlinePlayers().forEach(player -> {
-                                    player.sendMessage(color("&eThere are still more eggs in other servers!"));
-                                    JSONObject servers = obj.getJSONObject("servers");
-                                    for (String server : obj.keySet()) {
-                                        player.sendMessage(color("&e" + server + ": " + servers.getInt(server) + " left"));
-                                    }
-                                });
-                            } else {
-                                checkOtherServers = false;
-                            }
-                        }
-                    });
-                }
-                return;
-            }
-
-            plugin.getServer().getOnlinePlayers().forEach(player -> {
-                player.sendMessage(color("&eThere might be an egg at " + random.getBlockX() + " " + random.getBlockZ()));
-            });
-        }, 20L * 10, 20L * 60L * 15L);
-
-        plugin.getCommand("egg").setExecutor(this);
     }
 
     public Set<Location> getHunts() {
@@ -341,6 +257,93 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
         players.clear();
 
         plugin.getCommand("egg").setExecutor(null);
+    }
+
+    @Override
+    public void enable() {
+        head = config.getItemStack("egg", head);
+        String metaString = head.getItemMeta().getAsString();
+        int index = metaString.indexOf(",display{");
+        blockData = metaString.substring(0, index != -1 ? index : metaString.length());
+        if (index != -1) {
+            blockData += "}";
+        }
+
+        blockData = "minecraft:" + head.getType().name().toLowerCase() + blockData;
+
+        List<?> locations = config.getList("locations");
+        if (locations != null) {
+            for (Object loc : locations) {
+                try {
+                    Location location = (Location) loc;
+                    hunts.add(location);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        ConfigurationSection playersSection = config.getConfigurationSection("players");
+        if (playersSection != null) {
+            for (String key : playersSection.getKeys(false)) {
+                int amount = playersSection.getInt(key, 0);
+                players.put(key, amount);
+            }
+        }
+
+        plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+            for (Location location : hunts) {
+                World world = location.getWorld();
+                if (world == null)
+                    continue;
+
+                if (!location.getChunk().isLoaded())
+                    continue;
+
+                Location particleLoc = location.clone().add(0.5, 0.5, 0.5);
+                world.spawnParticle(Particle.DUST_COLOR_TRANSITION, particleLoc, 1, new Particle.DustTransition(Color.GREEN, Color.YELLOW, 1));
+            }
+        }, 1L, 2L);
+
+        plugin.getScheduler().runTaskTimer(() -> {
+            Location random = hunts.stream().findAny().orElse(null);
+            if (random == null) {
+                if (checkOtherServers) {
+                    DataModule module = plugin.getModule(DataModule.class);
+                    if (module == null)
+                        return;
+
+                    module.sendProxyData(SGCraftLinkCommon.DATA_GET_HEADHUNT, emptyDataMap(), (result) -> {
+                        if (result.isSuccess()) {
+                            JSONObject obj = result.getJSON();
+                            JSONObject score = obj.getJSONObject("score");
+                            for (String player : score.keySet()) {
+                                otherServerPlayers.put(player, score.getInt(player));
+                            }
+
+                            if (obj.getInt("total") != 0) {
+                                plugin.getServer().getOnlinePlayers().forEach(player -> {
+                                    player.sendMessage(color("&eThere are still more eggs in other servers!"));
+                                    JSONObject servers = obj.getJSONObject("servers");
+                                    for (String server : obj.keySet()) {
+                                        player.sendMessage(color("&e" + server + ": " + servers.getInt(server) + " left"));
+                                    }
+                                });
+                            } else {
+                                checkOtherServers = false;
+                            }
+                        }
+                    });
+                }
+                return;
+            }
+
+            plugin.getServer().getOnlinePlayers().forEach(player -> {
+                player.sendMessage(color("&eThere might be an egg at " + random.getBlockX() + " " + random.getBlockZ()));
+            });
+        }, 20L * 10, 20L * 60L * 15L);
+
+        plugin.getCommand("egg").setExecutor(this);
     }
 
     public int getAmount(String name) {

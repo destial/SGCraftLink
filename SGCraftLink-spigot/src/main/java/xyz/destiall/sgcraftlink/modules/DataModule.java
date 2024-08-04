@@ -1,5 +1,6 @@
 package xyz.destiall.sgcraftlink.modules;
 
+import com.Zrips.CMI.CMI;
 import express.Express;
 import express.utils.Status;
 import org.bukkit.command.Command;
@@ -47,90 +48,29 @@ public class DataModule extends Module implements CommandExecutor {
         express = new Express();
         manager = new HTTPManager();
         messengers = new ArrayList<>();
-        express.post("/", (request, response) -> {
-            try {
-                String body = SGCraftLinkCommon.convertStreamToString(request.getBody()).trim();
-                JSONObject json = new JSONObject(body);
-
-                if (!json.has("data-type")) {
-                    plugin.getLogger().warning("Request does not have any data-type!");
-                    response.sendStatus(Status._500);
-                    return;
-                }
-
-                String datatype = json.getString("data-type").toUpperCase();
-                plugin.getLogger().warning("Received data " + datatype);
-
-                if (!datatype.equalsIgnoreCase(SGCraftLinkCommon.DATA_SERVER_REGISTER)) {
-                    String auth = config.getString("authentication-key");
-                    if (!request.getHeader("X-Authorization").contains(auth)) {
-                        response.sendStatus(Status._403);
-                        return;
-                    }
-                }
-
-                switch (datatype) {
-                    case SGCraftLinkCommon.DATA_EXECUTE_COMMAND: {
-                        JSONArray commands = json.getJSONArray("commands");
-                        for (int i = 0; i < commands.length(); i++) {
-                            String command = commands.getString(i);
-                            plugin.dispatchCommand(command);
-                        }
-                        response.sendStatus(Status._200);
-                        break;
-                    }
-                    case SGCraftLinkCommon.DATA_SERVER_UNREGISTER: {
-                        plugin.getLogger().warning("Proxy has unregistered this server! This is probably due to a proxy plugin reload!");
-                        plugin.getLogger().warning("We will try to register this server again!");
-                        response.sendStatus(Status._200);
-
-                        plugin.getScheduler().runTaskLaterAsync(this::registerServer, 20L * 15L);
-                        break;
-                    }
-                    case SGCraftLinkCommon.DATA_LUCKPERMS_SERVICE: {
-                        for (LuckPermsHook.BackendRestMessenger messenger : messengers) {
-                            messenger.handleIncomingMessage(json);
-                        }
-                        response.sendStatus(Status._200);
-                        break;
-                    }
-                    default: {
-                        if (DataReceiveEvent.handlers.getRegisteredListeners() == null || DataReceiveEvent.handlers.getRegisteredListeners().length == 0) {
-                            plugin.getLogger().warning("Received data " + datatype + " but have no implementation!");
-                            response.sendStatus(Status._201);
-                        } else {
-                            DataReceiveEvent event = new DataReceiveEvent(json);
-                            try {
-                                plugin.getServer().getPluginManager().callEvent(event);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                            if (event.getResponse() == null) {
-                                response.sendStatus(event.getStatus());
-                            } else {
-                                response.setStatus(event.getStatus()).send(event.getResponse().toString());
-                            }
-                        }
-                        break;
-                    }
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-                response.sendStatus(Status._201);
-            }
-        });
-        express.listen(config.getInt("port"));
         plugin.getCommand("datacomm").setExecutor(this);
-        registerServer();
     }
 
     public void registerServer() {
         String authToken = getAuthToken();
+        boolean whitelisted = plugin.getServer().hasWhitelist();
+        if (!whitelisted) {
+            // Method is not available in 1.8 :(
+            try {
+                whitelisted = plugin.getServer().isWhitelistEnforced();
+            } catch (NoSuchMethodError e) {}
+        }
+        if (!whitelisted) {
+            // try CMI
+            try {
+                whitelisted = CMI.getInstance().getConfigManager().isMaintenance();
+            } catch (NoClassDefFoundError e) {}
+        }
         Map<String, Object> data = createDataMap(
                 "port", config.getInt("port", 1034),
                 "auth", authToken,
                 "panel_id", config.getString("panel_id", "null"),
-                "whitelisted", plugin.getServer().isWhitelistEnforced() || plugin.getServer().hasWhitelist()
+                "whitelisted", whitelisted
         );
         tryRegisterServer(data);
     }
@@ -237,6 +177,85 @@ public class DataModule extends Module implements CommandExecutor {
         messengers.clear();
 
         express.stop();
+    }
+
+    @Override
+    public void enable() {
+        express.post("/", (request, response) -> {
+            try {
+                String body = SGCraftLinkCommon.convertStreamToString(request.getBody()).trim();
+                JSONObject json = new JSONObject(body);
+
+                if (!json.has("data-type")) {
+                    plugin.getLogger().warning("Request does not have any data-type!");
+                    response.sendStatus(Status._500);
+                    return;
+                }
+
+                String datatype = json.getString("data-type").toUpperCase();
+                plugin.getLogger().warning("Received data " + datatype);
+
+                if (!datatype.equalsIgnoreCase(SGCraftLinkCommon.DATA_SERVER_REGISTER)) {
+                    String auth = config.getString("authentication-key");
+                    if (!request.getHeader("X-Authorization").contains(auth)) {
+                        response.sendStatus(Status._403);
+                        return;
+                    }
+                }
+
+                switch (datatype) {
+                    case SGCraftLinkCommon.DATA_EXECUTE_COMMAND: {
+                        JSONArray commands = json.getJSONArray("commands");
+                        for (int i = 0; i < commands.length(); i++) {
+                            String command = commands.getString(i);
+                            plugin.dispatchCommand(command);
+                        }
+                        response.sendStatus(Status._200);
+                        break;
+                    }
+                    case SGCraftLinkCommon.DATA_SERVER_UNREGISTER: {
+                        plugin.getLogger().warning("Proxy has unregistered this server! This is probably due to a proxy plugin reload!");
+                        plugin.getLogger().warning("We will try to register this server again!");
+                        response.sendStatus(Status._200);
+
+                        plugin.getScheduler().runTaskLaterAsync(this::registerServer, 20L * 15L);
+                        break;
+                    }
+                    case SGCraftLinkCommon.DATA_LUCKPERMS_SERVICE: {
+                        for (LuckPermsHook.BackendRestMessenger messenger : messengers) {
+                            messenger.handleIncomingMessage(json);
+                        }
+                        response.sendStatus(Status._200);
+                        break;
+                    }
+                    default: {
+                        // Intellisense is probably highlighting this to be removed, but in 1.8, this is still possible!
+                        if (DataReceiveEvent.handlers.getRegisteredListeners() == null || DataReceiveEvent.handlers.getRegisteredListeners().length == 0) {
+                            plugin.getLogger().warning("Received data " + datatype + " but have no implementation!");
+                            response.sendStatus(Status._201);
+                        } else {
+                            DataReceiveEvent event = new DataReceiveEvent(json);
+                            try {
+                                plugin.getServer().getPluginManager().callEvent(event);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            if (event.getResponse() == null) {
+                                response.sendStatus(event.getStatus());
+                            } else {
+                                response.setStatus(event.getStatus()).send(event.getResponse().toString());
+                            }
+                        }
+                        break;
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                response.sendStatus(Status._201);
+            }
+        });
+        express.listen(config.getInt("port"));
+        registerServer();
     }
 
     public String getAuthToken() {

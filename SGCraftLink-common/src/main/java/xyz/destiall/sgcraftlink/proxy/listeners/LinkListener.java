@@ -66,10 +66,18 @@ public class LinkListener extends ListenerAdapter {
             if (!node.getKey().startsWith("suffix"))
                 return;
 
-            String[] args = node.getKey().split("//.");
-            String suffix = ColorProvider.ChatColor.strip(args[args.length - 1]);
-
-            plugin.getScheduler().schedule(() -> plugin.getDiscordProvider().updateNickname(member, playerName, suffix), 1L, TimeUnit.SECONDS);
+            plugin.getScheduler().schedule(() -> {
+                String name = playerName;
+                if (player != null) {
+                    String suffix = player.getSuffix();
+                    if (suffix != null) {
+                        name += " " + suffix;
+                    }
+                }
+                try {
+                    member.modifyNickname(name).delay(3, TimeUnit.SECONDS).queue(q -> {}, err -> {});
+                } catch (Exception ignored) {}
+            }, 1L, TimeUnit.SECONDS);
         });
     }
 
@@ -208,6 +216,10 @@ public class LinkListener extends ListenerAdapter {
                 u.data().remove(node);
             }
         });
+
+        if (!member.getRoles().contains(plugin.getDiscordProvider().getLinkedRole())) {
+            member.getGuild().addRoleToMember(member, plugin.getDiscordProvider().getLinkedRole()).queue();
+        }
 
         plugin.getDiscordProvider().updateNickname(member, player);
         plugin.getDiscordProvider().updateRankStatus(player, member);

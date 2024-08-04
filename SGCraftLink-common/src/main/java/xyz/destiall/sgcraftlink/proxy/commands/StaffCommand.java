@@ -142,6 +142,22 @@ public class StaffCommand implements CommandProvider, TabProvider {
                     }
                     sender.sendMessageComponent(message);
                 });
+            } else if (type.equalsIgnoreCase("jail")) {
+                String server = args[2];
+                String time = args[3];
+                String reason = args[4].replace("_", " ");
+                Map<String, Object> data = SGCraftLinkCommon.createCommandsData("jail " + playerName + " " + time + " " + "r:" + reason);
+                plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, server.toLowerCase(), data, (result) -> {
+                    ComponentProvider<?> message;
+                    if (result.isSuccess()) {
+                        message = ComponentProvider.of("Jailed in server " + server + " for " + playerName);
+                        message.setColor(ColorProvider.ChatColor.GREEN);
+                    } else {
+                        message = ComponentProvider.of("Unable to jail in server " + server + " for " + playerName);
+                        message.setColor(ColorProvider.ChatColor.RED);
+                    }
+                    sender.sendMessageComponent(message);
+                });
             }
         }
     }

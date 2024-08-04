@@ -1,6 +1,5 @@
 package xyz.destiall.sgcraftlink;
 
-import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Plugin;
 import xyz.destiall.sgcraftlink.bungeeproviders.BungeeClickEvent;
@@ -9,6 +8,7 @@ import xyz.destiall.sgcraftlink.bungeeproviders.BungeeConnectedServer;
 import xyz.destiall.sgcraftlink.bungeeproviders.BungeeConsolePlayer;
 import xyz.destiall.sgcraftlink.bungeeproviders.BungeeHoverEvent;
 import xyz.destiall.sgcraftlink.bungeeproviders.BungeeLogger;
+import xyz.destiall.sgcraftlink.bungeeproviders.BungeePerServerSkin;
 import xyz.destiall.sgcraftlink.bungeeproviders.BungeePlayer;
 import xyz.destiall.sgcraftlink.bungeeproviders.BungeeScheduler;
 import xyz.destiall.sgcraftlink.bungeeproviders.BungeeTextComponent;
@@ -31,6 +31,7 @@ import xyz.destiall.sgcraftlink.proxy.commands.StaffCommand;
 import xyz.destiall.sgcraftlink.proxy.luckperms.LuckPermsManager;
 import xyz.destiall.sgcraftlink.proxy.misc.BirthdayManager;
 import xyz.destiall.sgcraftlink.proxy.misc.DataManager;
+import xyz.destiall.sgcraftlink.proxy.skins.PerServerSkin;
 
 import java.util.Collection;
 import java.util.UUID;
@@ -47,6 +48,7 @@ public final class SGCraftLinkWaterfall extends Plugin implements PluginProvider
     private LuckPermsManager luckPermsManager;
     private BirthdayManager birthdayManager;
     private DataManager dataManager;
+    private BungeePerServerSkin perServerSkin;
     private boolean shuttingDown = false;
 
     @Override
@@ -140,6 +142,11 @@ public final class SGCraftLinkWaterfall extends Plugin implements PluginProvider
         } catch (Exception e) {
             e.printStackTrace();
         }
+        try {
+            perServerSkin = new BungeePerServerSkin(this);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         getProxy().registerChannel(SGCraftLinkCommon.CHANNEL);
         getProxy().getPluginManager().registerListener(this, new BungeePMListener(this));
@@ -149,7 +156,6 @@ public final class SGCraftLinkWaterfall extends Plugin implements PluginProvider
         getProxy().getPluginManager().registerCommand(this, new BungeeCommand(this, "discord", new DiscordCommand(this)));
         getProxy().getPluginManager().registerCommand(this, new BungeeCommand(this, "sgc", new StaffCommand(this)));
         getProxy().getPluginManager().registerCommand(this, new BungeeCommand(this, "birthday", new BirthdayCommand(this)));
-        //getProxy().getPluginManager().registerCommand(this, new BungeeCommand(this, "vote", new TempVoteCommand(this)));
     }
 
     @Override
@@ -222,5 +228,10 @@ public final class SGCraftLinkWaterfall extends Plugin implements PluginProvider
     @Override
     public DataManager getDataManager() {
         return dataManager;
+    }
+
+    @Override
+    public PerServerSkin getPerServerSkin() {
+        return perServerSkin;
     }
 }
