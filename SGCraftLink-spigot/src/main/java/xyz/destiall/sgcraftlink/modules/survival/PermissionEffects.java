@@ -89,4 +89,9 @@ public class PermissionEffects extends Module implements Listener {
             applyEffects(player);
         }
     }
+
+    @Override
+    public boolean isUniversallyCompatible() {
+        return true;
+    }
 }

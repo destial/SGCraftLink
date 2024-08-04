@@ -182,4 +182,9 @@ public class ScheduledCommands extends Module implements CommandExecutor {
             return Duration.ZERO;
         }
     }
+
+    @Override
+    public boolean isUniversallyCompatible() {
+        return true;
+    }
 }

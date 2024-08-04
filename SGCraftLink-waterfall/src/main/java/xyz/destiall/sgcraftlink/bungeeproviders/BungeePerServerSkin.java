@@ -2,7 +2,6 @@ package xyz.destiall.sgcraftlink.bungeeproviders;
 
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.connection.Server;
-import net.md_5.bungee.event.EventHandler;
 import net.skinsrestorer.api.event.SkinApplyEvent;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
 import xyz.destiall.sgcraftlink.proxy.skins.PerServerSkin;

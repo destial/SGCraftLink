@@ -130,4 +130,9 @@ public class LastLocation extends Module implements CommandExecutor, Listener {
         }
         return true;
     }
+
+    @Override
+    public boolean isUniversallyCompatible() {
+        return true;
+    }
 }

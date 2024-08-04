@@ -117,149 +117,38 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
                 getLogger().warning("This version cannot run Economy Hook!");
             }
         }
-        try {
-            testPaperOr1_8Above();
-            modules.add(new HeadHunt(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run HeadHunt!");
-        }
-        try {
-            testPaperOr1_8Above();
-            modules.add(new TagModule(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run Tags!");
-        }
-        try {
-            testPaperOr1_8Above();
-            modules.add(new LastLocation(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run LastLocation!");
-        }
-        try {
-            modules.add(new TriggerModule(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run Triggers!");
-        }
-        try {
-            testPaperOr1_8Above();
-            modules.add(new Redeemables(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run Redeemables!");
-        }
-        try {
-            testPaperOr1_8Above();
-            modules.add(new TrashModule(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run Trash!");
-        }
-        try {
-            modules.add(new ScheduledCommands(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run ScheduledCommands!");
-        }
-        try {
-            testPaperOr1_8Above();
-            modules.add(new ReputationModule(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run Reputation!");
-        }
-        try {
-            testPaperOr1_8Above();
-            modules.add(new BirthdayModule(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run Birthdays!");
-        }
-        try {
-            testPaperOr1_8Above();
-            modules.add(new MigrationModule(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run Migration!");
-        }
-        try {
-            modules.add(new DataModule(this));
-        } catch (Exception e) {
-            e.printStackTrace();
-            getLogger().warning("This version cannot run Data Communication!");
-        }
 
+        saveDefaultConfig();
+        modules.add(new TagModule(this));
+        modules.add(new HeadHunt(this));
+        modules.add(new LastLocation(this));
+        modules.add(new TriggerModule(this));
+        modules.add(new Redeemables(this));
+        modules.add(new TrashModule(this));
+        modules.add(new ScheduledCommands(this));
+        modules.add(new ReputationModule(this));
+        modules.add(new BirthdayModule(this));
+        modules.add(new MigrationModule(this));
+        modules.add(new DataModule(this));
         modules.add(new PlayerListener(this));
-        try {
-            testPaperOr1_8Above();
-            modules.add(new AirBlockPlaceListener(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run Anti-Air Block Place!");
-        }
-
-        try {
-            testPaperOr1_8Above();
-            modules.add(new Casino(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run Casino!");
-        }
-
-        try {
-            testPaperOr1_8Above();
-            modules.add(new OnePersonDeath(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run OnePersonDeath!");
-        }
-
-        try {
-            testPaperOr1_8Above();
-            modules.add(new MoveIfGay(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run IfYouMoveYouGay!");
-        }
-
-        try {
-            testPaperOr1_8Above();
-            modules.add(new InvisFrames(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run InvisFrames!");
-        }
-
-        try {
-            testPaperOr1_8Above();
-            modules.add(new ResourcePackModule(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run ResourcePack!");
-        }
-
-        try {
-            testPaperOr1_8Above();
-            modules.add(new HealthBar(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run HealthBar!");
-        }
-
-        try {
-            testPaperOr1_8Above();
-            modules.add(new CustomFood(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run CustomFood!");
-        }
+        modules.add(new AirBlockPlaceListener(this));
+        modules.add(new Casino(this));
+        modules.add(new OnePersonDeath(this));
+        modules.add(new MoveIfGay(this));
+        modules.add(new InvisFrames(this));
+        modules.add(new ResourcePackModule(this));
+        modules.add(new HealthBar(this));
+        modules.add(new CustomFood(this));
+        modules.add(new VanillaAddon(this));
+        modules.add(new PermissionEffects(this));
 
         if (getServer().getPluginManager().isPluginEnabled("ProtocolLib")) {
-            try {
-                testPaperOr1_8Above();
-                modules.add(new ChatBubble(this));
-            } catch (Exception e) {
-                getLogger().warning("This version cannot run ChatBubbles!");
-            }
-            try {
-                testPaperOr1_8Above();
-                modules.add(new Fonter(this));
-            } catch (Exception e) {
-                getLogger().warning("This version cannot run Fonter!");
-            }
+            modules.add(new ChatBubble(this));
+            modules.add(new Fonter(this));
         }
 
         if (getServer().getPluginManager().isPluginEnabled("CMI")) {
-            try {
-                modules.add(new CMIModule(this));
-            } catch (Exception e) {
-                getLogger().warning("This version cannot run CMIModule!");
-            }
+            modules.add(new CMIModule(this));
         }
 
         /**
@@ -269,118 +158,58 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
          **/
 
         if (getServer().getPluginManager().isPluginEnabled("PiggyBank")) {
-            try {
-                testPaperOr1_8Above();
-                modules.add(new PiggyBankModule(this));
-            } catch (Exception e) {
-                getLogger().warning("This version cannot run PiggyBankModule!");
-            }
+            modules.add(new PiggyBankModule(this));
         }
-
-        saveDefaultConfig();
 
         if (getServer().getPluginManager().isPluginEnabled("LuckPerms")) {
             RegisteredServiceProvider<LuckPerms> provider = getServer().getServicesManager()
                     .getRegistration(LuckPerms.class);
             if (provider != null) {
-                try {
-                    modules.add(new LuckPermsHook(this, provider.getProvider()));
-                } catch (Exception e) {
-                    getLogger().warning("This version cannot run LuckPermsModule!");
-                }
+                modules.add(new LuckPermsHook(this, provider.getProvider()));
             }
         }
 
         if (getServer().getPluginManager().isPluginEnabled("DiscordSRV")) {
-            try {
-                testPaperOr1_8Above();
-                modules.add(new DiscordSRVHook(this));
-            } catch (Exception e) {
-                getLogger().warning("This version cannot run DiscordSRV Hook!");
-            }
+            modules.add(new DiscordSRVHook(this));
         }
 
         if (getServer().getPluginManager().isPluginEnabled("CoreProtect")) {
-            try {
-                testPaperOr1_8Above();
-                modules.add(new CoreProtectHook(this));
-            } catch (Exception e) {
-                getLogger().warning("This version cannot run CoreProtect Hook!");
-            }
+            modules.add(new CoreProtectHook(this));
         }
 
         if (getServer().getPluginManager().isPluginEnabled("dynmap")) {
-            try {
-                modules.add(new DynmapHook(this));
-            } catch (Exception e) {
-                getLogger().warning("This version cannot run Dynmap Hook!");
-            }
+            modules.add(new DynmapHook(this));
         }
 
         if (getServer().getPluginManager().isPluginEnabled("Nova")) {
             if (getServer().getPluginManager().isPluginEnabled("SuperiorSkyblock2")) {
-                try {
-                    modules.add(new NovaSkyblockModule(this));
-                } catch (Exception e) {
-                    getLogger().warning("This version cannot run Nova & SuperiorSkyblock Hook!");
-                }
+                modules.add(new NovaSkyblockModule(this));
             }
             if (getServer().getPluginManager().isPluginEnabled("EconomyShopGUI")) {
-                try {
-                    modules.add(new NovaEconomyGUIModule(this));
-                } catch (Exception e) {
-                    getLogger().warning("This version cannot run Nova & EconomyShopGUI Hook!");
-                }
+                modules.add(new NovaEconomyGUIModule(this));
             }
         }
 
         if (getServer().getPluginManager().isPluginEnabled("AuraSkills")) {
-            try {
-                modules.add(new AuraSkillsHook(this));
-            } catch (Exception e) {
-                getLogger().warning("This version cannot run MythicItemAbilities Hook!");
-            }
+            modules.add(new AuraSkillsHook(this));
         }
 
         if (getServer().getPluginManager().isPluginEnabled("MythicMobs")) {
-            try {
-                modules.add(new MythicHook(this));
-            } catch (Exception e) {
-                getLogger().warning("This version cannot run MythicItemAbilities Hook!");
-            }
-        }
-
-        if (getServer().getPluginManager().isPluginEnabled("ProtectionStones")) {
-            try {
-                modules.add(new ProtectionStonesModule(this));
-            } catch (Exception e) {
-                getLogger().warning("This version cannot run ProtectionStonesHook!");
-            }
-        }
-
-        if (getServer().getPluginManager().isPluginEnabled("NoteBlockMusicPlayer")) {
-            try {
-                modules.add(new MusicHook(this));
-            } catch (Exception e) {
-                getLogger().warning("This version cannot run MusicHook!");
-            }
+            modules.add(new MythicHook(this));
         }
 
         if (getServer().getPluginManager().isPluginEnabled("MythicCrucible")) {
-            try {
-                testPaperOr1_8Above();
-                modules.add(new CustomRecipes(this));
-            } catch (Exception e) {
-                getLogger().warning("This version cannot run CustomRecipes!");
-            }
+            modules.add(new CustomRecipes(this));
         }
 
-        try {
-            testPaperOr1_8Above();
-            modules.add(new VanillaAddon(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run VanillaAddon!");
+        if (getServer().getPluginManager().isPluginEnabled("ProtectionStones")) {
+            modules.add(new ProtectionStonesModule(this));
         }
+
+        if (getServer().getPluginManager().isPluginEnabled("NoteBlockMusicPlayer")) {
+            modules.add(new MusicHook(this));
+        }
+
 
         if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             try {
@@ -389,13 +218,6 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             } catch (Exception e) {
                 getLogger().warning("This version cannot run PAPI Hook!");
             }
-        }
-
-        try {
-            testPaperOr1_8Above();
-            modules.add(new PermissionEffects(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run PermissionEffects!");
         }
 
         Iterator<Module> it = modules.iterator();
@@ -407,9 +229,13 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             }
 
             try {
+                if (!module.isUniversallyCompatible()) {
+                    testPaperOr1_8Above();
+                }
                 module.enable();
             } catch (Exception e) {
                 getLogger().warning("This version cannot run " + module.getClass().getSimpleName());
+                it.remove();
                 continue;
             }
 

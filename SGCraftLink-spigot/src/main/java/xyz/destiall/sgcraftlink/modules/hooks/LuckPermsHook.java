@@ -29,9 +29,9 @@ import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.events.DataReceiveEvent;
 import xyz.destiall.sgcraftlink.items.Pair;
+import xyz.destiall.sgcraftlink.items.utils.ButtonCollector;
 import xyz.destiall.sgcraftlink.modules.DataModule;
 import xyz.destiall.sgcraftlink.modules.Module;
-import xyz.destiall.sgcraftlink.items.utils.ButtonCollector;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -395,5 +395,10 @@ public class LuckPermsHook extends Module implements Listener {
             messenger.init();
             return messenger;
         }
+    }
+
+    @Override
+    public boolean isUniversallyCompatible() {
+        return true;
     }
 }

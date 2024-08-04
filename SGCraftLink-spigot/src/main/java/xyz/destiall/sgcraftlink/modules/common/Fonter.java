@@ -27,9 +27,9 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.items.FontUserSettings;
-import xyz.destiall.sgcraftlink.modules.Module;
 import xyz.destiall.sgcraftlink.items.font.DefaultFont;
 import xyz.destiall.sgcraftlink.items.font.Font;
+import xyz.destiall.sgcraftlink.modules.Module;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;

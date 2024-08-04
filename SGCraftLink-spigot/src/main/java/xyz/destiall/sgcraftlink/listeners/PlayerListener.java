@@ -71,4 +71,9 @@ public class PlayerListener extends Module implements Listener {
 
     @Override
     public void enable() {}
+
+    @Override
+    public boolean isUniversallyCompatible() {
+        return true;
+    }
 }

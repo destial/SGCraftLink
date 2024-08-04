@@ -3,7 +3,6 @@ package xyz.destiall.sgcraftlink.providers;
 import xyz.destiall.sgcraftlink.proxy.luckperms.LuckPermsManager;
 import xyz.destiall.sgcraftlink.proxy.misc.BirthdayManager;
 import xyz.destiall.sgcraftlink.proxy.misc.DataManager;
-import xyz.destiall.sgcraftlink.proxy.misc.PanelManager;
 import xyz.destiall.sgcraftlink.proxy.skins.PerServerSkin;
 
 import java.io.File;

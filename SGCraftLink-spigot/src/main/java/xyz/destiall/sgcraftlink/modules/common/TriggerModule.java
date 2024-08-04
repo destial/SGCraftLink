@@ -58,6 +58,10 @@ public class TriggerModule extends Module implements Listener {
         }
 
         plugin.getLogger().info("Registered " + triggers.size() + " triggers " + new JSONArray(triggers.values()).toString().replace("\"", ""));
+    }
 
+    @Override
+    public boolean isUniversallyCompatible() {
+        return true;
     }
 }

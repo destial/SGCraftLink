@@ -160,6 +160,11 @@ public class DataModule extends Module implements CommandExecutor {
     }
 
     @Override
+    public boolean isUniversallyCompatible() {
+        return true;
+    }
+
+    @Override
     public void disable() {
         plugin.getCommand("datacomm").setExecutor(null);
 

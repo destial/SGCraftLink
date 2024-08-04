@@ -11,7 +11,6 @@ import xyz.destiall.sgcraftlink.providers.component.ComponentProvider;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 

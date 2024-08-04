@@ -31,7 +31,6 @@ import xyz.destiall.sgcraftlink.proxy.commands.StaffCommand;
 import xyz.destiall.sgcraftlink.proxy.luckperms.LuckPermsManager;
 import xyz.destiall.sgcraftlink.proxy.misc.BirthdayManager;
 import xyz.destiall.sgcraftlink.proxy.misc.DataManager;
-import xyz.destiall.sgcraftlink.proxy.misc.PanelManager;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityClickEvent;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityColor;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityConnectedServer;

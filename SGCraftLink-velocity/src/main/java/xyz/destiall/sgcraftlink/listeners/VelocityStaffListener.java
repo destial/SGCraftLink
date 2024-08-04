@@ -1,12 +1,8 @@
 package xyz.destiall.sgcraftlink.listeners;
 
 import com.velocitypowered.api.event.Subscribe;
-import com.velocitypowered.api.event.connection.ConnectionHandshakeEvent;
 import com.velocitypowered.api.event.connection.DisconnectEvent;
-import com.velocitypowered.api.event.connection.LoginEvent;
 import com.velocitypowered.api.event.connection.PostLoginEvent;
-import com.velocitypowered.api.event.player.ServerConnectedEvent;
-import com.velocitypowered.api.event.player.ServerPostConnectEvent;
 import xyz.destiall.sgcraftlink.SGCraftLinkVelocity;
 import xyz.destiall.sgcraftlink.providers.PlayerProvider;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityPlayer;

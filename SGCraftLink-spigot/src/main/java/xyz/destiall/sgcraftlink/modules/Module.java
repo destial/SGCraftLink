@@ -65,4 +65,8 @@ public abstract class Module {
     public abstract void disable();
 
     public abstract void enable();
+
+    public boolean isUniversallyCompatible() {
+        return false;
+    }
 }

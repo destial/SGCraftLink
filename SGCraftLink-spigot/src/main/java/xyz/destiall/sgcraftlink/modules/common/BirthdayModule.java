@@ -104,4 +104,9 @@ public class BirthdayModule extends Module implements Listener {
             }
         }, 60L);
     }
+
+    @Override
+    public boolean isUniversallyCompatible() {
+        return true;
+    }
 }

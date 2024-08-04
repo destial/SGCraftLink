@@ -35,6 +35,11 @@ public class TagModule extends Module implements CommandExecutor {
     }
 
     @Override
+    public boolean isUniversallyCompatible() {
+        return true;
+    }
+
+    @Override
     public void loadDefaultConfig() {
         config.set("vip", "&dVIP");
     }
