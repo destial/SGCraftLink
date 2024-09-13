@@ -17,8 +17,8 @@ import xyz.destiall.sgcraftlink.modules.Module;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CustomRecipes extends Module implements Listener {
-    public CustomRecipes(SGCraftLinkSpigot plugin) {
+public class MythicRecipes extends Module implements Listener {
+    public MythicRecipes(SGCraftLinkSpigot plugin) {
         super(plugin);
     }
 

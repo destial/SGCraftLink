@@ -31,7 +31,7 @@ public class LastLocation extends Module implements CommandExecutor, Listener {
         super(plugin, "last-locations.yml");
         lastLocations = new ConcurrentHashMap<>();
         pending = new HashMap<>();
-        plugin.getCommand("lastloc").setExecutor(this);
+        setCommandExecutor("lastloc");
     }
 
     public void setLastLocation(Player player) {
@@ -50,11 +50,10 @@ public class LastLocation extends Module implements CommandExecutor, Listener {
 
     @Override
     public void disable() {
-        save();
+        unsetCommandExecutor("lastloc");
+        saveConfig();
         lastLocations.clear();
         pending.clear();
-
-        plugin.getCommand("lastloc").setExecutor(null);
     }
 
     @Override
@@ -64,7 +63,7 @@ public class LastLocation extends Module implements CommandExecutor, Listener {
                 try {
                     Location loc = config.getLocation(name);
                     lastLocations.put(name, loc);
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     String w = config.getString(name + ".world");
                     if (w == null)
                         continue;
@@ -92,7 +91,7 @@ public class LastLocation extends Module implements CommandExecutor, Listener {
         lastLocations.remove(e.getPlayer().getName());
         config.set(e.getPlayer().getName(), null);
 
-        save();
+        saveConfig();
     }
 
     @EventHandler
@@ -114,6 +113,11 @@ public class LastLocation extends Module implements CommandExecutor, Listener {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (!isEnabled()) {
+            sender.sendMessage(color("&cThis feature is not enabled!"));
+            return false;
+        }
+
         if (args.length != 2) {
             sender.sendMessage(color("&cUsage: /lastloc [set/tp] [player]"));
             return false;
@@ -131,8 +135,4 @@ public class LastLocation extends Module implements CommandExecutor, Listener {
         return true;
     }
 
-    @Override
-    public boolean isUniversallyCompatible() {
-        return true;
-    }
 }

@@ -10,6 +10,7 @@ softdepend:
   - LuckPerms
   - PlaceholderAPI
   - ProtocolLib
+  - PacketWrapper
   - dynmap
   - PiggyBank
   - TryMe
@@ -27,7 +28,14 @@ softdepend:
   - AuraSkills
   - NoteBlockMusicPlayer
   - BetonQuest
+  - Citizens
+  - EasyWhitelist
 commands:
+  hovermessages:
+    permission: sgc.hovermessages
+    aliases:
+      - hoverm
+      - hovermessage
   tags:
     permission: sgc.tags
   invisframes:
@@ -74,8 +82,6 @@ commands:
     permission: sgc.casino
   migrate:
     permission: sgc.migrate
-  customrecipes:
-    permission: sgc.customrecipes
   reputation:
     permission: sgc.reputation
     aliases:

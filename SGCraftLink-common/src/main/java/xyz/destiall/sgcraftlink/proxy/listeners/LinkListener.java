@@ -268,22 +268,28 @@ public class LinkListener extends ListenerAdapter {
                 message.reply("You are already linked to " + name).queue();
                 return;
             }
+
+            int code;
             try {
-                int code = Integer.parseInt(content);
-                name = plugin.getLinkProvider().getName(code);
-                if (name == null) {
-                    message.reply("That is not a valid code!").queue();
-                    return;
-                }
-                if (plugin.getLinkProvider().link(name, user)) {
-                    message.reply("You have linked your account to " + name).queue();
-                    plugin.getLinkProvider().invalidate(code);
-                } else {
-                    message.reply("Player " + name + " is not online!").queue();
-                }
-            } catch (Exception e) {
-                message.reply("That is not a valid code!").queue();
+                code = Integer.parseInt(content);
+            } catch (NumberFormatException e) {
+                message.reply("That is not a valid code! It is 6 digits!").queue();
+                return;
             }
+
+            name = plugin.getLinkProvider().getName(code);
+            if (name == null) {
+                message.reply("That is not a valid code!").queue();
+                return;
+            }
+
+            if (!plugin.getLinkProvider().link(name, user)) {
+                message.reply("Player " + name + " is not online!").queue();
+                return;
+            }
+
+            message.reply("You have linked your account to " + name).queue();
+            plugin.getLinkProvider().invalidate(code);
         }
     }
 
@@ -303,9 +309,7 @@ public class LinkListener extends ListenerAdapter {
             }
         }
         try {
-            member.modifyNickname(name).delay(5, TimeUnit.SECONDS).queue(q -> {
-            }, err -> {
-            });
+            member.modifyNickname(name).delay(5, TimeUnit.SECONDS).queue(q -> {}, err -> {});
         } catch (Exception ignored) {}
     }
 

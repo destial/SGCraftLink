@@ -35,6 +35,7 @@ public class Redeemables extends Module implements Listener, CommandExecutor, Ta
 
     public Redeemables(SGCraftLinkSpigot plugin) {
         super(plugin, "redeemables.yml");
+        setCommandExecutor("redeemables");
     }
 
     @Override
@@ -95,13 +96,11 @@ public class Redeemables extends Module implements Listener, CommandExecutor, Ta
             dirty = false;
         }
         redeemables.clear();
-        plugin.getCommand("redeemables").setExecutor(null);
+        unsetCommandExecutor("redeemables");
     }
 
     @Override
     public void enable() {
-        plugin.getCommand("redeemables").setExecutor(this);
-
         if (redeemables == null) {
             redeemables = new ArrayList<>();
         }
@@ -137,8 +136,8 @@ public class Redeemables extends Module implements Listener, CommandExecutor, Ta
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        if (!sender.hasPermission("redeemables.admin")) {
-            sender.sendMessage(color("&cYou do not have permission!"));
+        if (!isEnabled()) {
+            sender.sendMessage(color("&cThis feature is not enabled!"));
             return false;
         }
 

@@ -1,11 +1,16 @@
 package xyz.destiall.sgcraftlink.modules;
 
 import com.Zrips.CMI.CMI;
+import com.gmail.jyckosianjaya.easywhitelist.EasyWhiteList;
 import express.Express;
 import express.utils.Status;
+import me.clip.placeholderapi.util.Msg;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -28,19 +33,12 @@ import java.util.function.Consumer;
 import static xyz.destiall.sgcraftlink.SGCraftLinkCommon.createDataMap;
 import static xyz.destiall.sgcraftlink.SGCraftLinkSpigot.color;
 
-public class DataModule extends Module implements CommandExecutor {
-    private static final SecureRandom secureRandom = new SecureRandom(); //threadsafe
-    private static final Base64.Encoder base64Encoder = Base64.getUrlEncoder(); //threadsafe
-
-    public static String generateNewToken() {
-        byte[] randomBytes = new byte[24];
-        secureRandom.nextBytes(randomBytes);
-        return base64Encoder.encodeToString(randomBytes);
-    }
-
+public class DataModule extends Module implements Listener, CommandExecutor {
+    private final SecureRandom secureRandom = new SecureRandom(); //threadsafe
+    private final Base64.Encoder base64Encoder = Base64.getUrlEncoder(); //threadsafe
     private final Express express;
     private final HTTPManager manager;
-
+    private Scheduler.Task currentRegistrationTask = null;
     private final List<LuckPermsHook.BackendRestMessenger> messengers;
 
     public DataModule(SGCraftLinkSpigot plugin) {
@@ -48,7 +46,13 @@ public class DataModule extends Module implements CommandExecutor {
         express = new Express();
         manager = new HTTPManager();
         messengers = new ArrayList<>();
-        plugin.getCommand("datacomm").setExecutor(this);
+        setCommandExecutor("datacomm");
+    }
+
+    public String generateNewToken() {
+        byte[] randomBytes = new byte[24];
+        secureRandom.nextBytes(randomBytes);
+        return base64Encoder.encodeToString(randomBytes);
     }
 
     public void registerServer() {
@@ -66,11 +70,18 @@ public class DataModule extends Module implements CommandExecutor {
                 whitelisted = CMI.getInstance().getConfigManager().isMaintenance();
             } catch (NoClassDefFoundError e) {}
         }
+        if (!whitelisted) {
+            // try EasyWhitelist
+            try {
+                whitelisted = EasyWhiteList.getInstance().getStorage().isWhitelisting();
+            } catch (NoClassDefFoundError e) {}
+        }
         Map<String, Object> data = createDataMap(
                 "port", config.getInt("port", 1034),
                 "auth", authToken,
                 "panel_id", config.getString("panel_id", "null"),
-                "whitelisted", whitelisted
+                "whitelisted", whitelisted,
+                "announce", config.getBoolean("announce", true)
         );
         tryRegisterServer(data);
     }
@@ -81,7 +92,6 @@ public class DataModule extends Module implements CommandExecutor {
         tryUnregisterServer(data);
     }
 
-    private Scheduler.Task currentRegistrationTask = null;
 
     private void tryRegisterServer(Map<String, Object> data) {
         sendProxyData(SGCraftLinkCommon.DATA_SERVER_REGISTER, data, (result) -> {
@@ -156,6 +166,7 @@ public class DataModule extends Module implements CommandExecutor {
         config.set("port", 1034);
         config.set("proxy-port", 1035);
         config.set("proxy-ip", "192.168.1.99");
+        config.set("announce", false);
         config.set("authentication-key", generateNewToken());
     }
 
@@ -166,7 +177,7 @@ public class DataModule extends Module implements CommandExecutor {
 
     @Override
     public void disable() {
-        plugin.getCommand("datacomm").setExecutor(null);
+        unsetCommandExecutor("datacomm");
 
         try {
             unregisterServer();
@@ -270,7 +281,7 @@ public class DataModule extends Module implements CommandExecutor {
         } else {
             authToken = generateNewToken();
             config.set("authentication-key", authToken);
-            save();
+            saveConfig();
         }
         return authToken;
     }
@@ -285,6 +296,11 @@ public class DataModule extends Module implements CommandExecutor {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String s, @NotNull String[] args) {
+        if (!isEnabled()) {
+            sender.sendMessage(Msg.color("&cThis feature is not enabled!"));
+            return false;
+        }
+
         if (args.length == 0) {
             sender.sendMessage(color("&cUsage: /datacomms [reg/unreg]"));
             return false;
@@ -306,5 +322,24 @@ public class DataModule extends Module implements CommandExecutor {
             default: break;
         }
         return false;
+    }
+
+    @EventHandler
+    public void onJoin(PlayerJoinEvent e) {
+        plugin.getScheduler().runTaskLater(() -> {
+            Map<String, Object> map = createDataMap("uuid", e.getPlayer().getUniqueId().toString());
+            sendProxyData(SGCraftLinkCommon.DATA_SECURITY_CHECK, map, (result) -> {
+                if (result.isSuccess()) {
+                    plugin.sendFirstJoin(e.getPlayer());
+                    return;
+                }
+
+                plugin.getScheduler().runTask(() -> {
+                    if (e.getPlayer().isOnline()) {
+                        e.getPlayer().kickPlayer("You are not joined via the proxy!");
+                    }
+                }, e.getPlayer());
+            });
+        }, e.getPlayer(), 5L);
     }
 }

@@ -59,7 +59,7 @@ public class NovaSkyblockModule extends Module implements Listener {
             List<Location> blocks = new ArrayList<>(generatedBlocks);
             config.set("generated-blocks", blocks);
         }
-        save();
+        saveConfig();
     }
 
     @Override

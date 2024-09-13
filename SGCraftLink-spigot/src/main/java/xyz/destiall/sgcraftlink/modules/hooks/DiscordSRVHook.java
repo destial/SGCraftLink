@@ -33,6 +33,7 @@ import java.util.Arrays;
 public class DiscordSRVHook extends Module implements Listener, CommandExecutor {
     public DiscordSRVHook(SGCraftLinkSpigot plugin) {
         super(plugin, "news.yml");
+        setCommandExecutor("sgcdiscord");
     }
 
     @EventHandler
@@ -130,17 +131,21 @@ public class DiscordSRVHook extends Module implements Listener, CommandExecutor 
     @Override
     public void disable() {
         DiscordSRV.api.unsubscribe(this);
-        plugin.getCommand("sgcdiscord").setExecutor(null);
+        unsetCommandExecutor("sgcdiscord");
     }
 
     @Override
     public void enable() {
         DiscordSRV.api.subscribe(this);
-        plugin.getCommand("sgcdiscord").setExecutor(this);
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String s, @NotNull String[] args) {
+        if (!isEnabled()) {
+            sender.sendMessage(color("&cThis feature is not enabled!"));
+            return false;
+        }
+
         if (args.length < 2) {
             sender.sendMessage("Usage: /sgcdiscord [rankup|rankdown|saveaccounts|embed|reload] [player|color] [rank|msg]");
             return false;
@@ -192,7 +197,7 @@ public class DiscordSRVHook extends Module implements Listener, CommandExecutor 
         }
 
         if (args[0].equalsIgnoreCase("reload")) {
-            load();
+            loadConfig();
             return false;
         }
 

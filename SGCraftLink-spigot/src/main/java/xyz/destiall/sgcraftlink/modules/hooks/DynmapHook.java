@@ -103,7 +103,7 @@ public class DynmapHook extends Module {
     }
 
     @Override
-    public void save() {
+    public void saveConfig() {
         if (chunks == null)
             return;
         int index = 0;
@@ -116,7 +116,7 @@ public class DynmapHook extends Module {
             chunkYML.toYaml(section);
         }
         config.set("slime-chunks.fully-loaded", fullyLoaded);
-        super.save();
+        super.saveConfig();
     }
 
     @Override

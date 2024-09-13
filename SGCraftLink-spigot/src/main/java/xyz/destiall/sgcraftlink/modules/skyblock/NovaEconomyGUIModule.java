@@ -36,7 +36,7 @@ public class NovaEconomyGUIModule extends Module {
             return config.getDouble(key + ".sell");
         }
         config.set(key + ".sell", -1D);
-        save();
+        saveConfig();
         return -1D;
     }
 
@@ -46,7 +46,7 @@ public class NovaEconomyGUIModule extends Module {
             return config.getDouble(key + ".buy");
         }
         config.set(key + ".buy", -1D);
-        save();
+        saveConfig();
         return -1D;
     }
 
@@ -81,7 +81,7 @@ public class NovaEconomyGUIModule extends Module {
             shopItems.computeIfAbsent(key, (k) -> {
                 config.set(key + ".sell", -1D);
                 config.set(key + ".buy", -1D);
-                save();
+                saveConfig();
                 NovaExtendedShopItem shopItem = new NovaExtendedShopItem(matchShopItem(new ItemStack(Material.STONE)));
                 shopItem.init(novaItem);
                 plugin.getLogger().warning("Creating NovaShopItem = " + key);
@@ -101,7 +101,7 @@ public class NovaEconomyGUIModule extends Module {
             shopItems.computeIfAbsent(key, (k) -> {
                 config.set(key + ".sell", -1D);
                 config.set(key + ".buy", -1D);
-                save();
+                saveConfig();
                 NovaExtendedShopItem shopItem = new NovaExtendedShopItem(matchShopItem(new ItemStack(Material.STONE)));
                 shopItem.init(novaItem);
                 plugin.getLogger().warning("Creating NovaShopItem = " + key);

@@ -9,6 +9,7 @@ import xyz.destiall.sgcraftlink.utils.HTTPManager;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class PanelManager {
     private final String baseUrl = "https://panel.destial.xyz/api/client/servers/{PANEL_ID}/";
@@ -31,7 +32,7 @@ public class PanelManager {
 
         // Memory checker
         plugin.getScheduler().schedule(() -> {
-            plugin.getLoggerProvider().warning("Scheduling memory checker!");
+            plugin.getLoggerProvider().warning("Scheduling memory checker! [" + String.join(",", plugin.getDataManager().getServers()) + "]");
             for (String serverName : plugin.getDataManager().getServers()) {
                 RegisteredServer server = plugin.getDataManager().getRegisteredServer(serverName);
                 if (server.getPanelId() == null || server.getPanelId().equalsIgnoreCase("null"))
@@ -49,8 +50,8 @@ public class PanelManager {
                         return;
 
                     double usage = memoryBytes / (double) maxMemory;
-                    plugin.getLoggerProvider().warning(serverName + ": " + (usage * 100d) + "%");
                     if (usage >= 0.95d) {
+                        plugin.getLoggerProvider().warning(serverName + " is overloading soon! Restarting! (" + (usage * 100d) + "%)");
                         plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, serverName, SGCraftLinkCommon.createCommandsData("cmi schedule stopserver"), (r) -> {});
                     }
                 });

@@ -1,13 +1,10 @@
 package xyz.destiall.sgcraftlink.modules.common;
 
-import com.destroystokyo.paper.profile.PlayerProfile;
-import com.destroystokyo.paper.profile.ProfileProperty;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Color;
 import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
@@ -54,6 +51,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static xyz.destiall.sgcraftlink.SGCraftLinkCommon.emptyDataMap;
+import static xyz.destiall.sgcraftlink.SGCraftLinkSpigot.color;
+import static xyz.destiall.sgcraftlink.SGCraftLinkSpigot.testPaperOr1_8Above;
 
 public class HeadHunt extends Module implements Listener, CommandExecutor {
     private final Set<Location> hunts = new HashSet<>();
@@ -67,6 +66,29 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
 
     public HeadHunt(SGCraftLinkSpigot plugin) {
         super(plugin, "hunt.yml");
+        setCommandExecutor("egg");
+    }
+
+    @Override
+    public void loadDefaultConfig() {
+        head = new ItemStack(Material.SKELETON_SKULL);
+        SkullMeta meta = (SkullMeta) head.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(color("&aEaster Egg"));
+            try {
+                testPaperOr1_8Above();
+                UUID uuid = UUID.randomUUID();
+                com.destroystokyo.paper.profile.PlayerProfile playerProfile = Bukkit.createProfile(uuid);
+                playerProfile.setProperty(new com.destroystokyo.paper.profile.ProfileProperty("textures", "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZWNlZGRjMjNmOWQ5NmJhYWEwZDJkN2I5ZWMxODBjZDdiZWE1NDQ3ZDM5YzQyNWNhOWU0NGQ4ODA4ZWExMWVhMCJ9fX0="));
+                meta.setPlayerProfile(playerProfile);
+                meta.setOwnerProfile(playerProfile);
+            } catch (Throwable e) {
+                plugin.getLogger().warning("Unable to set Easter Egg texture for head hunt... Defaulting to my head!");
+                meta.setOwner("destiall");
+            }
+            head.setItemMeta(meta);
+        }
+        config.set("egg", head);
     }
 
     public Set<Location> getHunts() {
@@ -219,44 +241,23 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
         this.checkOtherServers = checkOtherServers;
     }
 
-    public void save() {
+    public void saveConfig() {
         List<Location> copy = hunts == null ? new ArrayList<>() : new ArrayList<>(hunts);
         config.set("locations", copy);
         config.set("players", players);
 
-        super.save();
-    }
-
-    @Override
-    public void loadDefaultConfig() {
-        head = new ItemStack(Material.SKELETON_SKULL);
-        SkullMeta meta = (SkullMeta) head.getItemMeta();
-        if (meta != null) {
-            meta.setDisplayName(color("&aEaster Egg"));
-            UUID uuid = UUID.randomUUID();
-            try {
-                PlayerProfile playerProfile = Bukkit.createProfile(uuid);
-                playerProfile.setProperty(new ProfileProperty("textures", "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZWNlZGRjMjNmOWQ5NmJhYWEwZDJkN2I5ZWMxODBjZDdiZWE1NDQ3ZDM5YzQyNWNhOWU0NGQ4ODA4ZWExMWVhMCJ9fX0="));
-                meta.setPlayerProfile(playerProfile);
-                meta.setOwnerProfile(playerProfile);
-            } catch (Exception e) {
-                plugin.getLogger().warning("Unable to set Easter Egg texture for head hunt... Defaulting to my head!");
-                meta.setOwner("destiall");
-            }
-            head.setItemMeta(meta);
-        }
-        config.set("egg", head);
+        super.saveConfig();
     }
 
     @Override
     public void disable() {
         if (dirty.get()) {
-            save();
+            saveConfig();
         }
         hunts.clear();
         players.clear();
 
-        plugin.getCommand("egg").setExecutor(null);
+        unsetCommandExecutor("egg");
     }
 
     @Override
@@ -342,8 +343,6 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
                 player.sendMessage(color("&eThere might be an egg at " + random.getBlockX() + " " + random.getBlockZ()));
             });
         }, 20L * 10, 20L * 60L * 15L);
-
-        plugin.getCommand("egg").setExecutor(this);
     }
 
     public int getAmount(String name) {
@@ -418,12 +417,14 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
         });
     }
 
-    private String color(String s) {
-        return ChatColor.translateAlternateColorCodes('&', s);
-    }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (!isEnabled()) {
+            sender.sendMessage(color("&cThis feature is not enabled!"));
+            return false;
+        }
+
         if (!(sender instanceof Player))
             return false;
 

@@ -22,7 +22,7 @@ public class TrashModule extends Module implements CommandExecutor, Listener {
     private final Set<Inventory> inventories;
     public TrashModule(SGCraftLinkSpigot plugin) {
         super(plugin);
-        plugin.getCommand("trash").setExecutor(this);
+        setCommandExecutor("trash");
         inventories = new HashSet<>();
     }
 
@@ -31,7 +31,7 @@ public class TrashModule extends Module implements CommandExecutor, Listener {
 
     @Override
     public void disable() {
-        plugin.getCommand("trash").setExecutor(null);
+        unsetCommandExecutor("trash");
     }
 
     @Override
@@ -47,6 +47,11 @@ public class TrashModule extends Module implements CommandExecutor, Listener {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String s, @NotNull String[] args) {
+        if (!isEnabled()) {
+            sender.sendMessage(color("&cThis feature is not enabled!"));
+            return false;
+        }
+
         if (!(sender instanceof Player)) {
             sender.sendMessage(color("&cOnly players can use this command!"));
             return false;

@@ -29,6 +29,7 @@ public class ScheduledCommands extends Module implements CommandExecutor {
 
     public ScheduledCommands(SGCraftLinkSpigot plugin) {
         super(plugin, "scheduled-commands.yml");
+        setCommandExecutor("schedulecmd");
     }
 
     @Override
@@ -78,14 +79,13 @@ public class ScheduledCommands extends Module implements CommandExecutor {
 
     @Override
     public void disable() {
-        save();
+        unsetCommandExecutor("schedulecmd");
+        saveConfig();
 
         for (ScheduledCommand cmd : scheduledCommands) {
             cmd.timer.cancel();
         }
         scheduledCommands.clear();
-
-        plugin.getCommand("schedulecmd").setExecutor(null);
     }
 
     @Override
@@ -96,24 +96,25 @@ public class ScheduledCommands extends Module implements CommandExecutor {
 
             scheduleCommand(date, commands);
         }
-
         plugin.getLogger().info("Registered " + scheduledCommands.size() + " scheduled commands");
-
-        plugin.getCommand("schedulecmd").setExecutor(this);
     }
 
     @Override
-    public void save() {
+    public void saveConfig() {
         if (scheduledCommands != null) {
             for (ScheduledCommand cmd : scheduledCommands) {
                 config.set(String.valueOf(cmd.date.getTime()), cmd.commands);
             }
         }
-        super.save();
+        super.saveConfig();
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (!isEnabled()) {
+            sender.sendMessage(color("&cThis feature is not enabled!"));
+            return false;
+        }
         if (args.length < 1) {
             sender.sendMessage(color("&cUsage: /schedulecmd [list|date]"));
             return false;
@@ -152,7 +153,7 @@ public class ScheduledCommands extends Module implements CommandExecutor {
         String cmd = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
         scheduleCommand(date, cmd);
         sender.sendMessage(color("&aScheduled command \"" + cmd + "\" to run on " + DateFormat.getDateTimeInstance().format(date)));
-        save();
+        saveConfig();
         return true;
     }
 

@@ -43,6 +43,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static xyz.destiall.sgcraftlink.SGCraftLinkSpigot.testPaperOr1_8Above;
+
 public class VanillaAddon extends Module implements Listener {
     private Map<Material, VanillaItem> addons;
     private NamespacedKey namespacedKey;
@@ -279,15 +281,17 @@ public class VanillaAddon extends Module implements Listener {
     @Override
     public void loadDefaultConfig() {
         config.set("enabled", false);
+        config.set("addons." + Material.COAL + ".lores", Arrays.asList("&f", "&eRarity: &f&lCOMMON"));
         config.set("addons." + Material.DIAMOND + ".lores", Arrays.asList("&f", "&eRarity: &f&lCOMMON"));
         config.set("addons." + Material.EMERALD + ".lores", Arrays.asList("&f", "&eRarity: &f&lCOMMON"));
-        config.set("addons." + Material.LAPIS_LAZULI + ".lores", Arrays.asList("&f", "&eRarity: &f&lCOMMON"));
-        config.set("addons." + Material.COAL + ".lores", Arrays.asList("&f", "&eRarity: &f&lCOMMON"));
-        config.set("addons." + Material.RAW_GOLD + ".lores", Arrays.asList("&f", "&eRarity: &f&lCOMMON"));
-        config.set("addons." + Material.RAW_COPPER + ".lores", Arrays.asList("&f", "&eRarity: &f&lCOMMON"));
-        config.set("addons." + Material.RAW_IRON + ".lores", Arrays.asList("&f", "&eRarity: &f&lCOMMON"));
-        config.set("addons." + Material.NETHERITE_SCRAP + ".lores", Arrays.asList("&f", "&eRarity: &f&lCOMMON"));
-
+        try {
+            testPaperOr1_8Above();
+            config.set("addons." + Material.LAPIS_LAZULI + ".lores", Arrays.asList("&f", "&eRarity: &f&lCOMMON"));
+            config.set("addons." + Material.RAW_GOLD + ".lores", Arrays.asList("&f", "&eRarity: &f&lCOMMON"));
+            config.set("addons." + Material.RAW_COPPER + ".lores", Arrays.asList("&f", "&eRarity: &f&lCOMMON"));
+            config.set("addons." + Material.RAW_IRON + ".lores", Arrays.asList("&f", "&eRarity: &f&lCOMMON"));
+            config.set("addons." + Material.NETHERITE_SCRAP + ".lores", Arrays.asList("&f", "&eRarity: &f&lCOMMON"));
+        } catch (Throwable e) {}
         config.set("addons." + Material.NETHER_STAR + ".lores", Arrays.asList("&f", "&eRarity: &a&lUNCOMMON"));
         config.set("addons." + Material.DRAGON_EGG + ".lores", Arrays.asList("&f", "&eRarity: &a&lUNCOMMON"));
     }

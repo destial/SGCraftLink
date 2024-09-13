@@ -2,7 +2,7 @@ package xyz.destiall.sgcraftlink.items;
 
 public class Tag {
     private final String name;
-    private final String display;
+    private String display;
 
     public Tag(String name, String display) {
         this.name = name;
@@ -15,5 +15,9 @@ public class Tag {
 
     public String getDisplay() {
         return display;
+    }
+
+    public void setDisplay(String display) {
+        this.display = display;
     }
 }

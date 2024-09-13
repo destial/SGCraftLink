@@ -37,6 +37,7 @@ public class InvisFrames extends Module implements Listener, CommandExecutor, Ta
 
     public InvisFrames(SGCraftLinkSpigot plugin) {
         super(plugin, "invis-frames.yml");
+        setCommandExecutor("invisframes");
     }
 
     @Override
@@ -149,7 +150,7 @@ public class InvisFrames extends Module implements Listener, CommandExecutor, Ta
 
     @Override
     public void disable() {
-        plugin.getCommand("invisframes").setExecutor(null);
+        unsetCommandExecutor("invisframes");
     }
 
     @Override
@@ -159,8 +160,6 @@ public class InvisFrames extends Module implements Listener, CommandExecutor, Ta
             glowFrame = Material.valueOf("GLOW_ITEM_FRAME");
             glowFrameEntity = EntityType.valueOf("GLOW_ITEM_FRAME");
         } catch(IllegalArgumentException ignored) {}
-
-        plugin.getCommand("invisframes").setExecutor(this);
     }
 
     @Override

@@ -1,14 +1,19 @@
 package xyz.destiall.sgcraftlink.modules;
 
+import org.bukkit.command.CommandExecutor;
 import org.bukkit.configuration.file.YamlConfiguration;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 
 import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
 
 public abstract class Module {
+    public static Set<String> COMMANDS = new HashSet<>();
     protected final SGCraftLinkSpigot plugin;
     protected YamlConfiguration config;
     protected File configFile;
+    protected String configName;
 
     public Module(SGCraftLinkSpigot plugin) {
         this(plugin, null);
@@ -16,18 +21,21 @@ public abstract class Module {
 
     public Module(SGCraftLinkSpigot plugin, String configName) {
         this.plugin = plugin;
+        this.configName = configName;
+    }
 
+    public void initConfig() {
         if (configName == null)
             return;
 
         this.config = new YamlConfiguration();
         configFile = new File(plugin.getDataFolder(), configName);
         if (!configFile.exists()) {
-            config.set("enabled", false);
             loadDefaultConfig();
-            save();
+            config.set("enabled", false);
+            saveConfig();
         } else {
-            load();
+            loadConfig();
         }
     }
 
@@ -35,7 +43,7 @@ public abstract class Module {
         return config == null || config.getBoolean("enabled", true);
     }
 
-    public void save() {
+    public void saveConfig() {
         try {
             config.save(configFile);
         } catch (Exception e) {
@@ -43,12 +51,24 @@ public abstract class Module {
         }
     }
 
-    public void load() {
+    public void loadConfig() {
         try {
             config.load(configFile);
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    protected void setCommandExecutor(String command) {
+        if (this instanceof CommandExecutor) {
+            plugin.getCommand(command).setExecutor((CommandExecutor) this);
+            COMMANDS.add(command);
+        }
+    }
+
+    protected void unsetCommandExecutor(String command) {
+        plugin.getCommand(command).setExecutor(null);
+        COMMANDS.remove(command);
     }
 
     @Override

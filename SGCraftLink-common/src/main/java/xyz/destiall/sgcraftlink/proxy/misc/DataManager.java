@@ -96,6 +96,7 @@ public final class DataManager {
                         if (json.has("panel_id"))
                             panelId = json.getString("panel_id");
                         boolean whitelisted = json.has("whitelisted") && json.getBoolean("whitelisted");
+                        boolean announce = json.has("announce") && json.getBoolean("announce");
                         RegisteredServer registration = new RegisteredServer(serverport, auth, panelId);
                         registeredServers.put(server, registration);
                         String ip = json.has("ip") ? json.getString("ip") : registration.getIp();
@@ -111,6 +112,9 @@ public final class DataManager {
                             long maxMemory = details.getJSON().getJSONObject("attributes").getJSONObject("limits").getInt("memory") * 1000000L;
                             registration.setMaxMemory(maxMemory);
                         });
+
+                        if (!announce)
+                            break;
 
                         ComponentProvider<?> component = ColorProvider.ofComponent("&b&lꜱᴇʀᴠᴇʀ &8&l» &a" + serverName + " is now online! " + (whitelisted ? "(Whitelisted)" : ""));
                         component.setHover(ComponentHoverProvider.of(ComponentHoverProvider.Action.SHOW_TEXT, ColorProvider.ofComponent("&eClick to join " + server)));

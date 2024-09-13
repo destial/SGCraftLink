@@ -93,7 +93,7 @@ public class MythicHook extends Module implements Listener {
     @EventHandler
     public void onReload(MythicReloadedEvent e) {
         disable();
-        load();
+        loadConfig();
         if (plugin.getServer().getPluginManager().getPlugin("MythicCrucible") == null) {
             loadItems();
         } else {

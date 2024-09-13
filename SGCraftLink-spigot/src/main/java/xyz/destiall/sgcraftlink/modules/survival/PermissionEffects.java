@@ -1,7 +1,8 @@
 package xyz.destiall.sgcraftlink.modules.survival;
 
+import net.luckperms.api.event.node.NodeAddEvent;
+import net.luckperms.api.model.user.User;
 import org.bukkit.Material;
-import org.bukkit.Registry;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -20,20 +21,27 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class PermissionEffects extends Module implements Listener {
+    private LuckPermsHook lp;
+
     public PermissionEffects(SGCraftLinkSpigot plugin) {
         super(plugin);
     }
 
     public void applyEffects(Player player) {
         Collection<String> permissions;
-        LuckPermsHook lp = plugin.getModule(LuckPermsHook.class);
+        if (lp == null)
+            lp = plugin.getModule(LuckPermsHook.class);
+
         if (lp == null) {
             permissions = player.getEffectivePermissions().stream().filter(PermissionAttachmentInfo::getValue).map(PermissionAttachmentInfo::getPermission).collect(Collectors.toSet());
         } else {
             permissions = lp.getPermissions(player.getPlayer());
         }
 
-        for (PotionEffectType type : Registry.EFFECT) {
+        for (PotionEffectType type : PotionEffectType.values()) {
+            if (type == null || type.getName() == null)
+                continue;
+
             String name = "permeffects." + type.getName().toLowerCase();
             Set<String> effectPerms = permissions.stream().filter(p -> p.startsWith(name)).collect(Collectors.toSet());
             if (effectPerms.isEmpty())
@@ -46,8 +54,8 @@ public class PermissionEffects extends Module implements Listener {
                     if (l > level) {
                         level = l;
                     }
-                } catch (Exception ex) {
-                    ex.printStackTrace();
+                } catch (Throwable e) {
+                    e.printStackTrace();
                 }
             }
 
@@ -88,6 +96,27 @@ public class PermissionEffects extends Module implements Listener {
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             applyEffects(player);
         }
+
+        lp = plugin.getModule(LuckPermsHook.class);
+        if (lp == null)
+            return;
+
+        lp.getLuckperms().getEventBus().subscribe(NodeAddEvent.class, (e) -> {
+            if (e.getNode().getKey().startsWith("permeffects.")) {
+                if (e.getTarget() instanceof User) {
+                    String username = ((User) e.getTarget()).getUsername();
+                    if (username == null)
+                        return;
+
+                    applyEffects(plugin.getServer().getPlayer(username));
+                    return;
+                }
+
+                for (Player player : plugin.getServer().getOnlinePlayers()) {
+                    applyEffects(player);
+                }
+            }
+        });
     }
 
     @Override

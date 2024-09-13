@@ -1,6 +1,7 @@
 package xyz.destiall.sgcraftlink.modules.survival;
 
 import org.bukkit.Bukkit;
+import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -71,29 +72,9 @@ public class HealthBar extends Module implements Listener {
         }
     }
 
-    public void createHealthBar() {
-        ScoreboardManager manager = Bukkit.getScoreboardManager();
-        board = manager.getNewScoreboard();
-        String displayName = config.getString("displayName", "&c<3").replaceAll("&", "§");
-        displayName = displayName.replaceAll("<3", "❤");
-        objective = board.registerNewObjective("healthBar", "health");
-        objective.setDisplayName(displayName);
-        if (config.getBoolean("players")) {
-            objective.setDisplaySlot(DisplaySlot.BELOW_NAME);
-        } else {
-            board.clearSlot(DisplaySlot.BELOW_NAME);
-        }
-
-        if (config.getBoolean("require-permission")) {
-            plugin.getServer().getOnlinePlayers().forEach(this::checkPermission);
-        } else {
-            plugin.getServer().getOnlinePlayers().forEach((player) -> checkDisabledWorld(player, player.getWorld().getName()));
-        }
-    }
-
-    @EventHandler(priority = EventPriority.LOW)
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onHit(EntityDamageEvent event) {
-        if (!(event.getEntity() instanceof LivingEntity))
+        if (!(event.getEntity() instanceof LivingEntity) || event.getEntity() instanceof ArmorStand)
             return;
 
         LivingEntity entity = (LivingEntity) event.getEntity();
@@ -136,9 +117,15 @@ public class HealthBar extends Module implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.LOW)
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onEntityDeath(EntityDeathEvent e) {
-        mobs.remove(e.getEntity().getUniqueId());
+        MobBar mb = mobs.remove(e.getEntity().getUniqueId());
+        if (mb == null)
+            return;
+
+        LivingEntity entity = e.getEntity();
+        entity.setCustomNameVisible(mb.customNameVisible);
+        entity.setCustomName(mb.oldName);
     }
 
     @EventHandler
@@ -199,6 +186,23 @@ public class HealthBar extends Module implements Listener {
         defaultBar[20] = "§a██████████▌";
 
         blockedWorlds = config.getStringList("disabled-worlds");
-        createHealthBar();
+
+        ScoreboardManager manager = Bukkit.getScoreboardManager();
+        board = manager.getNewScoreboard();
+        String displayName = config.getString("displayName", "&c<3").replaceAll("&", "§");
+        displayName = displayName.replaceAll("<3", "❤");
+        objective = board.registerNewObjective("healthBar", "health");
+        objective.setDisplayName(displayName);
+        if (config.getBoolean("players")) {
+            objective.setDisplaySlot(DisplaySlot.BELOW_NAME);
+        } else {
+            board.clearSlot(DisplaySlot.BELOW_NAME);
+        }
+
+        if (config.getBoolean("require-permission")) {
+            plugin.getServer().getOnlinePlayers().forEach(this::checkPermission);
+        } else {
+            plugin.getServer().getOnlinePlayers().forEach((player) -> checkDisabledWorld(player, player.getWorld().getName()));
+        }
     }
 }

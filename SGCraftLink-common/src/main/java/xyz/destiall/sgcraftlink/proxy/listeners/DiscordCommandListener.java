@@ -186,8 +186,8 @@ public class DiscordCommandListener extends ListenerAdapter {
                 } else {
                     e.reply("Player " + name + " is not online!").setEphemeral(true).queue();
                 }
-            } catch (Exception ex) {
-                e.reply("That is not a valid code!").setEphemeral(true).queue();
+            } catch (Throwable ex) {
+                e.reply("That is not a valid code! It has to be 6 digits!").setEphemeral(true).queue();
             }
             return;
         }
@@ -386,7 +386,7 @@ public class DiscordCommandListener extends ListenerAdapter {
         if (nameOrIp.matches("^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$")) {
             cmd += "add " + nameOrIp;
         } else {
-            cmd += "usernames add " + nameOrIp.toLowerCase();
+            cmd += "usernames add " + nameOrIp;
         }
         plugin.dispatchCommand(cmd);
         return new EmbedBuilder().setColor(Color.GREEN).setTitle("Whitelisted " + nameOrIp);

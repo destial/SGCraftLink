@@ -2,8 +2,7 @@ package xyz.destiall.sgcraftlink.modules.vanilla;
 
 import com.spawnchunk.piggybank.config.Config;
 import com.spawnchunk.piggybank.modules.Account;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.title.Title;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -95,7 +94,7 @@ public class PiggyBankModule extends Module implements Listener {
         String message = color(config.getString("pickup-message"));
         if (config.getBoolean("use-title")) {
             String sub = color(config.getString("pickup-message-subtitle"));
-            player.showTitle(Title.title(Component.text(message), Component.text(sub)));
+            player.showTitle(TextComponent.fromLegacy(message), TextComponent.fromLegacy(sub), 10, 70, 20);
             return;
         }
 

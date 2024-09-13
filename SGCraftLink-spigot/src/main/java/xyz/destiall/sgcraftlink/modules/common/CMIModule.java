@@ -35,6 +35,8 @@ public class CMIModule extends Module implements Listener, CommandExecutor {
 
     public CMIModule(SGCraftLinkSpigot plugin) {
         super(plugin);
+
+        setCommandExecutor("sgcwake");
     }
 
     @Override
@@ -42,12 +44,11 @@ public class CMIModule extends Module implements Listener, CommandExecutor {
 
     @Override
     public void disable() {
-        plugin.getCommand("sgcwake").setExecutor(null);
+        unsetCommandExecutor("sgcwake");
     }
 
     @Override
     public void enable() {
-        plugin.getCommand("sgcwake").setExecutor(this);
     }
 
     @EventHandler
@@ -155,6 +156,11 @@ public class CMIModule extends Module implements Listener, CommandExecutor {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (!isEnabled()) {
+            sender.sendMessage(color("&cThis feature is not enabled!"));
+            return false;
+        }
+
         if (args.length == 0) {
             sender.sendMessage(color("&cUsage: /sgcwake [player]"));
             return false;

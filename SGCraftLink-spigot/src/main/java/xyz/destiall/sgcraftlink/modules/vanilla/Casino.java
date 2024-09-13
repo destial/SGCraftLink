@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static xyz.destiall.sgcraftlink.SGCraftLinkSpigot.color;
+import static xyz.destiall.sgcraftlink.SGCraftLinkSpigot.testPaperOr1_8Above;
 
 public class Casino extends Module implements Listener, CommandExecutor, TabExecutor {
     private Map<Material, Double> rewards;
@@ -44,7 +45,7 @@ public class Casino extends Module implements Listener, CommandExecutor, TabExec
 
     public Casino(SGCraftLinkSpigot plugin) {
         super(plugin, "casino.yml");
-        plugin.getCommand("casino").setExecutor(this);
+        setCommandExecutor("casino");
     }
 
     public boolean deleteSlot(int id) {
@@ -77,7 +78,11 @@ public class Casino extends Module implements Listener, CommandExecutor, TabExec
         rewards.set(Material.EMERALD_BLOCK.name(), 5);
         rewards.set(Material.GOLD_BLOCK.name(), 3);
         rewards.set(Material.IRON_BLOCK.name(), 2);
-        rewards.set(Material.COPPER_BLOCK.name(), 1.5);
+
+        try {
+            testPaperOr1_8Above();
+            rewards.set(Material.COPPER_BLOCK.name(), 1.5);
+        } catch (Throwable e) {}
 
         config.set("block-rewards-multiplier", rewards);
     }
@@ -108,7 +113,7 @@ public class Casino extends Module implements Listener, CommandExecutor, TabExec
 
     @Override
     public void disable() {
-        plugin.getCommand("casino").setExecutor(null);
+        unsetCommandExecutor("casino");
 
         if (!dirty)
             return;
@@ -121,7 +126,7 @@ public class Casino extends Module implements Listener, CommandExecutor, TabExec
             slotsSection.set(String.valueOf(slot.getId()), slot.toConfig());
         }
 
-        save();
+        saveConfig();
     }
 
     @Override
@@ -166,9 +171,8 @@ public class Casino extends Module implements Listener, CommandExecutor, TabExec
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        // /casino create [look at block]
-        if (!isVault()) {
-            sender.sendMessage(color("&cCasino is disabled!"));
+        if (!isEnabled()) {
+            sender.sendMessage(color("&cThis feature is not enabled!"));
             return false;
         }
 

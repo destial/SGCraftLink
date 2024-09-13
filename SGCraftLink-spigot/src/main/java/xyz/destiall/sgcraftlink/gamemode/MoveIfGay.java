@@ -1,10 +1,12 @@
 package xyz.destiall.sgcraftlink.gamemode;
 
 import io.papermc.paper.event.player.PlayerArmSwingEvent;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.event.HoverEvent;
-import net.kyori.adventure.text.format.TextColor;
+import me.clip.placeholderapi.util.Msg;
 import net.md_5.bungee.api.ChatColor;
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.ComponentBuilder;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -32,6 +34,8 @@ public class MoveIfGay extends Module implements Listener, CommandExecutor {
     public MoveIfGay(SGCraftLinkSpigot plugin) {
         super(plugin, "move-if-gay.yml");
         players = ConcurrentHashMap.newKeySet();
+
+        setCommandExecutor("iymyg");
     }
 
     @Override
@@ -97,10 +101,11 @@ public class MoveIfGay extends Module implements Listener, CommandExecutor {
                 currentlyActive = false;
                 int winnerSize = players.size();
                 float reward = (float) (config.getDouble("prize-pool") / (float) winnerSize);
-                Component component = Component
-                        .text("The game is over! We have " + winnerSize + " winner(s)!")
-                        .color(TextColor.color(ChatColor.AQUA.getColor().getRGB()))
-                        .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text(String.join(", ", players))));
+                BaseComponent component = new ComponentBuilder()
+                        .append("The game is over! We have " + winnerSize + " winner(s)!")
+                        .color(ChatColor.AQUA)
+                        .build();
+                component.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(String.join(", ", players))));
                 plugin.getServer().broadcast(component);
                 for (String name : players) {
                     Player p = plugin.getServer().getPlayer(name);
@@ -116,15 +121,20 @@ public class MoveIfGay extends Module implements Listener, CommandExecutor {
     }
 
     @Override
-    public void disable() {}
-
-    @Override
-    public void enable() {
-        plugin.getCommand("iymyg").setExecutor(this);
+    public void disable() {
+        unsetCommandExecutor("iymyg");
     }
 
     @Override
+    public void enable() {}
+
+    @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String s, @NotNull String[] args) {
+        if (!isEnabled()) {
+            sender.sendMessage(Msg.color("&cThis feature is not enabled!"));
+            return false;
+        }
+
         if (args.length == 0 || !args[0].equalsIgnoreCase("start")) {
             sender.sendMessage(color("&cUsage: /" + s + " start"));
             return false;
