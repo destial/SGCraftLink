@@ -17,10 +17,9 @@ import xyz.destiall.sgcraftlink.modules.Module;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CustomRecipes extends Module implements Listener {
-
-    public CustomRecipes(SGCraftLinkSpigot plugin) {
-        super(plugin, null);
+public class MythicRecipes extends Module implements Listener {
+    public MythicRecipes(SGCraftLinkSpigot plugin) {
+        super(plugin);
     }
 
     @Override
@@ -29,9 +28,11 @@ public class CustomRecipes extends Module implements Listener {
     @Override
     public void disable() {}
 
+    @Override
+    public void enable() {}
+
     @EventHandler
-    public void onCraft(CraftItemEvent e) {
-    }
+    public void onCraft(CraftItemEvent e) {}
 
     @EventHandler
     public void onPickUp(EntityPickupItemEvent e) {

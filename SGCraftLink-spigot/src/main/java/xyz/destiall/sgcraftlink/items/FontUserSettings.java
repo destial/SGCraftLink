@@ -1,6 +1,6 @@
 package xyz.destiall.sgcraftlink.items;
 
-import xyz.destiall.sgcraftlink.modules.hooks.utils.Font;
+import xyz.destiall.sgcraftlink.items.font.Font;
 
 public class FontUserSettings {
     private Font font;

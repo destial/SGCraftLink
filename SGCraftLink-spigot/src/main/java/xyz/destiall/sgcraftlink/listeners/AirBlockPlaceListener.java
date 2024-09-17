@@ -15,7 +15,7 @@ public class AirBlockPlaceListener extends Module implements Listener {
     private final BlockFace[] faces = {BlockFace.UP, BlockFace.DOWN, BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
 
     public AirBlockPlaceListener(SGCraftLinkSpigot plugin) {
-        super(plugin, null);
+        super(plugin);
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -52,4 +52,7 @@ public class AirBlockPlaceListener extends Module implements Listener {
 
     @Override
     public void disable() {}
+
+    @Override
+    public void enable() {}
 }

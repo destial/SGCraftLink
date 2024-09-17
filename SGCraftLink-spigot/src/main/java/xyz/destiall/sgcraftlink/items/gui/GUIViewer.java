@@ -13,7 +13,7 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
-import xyz.destiall.sgcraftlink.modules.survival.MythicItemAbilities;
+import xyz.destiall.sgcraftlink.modules.survival.MythicHook;
 
 import java.util.HashMap;
 import java.util.List;
@@ -71,7 +71,7 @@ public class GUIViewer implements Listener {
             return null;
 
         if (entry.startsWith("mythicmobs:")) {
-            MythicItemAbilities mm = plugin.getModule(MythicItemAbilities.class);
+            MythicHook mm = plugin.getModule(MythicHook.class);
             if (mm == null) {
                 plugin.getLogger().severe("MythicMobs is not available! Unable to parse: " + entry);
                 return null;

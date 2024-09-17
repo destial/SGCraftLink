@@ -24,41 +24,6 @@ public class DynmapHook extends Module {
     boolean fullyLoaded = false;
     public DynmapHook(SGCraftLinkSpigot plugin) {
         super(plugin, "dynmap.yml");
-
-        DynmapAPI api = (DynmapAPI) plugin.getServer().getPluginManager().getPlugin("dynmap");
-        if (api == null)
-            return;
-
-        if (!config.getBoolean("slime-chunks.enabled", false)) {
-            return;
-        }
-
-        MarkerAPI marker = api.getMarkerAPI();
-        set = marker.getMarkerSet("slime-chunks");
-
-        if (set == null) {
-            set = marker.createMarkerSet("slime-chunks", "Slime Chunks", null, true);
-        }
-
-        set.setHideByDefault(config.getBoolean("slime-chunks.hide-by-default", true));
-        set.setMarkerSetLabel(config.getString("slime-chunks.label", "Slime Chunks"));
-        areaStyle = new AreaStyle(config, "slime-chunks.area-style");
-        fullyLoaded = config.getBoolean("slime-chunks.fully-loaded", false);
-
-        ConfigurationSection chunkSection = config.getConfigurationSection("slime-chunks.chunks");
-        if (chunkSection == null)
-            return;
-
-        for (String key : chunkSection.getKeys(false)) {
-            ConfigurationSection section = chunkSection.getConfigurationSection(key);
-            if (section == null)
-                continue;
-
-            ChunkYML chunkYML = new ChunkYML(section);
-            chunks.add(chunkYML);
-        }
-
-        findChunks();
     }
 
     public void findChunks() {
@@ -138,7 +103,7 @@ public class DynmapHook extends Module {
     }
 
     @Override
-    public void save() {
+    public void saveConfig() {
         if (chunks == null)
             return;
         int index = 0;
@@ -151,7 +116,7 @@ public class DynmapHook extends Module {
             chunkYML.toYaml(section);
         }
         config.set("slime-chunks.fully-loaded", fullyLoaded);
-        super.save();
+        super.saveConfig();
     }
 
     @Override
@@ -164,7 +129,46 @@ public class DynmapHook extends Module {
     }
 
     @Override
+    public void enable() {
+        DynmapAPI api = (DynmapAPI) plugin.getServer().getPluginManager().getPlugin("dynmap");
+        if (api == null)
+            return;
+
+        if (!config.getBoolean("slime-chunks.enabled", false)) {
+            return;
+        }
+
+        MarkerAPI marker = api.getMarkerAPI();
+        set = marker.getMarkerSet("slime-chunks");
+
+        if (set == null) {
+            set = marker.createMarkerSet("slime-chunks", "Slime Chunks", null, true);
+        }
+
+        set.setHideByDefault(config.getBoolean("slime-chunks.hide-by-default", true));
+        set.setMarkerSetLabel(config.getString("slime-chunks.label", "Slime Chunks"));
+        areaStyle = new AreaStyle(config, "slime-chunks.area-style");
+        fullyLoaded = config.getBoolean("slime-chunks.fully-loaded", false);
+
+        ConfigurationSection chunkSection = config.getConfigurationSection("slime-chunks.chunks");
+        if (chunkSection == null)
+            return;
+
+        for (String key : chunkSection.getKeys(false)) {
+            ConfigurationSection section = chunkSection.getConfigurationSection(key);
+            if (section == null)
+                continue;
+
+            ChunkYML chunkYML = new ChunkYML(section);
+            chunks.add(chunkYML);
+        }
+
+        findChunks();
+    }
+
+    @Override
     public void loadDefaultConfig() {
+        config.set("enabled", true);
         config.set("slime-chunks.enabled", false);
         config.set("slime-chunks.label", "Slime Chunks");
         config.set("slime-chunks.hide-by-default", true);

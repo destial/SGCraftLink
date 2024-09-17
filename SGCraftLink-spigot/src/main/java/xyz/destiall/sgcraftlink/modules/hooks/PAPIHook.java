@@ -15,10 +15,10 @@ import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.items.FontUserSettings;
 import xyz.destiall.sgcraftlink.items.PlayerReputation;
 import xyz.destiall.sgcraftlink.items.Tag;
+import xyz.destiall.sgcraftlink.items.font.Font;
 import xyz.destiall.sgcraftlink.modules.common.Fonter;
 import xyz.destiall.sgcraftlink.modules.common.HeadHunt;
 import xyz.destiall.sgcraftlink.modules.common.TagModule;
-import xyz.destiall.sgcraftlink.modules.hooks.utils.Font;
 import xyz.destiall.sgcraftlink.modules.survival.MusicHook;
 import xyz.destiall.sgcraftlink.modules.vanilla.PiggyBankModule;
 import xyz.destiall.sgcraftlink.modules.vanilla.ReputationModule;
@@ -118,13 +118,29 @@ public class PAPIHook extends PlaceholderExpansion implements Relational {
             }
 
             if (params.startsWith("ternary_")) {
-                String source = params.substring("ternary_".length()); // condition?true:false (%rel_sgcraftlink_ternary_{}?{}:{}%)
+                String source = params.substring("ternary_".length()); // condition?true:false (%sgcraftlink_ternary_{}?{}:{}%)
                 if (!source.contains("?") && !source.contains(":")) {
                     return "Invalid expression!";
                 }
-                String condition = source.substring(0, source.indexOf("?")).trim();
-                String ifTrue = source.substring(source.indexOf("?") + 1, source.indexOf(":")).trim();
-                String ifFalse = source.substring(source.indexOf(":") + 1).trim();
+                boolean stripColors = false;
+                if (source.startsWith("strip_")) {
+                    source = params.substring("strip_".length());
+                    stripColors = true;
+                }
+                int qIndex = source.indexOf("?");
+                while (source.charAt(qIndex - 1) == '\\') {
+                    source = source.substring(0, qIndex - 1) + source.substring(qIndex);
+                    qIndex = source.indexOf("?", qIndex);
+                }
+                String condition = source.substring(0, qIndex);
+                int cIndex = source.indexOf(":");
+                while (source.charAt(cIndex - 1) == '\\') {
+                    source = source.substring(0, cIndex - 1) + source.substring(cIndex);
+                    cIndex = source.indexOf(":", cIndex);
+                }
+
+                String ifTrue = source.substring(qIndex + 1, cIndex);
+                String ifFalse = source.substring(cIndex + 1);
 
                 String leftCondition;
                 String rightCondition;
@@ -163,6 +179,11 @@ public class PAPIHook extends PlaceholderExpansion implements Relational {
 
                 String leftSide = PlaceholderAPI.setBracketPlaceholders(target, setBracketRelationalPlaceholders(viewer, target, leftCondition));
                 String rightSide = PlaceholderAPI.setBracketPlaceholders(target, setBracketRelationalPlaceholders(viewer, target, rightCondition));
+
+                if (stripColors) {
+                    leftSide = ChatColor.stripColor(color(leftSide));
+                    rightSide = ChatColor.stripColor(color(rightSide));
+                }
 
                 boolean conditionResult;
                 switch (operator) {
@@ -368,9 +389,25 @@ public class PAPIHook extends PlaceholderExpansion implements Relational {
             if (!source.contains("?") && !source.contains(":")) {
                 return "Invalid expression!";
             }
-            String condition = source.substring(0, source.indexOf("?"));
-            String ifTrue = source.substring(source.indexOf("?") + 1, source.indexOf(":"));
-            String ifFalse = source.substring(source.indexOf(":") + 1);
+            boolean stripColors = false;
+            if (source.startsWith("strip_")) {
+                source = params.substring("strip_".length());
+                stripColors = true;
+            }
+            int qIndex = source.indexOf("?");
+            while (source.charAt(qIndex - 1) == '\\') {
+                source = source.substring(0, qIndex - 1) + source.substring(qIndex);
+                qIndex = source.indexOf("?", qIndex);
+            }
+            String condition = source.substring(0, qIndex);
+            int cIndex = source.indexOf(":");
+            while (source.charAt(cIndex - 1) == '\\') {
+                source = source.substring(0, cIndex - 1) + source.substring(cIndex);
+                cIndex = source.indexOf(":", cIndex);
+            }
+
+            String ifTrue = source.substring(qIndex + 1, cIndex);
+            String ifFalse = source.substring(cIndex + 1);
 
             String leftCondition;
             String rightCondition;
@@ -409,6 +446,11 @@ public class PAPIHook extends PlaceholderExpansion implements Relational {
 
             String leftSide = PlaceholderAPI.setBracketPlaceholders(player, leftCondition).trim();
             String rightSide = PlaceholderAPI.setBracketPlaceholders(player, rightCondition).trim();
+
+            if (stripColors) {
+                leftSide = ChatColor.stripColor(color(leftSide));
+                rightSide = ChatColor.stripColor(color(rightSide));
+            }
 
             boolean conditionResult;
             switch (operator) {

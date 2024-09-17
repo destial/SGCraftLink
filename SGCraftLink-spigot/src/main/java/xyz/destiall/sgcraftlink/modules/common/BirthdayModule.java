@@ -93,4 +93,20 @@ public class BirthdayModule extends Module implements Listener {
     public void disable() {
         birthdays.clear();
     }
+
+    @Override
+    public void enable() {
+        plugin.getScheduler().runTaskLater(() -> {
+            for (Player player : plugin.getServer().getOnlinePlayers()) {
+                if (birthdays.containsKey(player.getName())) {
+                    celebrate(player, birthdays.remove(player.getName()));
+                }
+            }
+        }, 60L);
+    }
+
+    @Override
+    public boolean isUniversallyCompatible() {
+        return true;
+    }
 }

@@ -11,7 +11,6 @@ import xyz.destiall.sgcraftlink.providers.component.ComponentProvider;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -59,9 +58,9 @@ public abstract class LinkProvider {
     }
 
     public boolean link(String name, User user) {
-        Map<String, Object> map = new HashMap<>();
-        map.put("id", user.getId());
-        map.put("messages", 0);
+        ConfigSectionProvider<?> map = plugin.getConfigProvider().createSection();
+        map.set("id", user.getId());
+        map.set("messages", 0);
         database.set(name, map);
 
         PlayerProvider player = plugin.getPlayer(name);

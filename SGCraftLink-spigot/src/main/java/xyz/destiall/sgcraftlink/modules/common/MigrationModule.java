@@ -46,15 +46,7 @@ public class MigrationModule extends Module implements Listener, CommandExecutor
         griefPrevention = plugin.getServer().getPluginManager().isPluginEnabled("GriefPrevention");
         survivalPlots = plugin.getServer().getPluginManager().isPluginEnabled("SurvivalPlots");
 
-        plugin.getCommand("migrate").setExecutor(this);
-
-        for (String oldName : config.getKeys(false)) {
-            String newName = config.getString(oldName);
-            Migration migration = new Migration(this, oldName, newName);
-            awaitingMigration.add(migration);
-        }
-
-        plugin.getLogger().info("Registered " + awaitingMigration.size() + " awaiting migration " + new JSONArray(awaitingMigration.stream().map(m -> m.getOldName() + "->" + m.getNewName()).collect(Collectors.toList())).toString().replace("\"", ""));
+        setCommandExecutor("migrate");
     }
 
     @Override
@@ -127,7 +119,7 @@ public class MigrationModule extends Module implements Listener, CommandExecutor
 
     @Override
     public void disable() {
-        plugin.getCommand("migrate").setExecutor(null);
+        unsetCommandExecutor("migrate");
         for (Migration migration : awaitingMigration) {
             if (migration.hasMigrated()) {
                 config.set(migration.getOldName(), null);
@@ -136,12 +128,28 @@ public class MigrationModule extends Module implements Listener, CommandExecutor
 
             config.set(migration.getOldName(), migration.getNewName());
         }
-        save();
+        saveConfig();
         awaitingMigration.clear();
     }
 
     @Override
+    public void enable() {
+        for (String oldName : config.getKeys(false)) {
+            String newName = config.getString(oldName);
+            Migration migration = new Migration(this, oldName, newName);
+            awaitingMigration.add(migration);
+        }
+
+        plugin.getLogger().info("Registered " + awaitingMigration.size() + " awaiting migration " + new JSONArray(awaitingMigration.stream().map(m -> m.getOldName() + "->" + m.getNewName()).collect(Collectors.toList())).toString().replace("\"", ""));
+    }
+
+    @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (!isEnabled()) {
+            sender.sendMessage(color("&cThis feature is not enabled!"));
+            return false;
+        }
+
         if (args.length < 2) {
             sender.sendMessage(color("&cUsage: /migrate [source|-remove] [target]"));
             return false;

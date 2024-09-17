@@ -53,6 +53,7 @@ public class VelocityLinkProvider extends LinkProvider {
                 map.node("id").set(hashMap.get("id"));
                 map.node("messages").set(hashMap.get("messages"));
                 map.node("ip").set(hashMap.get("ip"));
+                map.node("perms").set(hashMap.get("perms"));
             } catch (Exception e) {
                 e.printStackTrace();
             }

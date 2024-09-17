@@ -5,6 +5,7 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -87,9 +88,12 @@ public class DiscordCommandListener extends ListenerAdapter {
         SlashCommandData server = Commands.slash("panel", "Access the server control panel")
                 .addOption(OptionType.STRING, "server", "The server to access", true);
 
+        SlashCommandData mclink = Commands.slash("mclink", "Link your minecraft account to discord")
+                .addOption(OptionType.STRING, "code", "The code you have been given", true);
+
         SlashCommandData globalList = Commands.slash("globallist", "View the current players online on all servers");
 
-        slashCommands.addAll(Arrays.asList(chatHistory, history, alts, firstjoin, ipwhitelist, changepw, server, globalList));
+        slashCommands.addAll(Arrays.asList(chatHistory, history, alts, firstjoin, ipwhitelist, changepw, server, globalList, mclink));
 
         jda.updateCommands().addCommands(slashCommands).queue(commands::addAll);
 
@@ -154,6 +158,37 @@ public class DiscordCommandListener extends ListenerAdapter {
             }
             builder.append("```");
             e.reply(builder.toString()).queue();
+            return;
+        }
+
+        if (command.getName().equalsIgnoreCase("mclink")) {
+            String content = e.getOption("code", OptionMapping::getAsString);
+            if (content == null) {
+                e.reply("Code cannot be empty!").setEphemeral(true).queue();
+                return;
+            }
+            User user = e.getUser();
+            String name = plugin.getLinkProvider().getUsername(user);
+            if (name != null) {
+                e.reply("You are already linked to " + name).setEphemeral(true).queue();
+                return;
+            }
+            try {
+                int code = Integer.parseInt(content);
+                name = plugin.getLinkProvider().getName(code);
+                if (name == null) {
+                    e.reply("That is not a valid code!").setEphemeral(true).queue();
+                    return;
+                }
+                if (plugin.getLinkProvider().link(name, user)) {
+                    e.reply("You have linked your account to " + name).setEphemeral(true).queue();
+                    plugin.getLinkProvider().invalidate(code);
+                } else {
+                    e.reply("Player " + name + " is not online!").setEphemeral(true).queue();
+                }
+            } catch (Throwable ex) {
+                e.reply("That is not a valid code! It has to be 6 digits!").setEphemeral(true).queue();
+            }
             return;
         }
 
@@ -351,7 +386,7 @@ public class DiscordCommandListener extends ListenerAdapter {
         if (nameOrIp.matches("^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$")) {
             cmd += "add " + nameOrIp;
         } else {
-            cmd += "usernames add " + nameOrIp.toLowerCase();
+            cmd += "usernames add " + nameOrIp;
         }
         plugin.dispatchCommand(cmd);
         return new EmbedBuilder().setColor(Color.GREEN).setTitle("Whitelisted " + nameOrIp);

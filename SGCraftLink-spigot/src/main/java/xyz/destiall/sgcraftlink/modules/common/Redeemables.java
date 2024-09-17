@@ -35,20 +35,7 @@ public class Redeemables extends Module implements Listener, CommandExecutor, Ta
 
     public Redeemables(SGCraftLinkSpigot plugin) {
         super(plugin, "redeemables.yml");
-        plugin.getCommand("redeemables").setExecutor(this);
-
-        if (redeemables == null) {
-            redeemables = new ArrayList<>();
-        }
-
-        if (redeemables.isEmpty()) {
-            for (String key : config.getKeys(false)) {
-                Redeemable redeemable = new Redeemable(key, config.getConfigurationSection(key));
-                redeemables.add(redeemable);
-            }
-        }
-
-        plugin.getLogger().info("Registered " + redeemables.size() + " redeemables " + new JSONArray(redeemables.stream().map(Redeemable::getName).collect(Collectors.toList())).toString().replace("\"", ""));
+        setCommandExecutor("redeemables");
     }
 
     @Override
@@ -109,7 +96,23 @@ public class Redeemables extends Module implements Listener, CommandExecutor, Ta
             dirty = false;
         }
         redeemables.clear();
-        plugin.getCommand("redeemables").setExecutor(null);
+        unsetCommandExecutor("redeemables");
+    }
+
+    @Override
+    public void enable() {
+        if (redeemables == null) {
+            redeemables = new ArrayList<>();
+        }
+
+        if (redeemables.isEmpty()) {
+            for (String key : config.getKeys(false)) {
+                Redeemable redeemable = new Redeemable(key, config.getConfigurationSection(key));
+                redeemables.add(redeemable);
+            }
+        }
+
+        plugin.getLogger().info("Registered " + redeemables.size() + " redeemables " + new JSONArray(redeemables.stream().map(Redeemable::getName).collect(Collectors.toList())).toString().replace("\"", ""));
     }
 
     @EventHandler
@@ -133,8 +136,8 @@ public class Redeemables extends Module implements Listener, CommandExecutor, Ta
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        if (!sender.hasPermission("redeemables.admin")) {
-            sender.sendMessage(color("&cYou do not have permission!"));
+        if (!isEnabled()) {
+            sender.sendMessage(color("&cThis feature is not enabled!"));
             return false;
         }
 

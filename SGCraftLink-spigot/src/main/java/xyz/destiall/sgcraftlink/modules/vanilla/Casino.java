@@ -32,9 +32,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static xyz.destiall.sgcraftlink.SGCraftLinkSpigot.color;
+import static xyz.destiall.sgcraftlink.SGCraftLinkSpigot.testPaperOr1_8Above;
 
 public class Casino extends Module implements Listener, CommandExecutor, TabExecutor {
-    private final boolean enabled;
     private Map<Material, Double> rewards;
     private List<CasinoSlot> slots;
     private Material currency = Material.DIAMOND;
@@ -45,11 +45,92 @@ public class Casino extends Module implements Listener, CommandExecutor, TabExec
 
     public Casino(SGCraftLinkSpigot plugin) {
         super(plugin, "casino.yml");
-        enabled = config.getBoolean("enabled", false);
-        plugin.getCommand("casino").setExecutor(this);
-        if (!enabled)
+        setCommandExecutor("casino");
+    }
+
+    public boolean deleteSlot(int id) {
+        if (slots.removeIf(slot -> slot.getId() == id)) {
+            dirty = true;
+            config.set("slots." + id, null);
+            return true;
+        }
+        return false;
+    }
+
+    public CasinoSlot createSlot(Block center, BlockFace left, BlockFace right) {
+        CasinoSlot slot = new CasinoSlot(this, center, left, right);
+        slots.add(slot);
+        dirty = true;
+
+        return slot;
+    }
+
+    @Override
+    public void loadDefaultConfig() {
+        config.set("enabled", false);
+        config.set("vault.enabled", false);
+        config.set("vault.currency", "credits");
+        config.set("currency", (currency = Material.DIAMOND).name());
+        config.set("minimum", minimum);
+
+        Configuration rewards = new YamlConfiguration();
+        rewards.set(Material.DIAMOND_BLOCK.name(), 10);
+        rewards.set(Material.EMERALD_BLOCK.name(), 5);
+        rewards.set(Material.GOLD_BLOCK.name(), 3);
+        rewards.set(Material.IRON_BLOCK.name(), 2);
+
+        try {
+            testPaperOr1_8Above();
+            rewards.set(Material.COPPER_BLOCK.name(), 1.5);
+        } catch (Throwable e) {}
+
+        config.set("block-rewards-multiplier", rewards);
+    }
+
+    public Map<Material, Double> getRewards() {
+        return rewards;
+    }
+
+    public List<CasinoSlot> getSlots() {
+        return slots;
+    }
+
+    public Material getCurrency() {
+        return currency;
+    }
+
+    public String getCurrencyName() {
+        if (currencyName == null) {
+            if (vault) {
+                currencyName = config.getString("vault.currency", "credits");
+                return currencyName;
+            }
+
+            currencyName = (currency.name().charAt(0) + currency.name().toLowerCase().substring(1)).replace("_", " ");
+        }
+        return currencyName;
+    }
+
+    @Override
+    public void disable() {
+        unsetCommandExecutor("casino");
+
+        if (!dirty)
             return;
 
+        ConfigurationSection slotsSection = config.getConfigurationSection("slots");
+        if (slotsSection == null) {
+            slotsSection = config.createSection("slots");
+        }
+        for (CasinoSlot slot : slots) {
+            slotsSection.set(String.valueOf(slot.getId()), slot.toConfig());
+        }
+
+        saveConfig();
+    }
+
+    @Override
+    public void enable() {
         vault = config.getBoolean("vault.enabled", false);
         currency = Material.getMaterial(config.getString("currency", Material.DIAMOND.name()));
         minimum = config.getInt("minimum", minimum);
@@ -81,83 +162,7 @@ public class Casino extends Module implements Listener, CommandExecutor, TabExec
         }
 
         plugin.getLogger().info("Registered " + slots.size() + " casino slots " + new JSONArray(slots.stream().map(CasinoSlot::getId).collect(Collectors.toList())).toString().replace("\"", ""));
-    }
 
-    public boolean deleteSlot(int id) {
-        if (slots.removeIf(slot -> slot.getId() == id)) {
-            dirty = true;
-            config.set("slots." + id, null);
-            return true;
-        }
-        return false;
-    }
-
-    public CasinoSlot createSlot(Block center, BlockFace left, BlockFace right) {
-        CasinoSlot slot = new CasinoSlot(this, center, left, right);
-        slots.add(slot);
-        dirty = true;
-
-        return slot;
-    }
-
-    @Override
-    public void loadDefaultConfig() {
-        config.set("enabled", enabled);
-        config.set("vault.enabled", false);
-        config.set("vault.currency", "credits");
-        config.set("currency", (currency = Material.DIAMOND).name());
-        config.set("minimum", minimum);
-
-        Configuration rewards = new YamlConfiguration();
-        rewards.set(Material.DIAMOND_BLOCK.name(), 10);
-        rewards.set(Material.EMERALD_BLOCK.name(), 5);
-        rewards.set(Material.GOLD_BLOCK.name(), 3);
-        rewards.set(Material.IRON_BLOCK.name(), 2);
-        rewards.set(Material.COPPER_BLOCK.name(), 1.5);
-
-        config.set("block-rewards-multiplier", rewards);
-    }
-
-    public Map<Material, Double> getRewards() {
-        return rewards;
-    }
-
-    public List<CasinoSlot> getSlots() {
-        return slots;
-    }
-
-    public Material getCurrency() {
-        return currency;
-    }
-
-    public String getCurrencyName() {
-        if (currencyName == null) {
-            if (vault) {
-                currencyName = config.getString("vault.currency", "credits");
-                return currencyName;
-            }
-
-            currencyName = (currency.name().charAt(0) + currency.name().toLowerCase().substring(1)).replace("_", " ");
-        }
-        return currencyName;
-    }
-
-    @Override
-    public void disable() {
-        plugin.getCommand("casino").setExecutor(null);
-
-        if (!dirty)
-            return;
-
-        ConfigurationSection slotsSection = config.getConfigurationSection("slots");
-        if (slotsSection == null) {
-            slotsSection = config.createSection("slots");
-        }
-        for (CasinoSlot slot : slots) {
-            slotsSection.set(String.valueOf(slot.getId()), slot.toConfig());
-        }
-
-        save();
     }
 
     public boolean isVault() {
@@ -166,9 +171,8 @@ public class Casino extends Module implements Listener, CommandExecutor, TabExec
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        // /casino create [look at block]
-        if (!enabled) {
-            sender.sendMessage(color("&cCasino is disabled!"));
+        if (!isEnabled()) {
+            sender.sendMessage(color("&cThis feature is not enabled!"));
             return false;
         }
 

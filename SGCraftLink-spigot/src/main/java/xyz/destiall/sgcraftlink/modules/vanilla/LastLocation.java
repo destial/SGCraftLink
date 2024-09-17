@@ -31,24 +31,7 @@ public class LastLocation extends Module implements CommandExecutor, Listener {
         super(plugin, "last-locations.yml");
         lastLocations = new ConcurrentHashMap<>();
         pending = new HashMap<>();
-        try {
-            for (String name : config.getKeys(false)) {
-                try {
-                    Location loc = config.getLocation(name);
-                    lastLocations.put(name, loc);
-                } catch (Exception e) {
-                    String w = config.getString(name + ".world");
-                    if (w == null)
-                        continue;
-                    pending.putIfAbsent(w, new ArrayList<>());
-                    pending.get(w).add(name);
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        plugin.getCommand("lastloc").setExecutor(this);
+        setCommandExecutor("lastloc");
     }
 
     public void setLastLocation(Player player) {
@@ -61,15 +44,36 @@ public class LastLocation extends Module implements CommandExecutor, Listener {
     }
 
     @Override
-    public void loadDefaultConfig() {}
+    public void loadDefaultConfig() {
+        config.set("enabled", true);
+    }
 
     @Override
     public void disable() {
-        save();
+        unsetCommandExecutor("lastloc");
+        saveConfig();
         lastLocations.clear();
         pending.clear();
+    }
 
-        plugin.getCommand("lastloc").setExecutor(null);
+    @Override
+    public void enable() {
+        try {
+            for (String name : config.getKeys(false)) {
+                try {
+                    Location loc = config.getLocation(name);
+                    lastLocations.put(name, loc);
+                } catch (Throwable e) {
+                    String w = config.getString(name + ".world");
+                    if (w == null)
+                        continue;
+                    pending.putIfAbsent(w, new ArrayList<>());
+                    pending.get(w).add(name);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void teleportLastLocation(Player player) {
@@ -87,7 +91,7 @@ public class LastLocation extends Module implements CommandExecutor, Listener {
         lastLocations.remove(e.getPlayer().getName());
         config.set(e.getPlayer().getName(), null);
 
-        save();
+        saveConfig();
     }
 
     @EventHandler
@@ -109,6 +113,11 @@ public class LastLocation extends Module implements CommandExecutor, Listener {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (!isEnabled()) {
+            sender.sendMessage(color("&cThis feature is not enabled!"));
+            return false;
+        }
+
         if (args.length != 2) {
             sender.sendMessage(color("&cUsage: /lastloc [set/tp] [player]"));
             return false;
@@ -125,4 +134,5 @@ public class LastLocation extends Module implements CommandExecutor, Listener {
         }
         return true;
     }
+
 }

@@ -1,9 +1,11 @@
 package xyz.destiall.sgcraftlink.managers;
 
 import com.google.common.io.ByteStreams;
+import org.spongepowered.configurate.BasicConfigurationNode;
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader;
 import xyz.destiall.sgcraftlink.SGCraftLinkVelocity;
 import xyz.destiall.sgcraftlink.providers.ConfigProvider;
+import xyz.destiall.sgcraftlink.providers.ConfigSectionProvider;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityConfiguration;
 
 import java.io.File;
@@ -25,6 +27,11 @@ public class VelocityConfigProvider extends ConfigProvider<VelocityConfiguration
     @Override
     public VelocityConfigProvider createConfig(String name) {
         return new VelocityConfigProvider(plugin, name);
+    }
+
+    @Override
+    public ConfigSectionProvider<?> createSection() {
+        return new VelocityConfiguration(BasicConfigurationNode.root());
     }
 
     @Override

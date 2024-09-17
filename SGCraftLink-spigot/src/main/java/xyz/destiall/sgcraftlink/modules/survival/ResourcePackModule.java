@@ -23,10 +23,7 @@ import static xyz.destiall.sgcraftlink.SGCraftLinkSpigot.color;
 public class ResourcePackModule extends Module implements CommandExecutor {
     public ResourcePackModule(SGCraftLinkSpigot plugin) {
         super(plugin, "resource-pack.yml");
-        if (!config.getBoolean("enabled"))
-            return;
-
-        plugin.getCommand("rp").setExecutor(this);
+        setCommandExecutor("rp");
     }
 
     @Override
@@ -37,11 +34,11 @@ public class ResourcePackModule extends Module implements CommandExecutor {
 
     @Override
     public void disable() {
-        if (!config.getBoolean("enabled"))
-            return;
-
-        plugin.getCommand("rp").setExecutor(null);
+        unsetCommandExecutor("rp");
     }
+
+    @Override
+    public void enable() {}
 
     private static final char[] hexCode = "0123456789ABCDEF".toCharArray();
 
@@ -77,6 +74,11 @@ public class ResourcePackModule extends Module implements CommandExecutor {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (!isEnabled()) {
+            sender.sendMessage(color("&cThis feature is not enabled!"));
+            return false;
+        }
+
         if (!(sender instanceof Player))
             return false;
 

@@ -43,35 +43,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static xyz.destiall.sgcraftlink.SGCraftLinkSpigot.testPaperOr1_8Above;
+
 public class VanillaAddon extends Module implements Listener {
     private Map<Material, VanillaItem> addons;
     private NamespacedKey namespacedKey;
     public VanillaAddon(SGCraftLinkSpigot plugin) {
         super(plugin, "vanilla-addons.yml");
-        if (!config.getBoolean("enabled", false))
-            return;
-
-        namespacedKey = new NamespacedKey(plugin, "vanilla-addon");
-
-        addons = new HashMap<>();
-        ConfigurationSection addonSection = config.getConfigurationSection("addons");
-        if (addonSection == null)
-            return;
-
-        for (String key : addonSection.getKeys(false)) {
-            Material material = Material.matchMaterial(key);
-            if (material == null)
-                continue;
-
-            ConfigurationSection section = addonSection.getConfigurationSection(key);
-            if (section == null)
-                continue;
-
-            VanillaItem vanillaItem = new VanillaItem(material, section);
-            addons.put(material, vanillaItem);
-        }
-
-        plugin.getLogger().info("Registered " + addons.size() + " vanilla addons " + new JSONArray(addons.keySet().stream().map(Material::name).collect(Collectors.toList())).toString().replace("\"", ""));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -87,9 +65,6 @@ public class VanillaAddon extends Module implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPickUp(EntityPickupItemEvent e) {
-        if (!config.getBoolean("enabled", false))
-            return;
-
         ItemStack itemStack = e.getItem().getItemStack();
         if (changeMeta(itemStack))
             e.getItem().setItemStack(itemStack);
@@ -97,7 +72,7 @@ public class VanillaAddon extends Module implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onDrop(BlockDropItemEvent e) {
-        if (!config.getBoolean("enabled", false))
+        if (!isEnabled())
             return;
 
         for (Item entity : e.getItems()) {
@@ -109,9 +84,6 @@ public class VanillaAddon extends Module implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onDrop(PlayerDropItemEvent e) {
-        if (!config.getBoolean("enabled", false))
-            return;
-
         ItemStack itemStack = e.getItemDrop().getItemStack();
         if (changeMeta(itemStack))
             e.getItemDrop().setItemStack(itemStack);
@@ -119,8 +91,6 @@ public class VanillaAddon extends Module implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onCreativeInventory(InventoryCreativeEvent e) {
-        if (!config.getBoolean("enabled", false))
-            return;
         ItemStack itemStack = e.getCursor();
         if (changeMeta(itemStack))
             e.setCursor(itemStack);
@@ -128,8 +98,6 @@ public class VanillaAddon extends Module implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDeath(EntityDeathEvent e) {
-        if (!config.getBoolean("enabled", false))
-            return;
         List<ItemStack> drops = e.getDrops();
         for (ItemStack itemStack : drops) {
             changeMeta(itemStack);
@@ -138,8 +106,6 @@ public class VanillaAddon extends Module implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onLootGeneration(LootGenerateEvent e) {
-        if (!config.getBoolean("enabled", false))
-            return;
         List<ItemStack> loot = e.getLoot();
         boolean dirty = false;
         for (ItemStack itemStack : loot) {
@@ -152,8 +118,6 @@ public class VanillaAddon extends Module implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryInteract(InventoryClickEvent e) {
-        if (!config.getBoolean("enabled", false))
-            return;
         ItemStack currentItem = e.getCurrentItem();
         if (currentItem != null && changeMeta(currentItem)) {
             e.setCurrentItem(currentItem);
@@ -162,8 +126,6 @@ public class VanillaAddon extends Module implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPreCraft(PrepareItemCraftEvent e) {
-        if (!config.getBoolean("enabled", false))
-            return;
         ItemStack itemStack = e.getInventory().getResult();
         if (itemStack != null && changeMeta(itemStack))
             e.getInventory().setResult(itemStack);
@@ -171,8 +133,6 @@ public class VanillaAddon extends Module implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onSmelt(FurnaceSmeltEvent e) {
-        if (!config.getBoolean("enabled", false))
-            return;
         ItemStack itemStack = e.getResult();
         if (changeMeta(itemStack))
             e.setResult(itemStack);
@@ -180,8 +140,6 @@ public class VanillaAddon extends Module implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onFish(PlayerFishEvent e) {
-        if (!config.getBoolean("enabled", false))
-            return;
         Entity caught = e.getCaught();
         if (caught == null)
             return;
@@ -196,8 +154,6 @@ public class VanillaAddon extends Module implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onVillagerTrade(VillagerAcquireTradeEvent e) {
-        if (!config.getBoolean("enabled", false))
-            return;
         MerchantRecipe recipe = e.getRecipe();
         List<ItemStack> itemStacks = e.getRecipe().getIngredients();
         boolean dirty = false;
@@ -219,8 +175,6 @@ public class VanillaAddon extends Module implements Listener {
 
     // @EventHandler
     public void onRecipeBook(PlayerRecipeBookClickEvent e) {
-        if (!config.getBoolean("enabled", false))
-            return;
         /* TODO:
            When clicking the recipe book, it will not automatically add ingredients that have custom data.
            Figure out a way that replaces the ingredients with our new ingredients.
@@ -327,24 +281,51 @@ public class VanillaAddon extends Module implements Listener {
     @Override
     public void loadDefaultConfig() {
         config.set("enabled", false);
+        config.set("addons." + Material.COAL + ".lores", Arrays.asList("&f", "&eRarity: &f&lCOMMON"));
         config.set("addons." + Material.DIAMOND + ".lores", Arrays.asList("&f", "&eRarity: &f&lCOMMON"));
         config.set("addons." + Material.EMERALD + ".lores", Arrays.asList("&f", "&eRarity: &f&lCOMMON"));
-        config.set("addons." + Material.LAPIS_LAZULI + ".lores", Arrays.asList("&f", "&eRarity: &f&lCOMMON"));
-        config.set("addons." + Material.COAL + ".lores", Arrays.asList("&f", "&eRarity: &f&lCOMMON"));
-        config.set("addons." + Material.RAW_GOLD + ".lores", Arrays.asList("&f", "&eRarity: &f&lCOMMON"));
-        config.set("addons." + Material.RAW_COPPER + ".lores", Arrays.asList("&f", "&eRarity: &f&lCOMMON"));
-        config.set("addons." + Material.RAW_IRON + ".lores", Arrays.asList("&f", "&eRarity: &f&lCOMMON"));
-        config.set("addons." + Material.NETHERITE_SCRAP + ".lores", Arrays.asList("&f", "&eRarity: &f&lCOMMON"));
-
+        try {
+            testPaperOr1_8Above();
+            config.set("addons." + Material.LAPIS_LAZULI + ".lores", Arrays.asList("&f", "&eRarity: &f&lCOMMON"));
+            config.set("addons." + Material.RAW_GOLD + ".lores", Arrays.asList("&f", "&eRarity: &f&lCOMMON"));
+            config.set("addons." + Material.RAW_COPPER + ".lores", Arrays.asList("&f", "&eRarity: &f&lCOMMON"));
+            config.set("addons." + Material.RAW_IRON + ".lores", Arrays.asList("&f", "&eRarity: &f&lCOMMON"));
+            config.set("addons." + Material.NETHERITE_SCRAP + ".lores", Arrays.asList("&f", "&eRarity: &f&lCOMMON"));
+        } catch (Throwable e) {}
         config.set("addons." + Material.NETHER_STAR + ".lores", Arrays.asList("&f", "&eRarity: &a&lUNCOMMON"));
         config.set("addons." + Material.DRAGON_EGG + ".lores", Arrays.asList("&f", "&eRarity: &a&lUNCOMMON"));
     }
 
     @Override
     public void disable() {
-        if (!config.getBoolean("enabled", false))
+        if (!isEnabled())
             return;
 
         addons.clear();
+    }
+
+    @Override
+    public void enable() {
+        namespacedKey = new NamespacedKey(plugin, "vanilla-addon");
+
+        addons = new HashMap<>();
+        ConfigurationSection addonSection = config.getConfigurationSection("addons");
+        if (addonSection == null)
+            return;
+
+        for (String key : addonSection.getKeys(false)) {
+            Material material = Material.matchMaterial(key);
+            if (material == null)
+                continue;
+
+            ConfigurationSection section = addonSection.getConfigurationSection(key);
+            if (section == null)
+                continue;
+
+            VanillaItem vanillaItem = new VanillaItem(material, section);
+            addons.put(material, vanillaItem);
+        }
+
+        plugin.getLogger().info("Registered " + addons.size() + " vanilla addons " + new JSONArray(addons.keySet().stream().map(Material::name).collect(Collectors.toList())).toString().replace("\"", ""));
     }
 }

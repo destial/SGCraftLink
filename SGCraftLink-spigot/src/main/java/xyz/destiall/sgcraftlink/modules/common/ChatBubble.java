@@ -17,7 +17,8 @@ import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.jetbrains.annotations.NotNull;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.Scheduler;
-import xyz.destiall.sgcraftlink.items.ChatBubblePacket;
+import xyz.destiall.sgcraftlink.items.packets.PacketArmorStand;
+import xyz.destiall.sgcraftlink.items.packets.ProtocolLibArmorStand;
 import xyz.destiall.sgcraftlink.modules.Module;
 
 import java.util.ArrayList;
@@ -30,25 +31,10 @@ import java.util.stream.Collectors;
 import static xyz.destiall.sgcraftlink.SGCraftLinkSpigot.color;
 
 public class ChatBubble extends Module implements Listener, CommandExecutor {
-    @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        if (!(sender instanceof Player))
-            return false;
-
-        Player player = (Player) sender;
-        boolean state = config.getBoolean("data." + player.getName(), true);
-        state = !state;
-        config.set("data." + player.getName(), state);
-
-        player.sendMessage(color("&eYou have toggled chat bubbles: " + (state ? "&a&lON" : "&c&lOFF")));
-
-        save();
-        return false;
-    }
 
     private class Chat {
         private Scheduler.Task teleport;
-        private Map<Scheduler.TaskRunnable, List<ChatBubblePacket>> lines;
+        private Map<Scheduler.TaskRunnable, List<PacketArmorStand>> lines;
 
         private Chat(Player player) {
             init(player);
@@ -64,7 +50,7 @@ public class ChatBubble extends Module implements Listener, CommandExecutor {
 
         public void clear() {
             lines.forEach((task, list) -> {
-                list.forEach(ChatBubblePacket::remove);
+                list.forEach(PacketArmorStand::remove);
                 list.clear();
                 task.cancel();
             });
@@ -77,16 +63,17 @@ public class ChatBubble extends Module implements Listener, CommandExecutor {
 
     public ChatBubble(SGCraftLinkSpigot plugin) {
         super(plugin, "chat-bubble.yml");
-
-        plugin.getCommand("chatbubble").setExecutor(this);
+        setCommandExecutor("chatbubble");
     }
 
     public void disable() {
         chatBubbles.values().forEach(Chat::clear);
         chatBubbles.clear();
-
-        plugin.getCommand("chatbubble").setExecutor(null);
+        unsetCommandExecutor("chatbubble");
     }
+
+    @Override
+    public void enable() {}
 
     @EventHandler(ignoreCancelled = true)
     public void onTeleport(PlayerTeleportEvent e) {
@@ -176,8 +163,8 @@ public class ChatBubble extends Module implements Listener, CommandExecutor {
 
             AtomicDouble deltaY = new AtomicDouble(lines.size() * spacing);
             String finalColor = color;
-            List<ChatBubblePacket> bubbles = lines.stream().map(line -> {
-                ChatBubblePacket as = new ChatBubblePacket(loc.getWorld(), loc.getX(), loc.getY(), loc.getZ());
+            List<PacketArmorStand> bubbles = lines.stream().map(line -> {
+                PacketArmorStand as = new ProtocolLibArmorStand(loc.getWorld(), loc.getX(), loc.getY(), loc.getZ());
                 as.getOffset().setY(height + deltaY.getAndAdd(-spacing));
                 as.setPos(loc.getX() + as.getOffset().getX(), loc.getY() + as.getOffset().getY(), loc.getZ() + as.getOffset().getZ());
                 as.setCustomName(finalColor + (player.hasPermission("chatbubbles.color") ? color(line) : line));
@@ -193,12 +180,12 @@ public class ChatBubble extends Module implements Listener, CommandExecutor {
 
             Chat playerBubbles = chatBubbles.getOrDefault(player, chatBubbles.putIfAbsent(player, new Chat(player)));
             int current = lines.size();
-            for (Map.Entry<Scheduler.TaskRunnable, List<ChatBubblePacket>> entry : playerBubbles.lines.entrySet()) {
+            for (Map.Entry<Scheduler.TaskRunnable, List<PacketArmorStand>> entry : playerBubbles.lines.entrySet()) {
                 if ((current += entry.getValue().size()) > maxLines) {
                     entry.getKey().cancel();
                     continue;
                 }
-                for (ChatBubblePacket as : entry.getValue()) {
+                for (PacketArmorStand as : entry.getValue()) {
                     as.getOffset().setY(as.getOffset().getY() + (lines.size() * spacing));
                 }
             }
@@ -210,7 +197,7 @@ public class ChatBubble extends Module implements Listener, CommandExecutor {
                 }
 
                 public void remove() {
-                    ChatBubblePacket.remove(bubbles);
+                    PacketArmorStand.remove(bubbles);
                     bubbles.clear();
                     playerBubbles.lines.remove(this);
                     if (playerBubbles.lines.isEmpty()) {
@@ -244,5 +231,26 @@ public class ChatBubble extends Module implements Listener, CommandExecutor {
         config.set("bubble.disappear-seconds", 3);
         config.set("bubble.radius", 30);
         config.set("bubble.max-lines", 5);
+    }
+
+    @Override
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (!isEnabled()) {
+            sender.sendMessage(color("&cThis feature is not enabled!"));
+            return false;
+        }
+
+        if (!(sender instanceof Player))
+            return false;
+
+        Player player = (Player) sender;
+        boolean state = config.getBoolean("data." + player.getName(), true);
+        state = !state;
+        config.set("data." + player.getName(), state);
+
+        player.sendMessage(color("&eYou have toggled chat bubbles: " + (state ? "&a&lON" : "&c&lOFF")));
+
+        saveConfig();
+        return false;
     }
 }

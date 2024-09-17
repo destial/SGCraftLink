@@ -27,9 +27,9 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.items.FontUserSettings;
+import xyz.destiall.sgcraftlink.items.font.DefaultFont;
+import xyz.destiall.sgcraftlink.items.font.Font;
 import xyz.destiall.sgcraftlink.modules.Module;
-import xyz.destiall.sgcraftlink.modules.hooks.utils.DefaultFont;
-import xyz.destiall.sgcraftlink.modules.hooks.utils.Font;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -60,8 +60,7 @@ public class Fonter extends Module implements CommandExecutor, TabExecutor {
 
     public Fonter(SGCraftLinkSpigot plugin) {
         super(plugin, "fonts.yml");
-        plugin.getCommand("font").setExecutor(this);
-        enable();
+        setCommandExecutor("font");
     }
 
     @Override
@@ -141,6 +140,7 @@ public class Fonter extends Module implements CommandExecutor, TabExecutor {
         return users.getOrDefault(player, new FontUserSettings(defaultFont));
     }
 
+    @Override
     public void enable() {
         if (!config.getBoolean("enabled", true))
             return;
@@ -217,7 +217,7 @@ public class Fonter extends Module implements CommandExecutor, TabExecutor {
         convertTitle = config.getBoolean("conversion.title-subtitle", convertTitle);
 
         if (dirty) {
-            save();
+            saveConfig();
             dirty = false;
         }
 
@@ -341,6 +341,7 @@ public class Fonter extends Module implements CommandExecutor, TabExecutor {
                             }
                         }
                     }
+
                     return;
                 }
 
@@ -406,9 +407,18 @@ public class Fonter extends Module implements CommandExecutor, TabExecutor {
             JSONArray extra = object.getJSONArray("extra");
             JSONArray update = new JSONArray();
             for (int i = 0; i < extra.length(); i++) {
-                JSONObject obj = extra.getJSONObject(i);
-                chatComponent(obj, font, checkChar);
-                update.put(obj);
+                try {
+                    JSONObject obj = extra.getJSONObject(i);
+                    chatComponent(obj, font, checkChar);
+                    update.put(obj);
+                } catch (Exception e) {
+                    String string = extra.getString(i);
+                    JSONObject obj = new JSONObject();
+                    obj.put("text", string);
+                    chatComponent(obj, font, checkChar);
+                    update.put(obj);
+                }
+
             }
             object.put("extra", update);
         }
@@ -416,13 +426,14 @@ public class Fonter extends Module implements CommandExecutor, TabExecutor {
 
     @Override
     public void disable() {
+        unsetCommandExecutor("font");
         if (!config.getBoolean("enabled", true))
             return;
 
         fonts.clear();
 
         if (dirty) {
-            save();
+            saveConfig();
             dirty = false;
         }
 
@@ -431,6 +442,11 @@ public class Fonter extends Module implements CommandExecutor, TabExecutor {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String s, @NotNull String[] args) {
+        if (!isEnabled()) {
+            sender.sendMessage(color("&cThis feature is not enabled!"));
+            return false;
+        }
+
         if (!(sender instanceof Player)) {
             sender.sendMessage(color("&cOnly players can use this command!"));
             return false;
@@ -445,7 +461,7 @@ public class Fonter extends Module implements CommandExecutor, TabExecutor {
         if (args[0].equalsIgnoreCase("reload") && player.hasPermission("sgc.font.admin")) {
             player.sendMessage(color("&aReloading fonts..."));
             disable();
-            load();
+            loadConfig();
             enable();
             return false;
         }
@@ -456,7 +472,7 @@ public class Fonter extends Module implements CommandExecutor, TabExecutor {
                 defaultFont = newDefault;
                 config.set("default-font", defaultFont.getName());
                 dirty = true;
-                save();
+                saveConfig();
                 player.sendMessage(color("&aSet global default font to: " + defaultFont.getName()));
                 return false;
             }
@@ -509,7 +525,7 @@ public class Fonter extends Module implements CommandExecutor, TabExecutor {
             }
 
             dirty = true;
-            save();
+            saveConfig();
             return false;
         }
 
@@ -523,7 +539,7 @@ public class Fonter extends Module implements CommandExecutor, TabExecutor {
         users.put(player.getUniqueId(), settings);
         config.set("users." + player.getUniqueId() + ".font", newFont.getName());
         dirty = true;
-        save();
+        saveConfig();
         player.sendMessage(color("&aYou have set your font to: " + newFont.getName()));
         return false;
     }

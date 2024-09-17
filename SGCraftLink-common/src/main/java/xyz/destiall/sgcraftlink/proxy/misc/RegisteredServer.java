@@ -5,11 +5,20 @@ public class RegisteredServer {
     private final String token;
     private final String panelId;
     private String ip = "192.168.1.99";
+    private long maxMemory = -1;
 
     public RegisteredServer(int port, String token, String panelId) {
         this.port = port;
         this.token = token;
         this.panelId = panelId;
+    }
+
+    public long getMaxMemory() {
+        return maxMemory;
+    }
+
+    public void setMaxMemory(long maxMemory) {
+        this.maxMemory = maxMemory;
     }
 
     public String getPanelId() {

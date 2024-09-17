@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
+import com.velocitypowered.api.plugin.Dependency;
 import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.Player;
@@ -36,6 +37,7 @@ import xyz.destiall.sgcraftlink.velocityproviders.VelocityConnectedServer;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityConsolePlayer;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityHoverEvent;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityLogger;
+import xyz.destiall.sgcraftlink.velocityproviders.VelocityPerServerSkin;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityPlayer;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityScheduler;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityTextComponent;
@@ -52,7 +54,10 @@ import java.util.stream.Collectors;
         id = "sgcraftlink",
         name = "SGCraftLink",
         version = "1.0-SNAPSHOT",
-        authors = {"destiall"}
+        authors = {"destiall"},
+        dependencies = {
+            @Dependency(id = "skinsrestorer", optional = true)
+        }
 )
 public class SGCraftLinkVelocity implements PluginProvider {
     public static final ChannelIdentifier CHANNEL = MinecraftChannelIdentifier.from(SGCraftLinkCommon.CHANNEL);
@@ -66,6 +71,7 @@ public class SGCraftLinkVelocity implements PluginProvider {
     private DiscordProvider discordManager;
     private VelocityPlaytimeProvider playtimeManager;
     private VelocityPluginMessager pluginMessager;
+    private VelocityPerServerSkin perServerSkin;
     private LuckPermsManager luckPermsManager;
     private BirthdayManager birthdayManager;
     private DataManager dataManager;
@@ -151,6 +157,11 @@ public class SGCraftLinkVelocity implements PluginProvider {
     @Override
     public DataManager getDataManager() {
         return dataManager;
+    }
+
+    @Override
+    public VelocityPerServerSkin getPerServerSkin() {
+        return perServerSkin;
     }
 
     @Override
@@ -243,6 +254,11 @@ public class SGCraftLinkVelocity implements PluginProvider {
         }
         try {
             birthdayManager = new BirthdayManager(this);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            perServerSkin = new VelocityPerServerSkin(this);
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -1,6 +1,5 @@
 package xyz.destiall.sgcraftlink;
 
-import net.luckperms.api.LuckPerms;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -8,11 +7,12 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
-import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
+import xyz.destiall.sgcraftlink.gamemode.MoveIfGay;
 import xyz.destiall.sgcraftlink.gamemode.OnePersonDeath;
+import xyz.destiall.sgcraftlink.items.ClassSet;
 import xyz.destiall.sgcraftlink.listeners.AirBlockPlaceListener;
 import xyz.destiall.sgcraftlink.listeners.PML;
 import xyz.destiall.sgcraftlink.listeners.PlayerListener;
@@ -23,11 +23,13 @@ import xyz.destiall.sgcraftlink.modules.common.CMIModule;
 import xyz.destiall.sgcraftlink.modules.common.ChatBubble;
 import xyz.destiall.sgcraftlink.modules.common.Fonter;
 import xyz.destiall.sgcraftlink.modules.common.HeadHunt;
+import xyz.destiall.sgcraftlink.modules.common.HoverMessages;
 import xyz.destiall.sgcraftlink.modules.common.MigrationModule;
 import xyz.destiall.sgcraftlink.modules.common.Redeemables;
 import xyz.destiall.sgcraftlink.modules.common.ScheduledCommands;
 import xyz.destiall.sgcraftlink.modules.common.TagModule;
 import xyz.destiall.sgcraftlink.modules.common.TriggerModule;
+import xyz.destiall.sgcraftlink.modules.common.WorldGuardModule;
 import xyz.destiall.sgcraftlink.modules.hooks.CoreProtectHook;
 import xyz.destiall.sgcraftlink.modules.hooks.DiscordSRVHook;
 import xyz.destiall.sgcraftlink.modules.hooks.DynmapHook;
@@ -37,12 +39,16 @@ import xyz.destiall.sgcraftlink.modules.hooks.PAPIHook;
 import xyz.destiall.sgcraftlink.modules.skyblock.NovaEconomyGUIModule;
 import xyz.destiall.sgcraftlink.modules.skyblock.NovaSkyblockModule;
 import xyz.destiall.sgcraftlink.modules.survival.AuraSkillsHook;
-import xyz.destiall.sgcraftlink.modules.survival.CustomRecipes;
+import xyz.destiall.sgcraftlink.modules.survival.CustomFood;
+import xyz.destiall.sgcraftlink.modules.survival.MythicRecipes;
+import xyz.destiall.sgcraftlink.modules.survival.HealthBar;
 import xyz.destiall.sgcraftlink.modules.survival.InvisFrames;
 import xyz.destiall.sgcraftlink.modules.survival.MusicHook;
-import xyz.destiall.sgcraftlink.modules.survival.MythicItemAbilities;
+import xyz.destiall.sgcraftlink.modules.survival.MythicHook;
+import xyz.destiall.sgcraftlink.modules.survival.PermissionEffects;
 import xyz.destiall.sgcraftlink.modules.survival.ProtectionStonesModule;
 import xyz.destiall.sgcraftlink.modules.survival.ResourcePackModule;
+import xyz.destiall.sgcraftlink.modules.survival.TrashModule;
 import xyz.destiall.sgcraftlink.modules.survival.VanillaAddon;
 import xyz.destiall.sgcraftlink.modules.vanilla.Casino;
 import xyz.destiall.sgcraftlink.modules.vanilla.LastLocation;
@@ -52,21 +58,32 @@ import xyz.destiall.sgcraftlink.modules.vanilla.ReputationModule;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecutor {
-    private List<Module> modules;
+    private final Collection<Module> modules = new ClassSet<>();
     private PAPIHook papiHook;
     private Scheduler scheduler;
 
     @Override
-    public void onEnable() {
+    public void onLoad() {
         scheduler = new Scheduler(this);
+        if (getServer().getPluginManager().isPluginEnabled("WorldGuard")) {
+            try {
+                modules.add(new WorldGuardModule(this));
+            } catch (Exception e) {
+                getLogger().warning("This version cannot run WorldGuard!");
+                e.printStackTrace();
+            }
+        }
+    }
 
+    @Override
+    public void onEnable() {
         getServer().getMessenger().registerOutgoingPluginChannel(this, SGCraftLinkCommon.CHANNEL);
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
 
@@ -84,138 +101,57 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             enable();
         } catch (Exception e) {
             getLogger().warning("This version cannot be loaded!");
+            e.printStackTrace();
         }
-    }
-
-    public void testPaperOr1_8Above() throws ClassNotFoundException {
-        Class.forName("com.destroystokyo.paper.profile.PlayerProfile");
     }
 
     public void enable() {
-        modules = new ArrayList<>();
-        if (getServer().getPluginManager().getPlugin("Vault") != null) {
-            try {
-                modules.add(new EconomyHook(this));
-            } catch (Exception e) {
-                getLogger().warning("This version cannot run Economy Hook!");
-            }
+        for (String cmd : Module.COMMANDS) {
+            getCommand(cmd).setExecutor(null);
         }
-        try {
-            testPaperOr1_8Above();
-            modules.add(new HeadHunt(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run HeadHunt!");
-        }
-        try {
-            testPaperOr1_8Above();
-            modules.add(new TagModule(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run Tags!");
-        }
-        try {
-            testPaperOr1_8Above();
-            modules.add(new LastLocation(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run LastLocation!");
-        }
-        try {
-            modules.add(new TriggerModule(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run Triggers!");
-        }
-        try {
-            testPaperOr1_8Above();
-            modules.add(new Redeemables(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run Redeemables!");
-        }
-        try {
-            modules.add(new ScheduledCommands(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run ScheduledCommands!");
-        }
-        try {
-            testPaperOr1_8Above();
-            modules.add(new ReputationModule(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run Reputation!");
-        }
-        try {
-            testPaperOr1_8Above();
-            modules.add(new BirthdayModule(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run Birthdays!");
-        }
-        try {
-            testPaperOr1_8Above();
-            modules.add(new MigrationModule(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run Birthdays!");
-        }
-        try {
-            modules.add(new DataModule(this));
-        } catch (Exception e) {
-            e.printStackTrace();
-            getLogger().warning("This version cannot run Data Communication!");
+        Collection<Class<? extends Module>> modules = new HashSet<>();
+        Module.COMMANDS.clear();
+        if (getServer().getPluginManager().isPluginEnabled("Vault")) {
+            modules.add(EconomyHook.class);
         }
 
-        modules.add(new PlayerListener(this));
-        try {
-            testPaperOr1_8Above();
-            modules.add(new AirBlockPlaceListener(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run Anti-Air Block Place!");
+        if (getServer().getPluginManager().isPluginEnabled("LuckPerms")) {
+            modules.add(LuckPermsHook.class);
         }
 
-        try {
-            testPaperOr1_8Above();
-            modules.add(new Casino(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run Casino!");
+        saveDefaultConfig();
+        modules.add(TagModule.class);
+        modules.add(HeadHunt.class);
+        modules.add(LastLocation.class);
+        modules.add(TriggerModule.class);
+        modules.add(Redeemables.class);
+        modules.add(TrashModule.class);
+        modules.add(ScheduledCommands.class);
+        modules.add(ReputationModule.class);
+        modules.add(BirthdayModule.class);
+        modules.add(MigrationModule.class);
+        modules.add(DataModule.class);
+        modules.add(PlayerListener.class);
+        modules.add(AirBlockPlaceListener.class);
+        modules.add(Casino.class);
+        modules.add(InvisFrames.class);
+        modules.add(ResourcePackModule.class);
+        modules.add(HealthBar.class);
+        modules.add(CustomFood.class);
+        modules.add(VanillaAddon.class);
+        modules.add(PermissionEffects.class);
+
+        // Gamemodes (hehe)
+        modules.add(OnePersonDeath.class);
+        modules.add(MoveIfGay.class);
+
+        if (getServer().getPluginManager().isPluginEnabled("ProtocolLib")) {
+            modules.add(ChatBubble.class);
+            modules.add(Fonter.class);
         }
 
-        try {
-            testPaperOr1_8Above();
-            modules.add(new OnePersonDeath(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run OnePersonDeath!");
-        }
-
-        try {
-            testPaperOr1_8Above();
-            modules.add(new InvisFrames(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run InvisFrames!");
-        }
-
-        try {
-            testPaperOr1_8Above();
-            modules.add(new ResourcePackModule(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run ResourcePack!");
-        }
-
-        if (getServer().getPluginManager().getPlugin("ProtocolLib") != null) {
-            try {
-                testPaperOr1_8Above();
-                modules.add(new ChatBubble(this));
-            } catch (Exception e) {
-                getLogger().warning("This version cannot run ChatBubbles!");
-            }
-            try {
-                testPaperOr1_8Above();
-                modules.add(new Fonter(this));
-            } catch (Exception e) {
-                getLogger().warning("This version cannot run Fonter!");
-            }
-        }
-
-        if (getServer().getPluginManager().getPlugin("CMI") != null) {
-            try {
-                modules.add(new CMIModule(this));
-            } catch (Exception e) {
-                getLogger().warning("This version cannot run CMIModule!");
-            }
+        if (getServer().getPluginManager().isPluginEnabled("CMI")) {
+            modules.add(CMIModule.class);
         }
 
         /**
@@ -224,121 +160,93 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
          * getLogger().warning("This version cannot run TryMeModule!"); } }
          **/
 
-        if (getServer().getPluginManager().getPlugin("PiggyBank") != null) {
-            try {
-                testPaperOr1_8Above();
-                modules.add(new PiggyBankModule(this));
-            } catch (Exception e) {
-                getLogger().warning("This version cannot run PiggyBankModule!");
+        if (getServer().getPluginManager().isPluginEnabled("PiggyBank")) {
+            modules.add(PiggyBankModule.class);
+        }
+
+        if (getServer().getPluginManager().isPluginEnabled("DiscordSRV")) {
+            modules.add(DiscordSRVHook.class);
+        }
+
+        if (getServer().getPluginManager().isPluginEnabled("CoreProtect")) {
+            modules.add(CoreProtectHook.class);
+        }
+
+        if (getServer().getPluginManager().isPluginEnabled("dynmap")) {
+            modules.add(DynmapHook.class);
+        }
+
+        if (getServer().getPluginManager().isPluginEnabled("Nova")) {
+            if (getServer().getPluginManager().isPluginEnabled("SuperiorSkyblock2")) {
+                modules.add(NovaSkyblockModule.class);
+            }
+            if (getServer().getPluginManager().isPluginEnabled("EconomyShopGUI")) {
+                modules.add(NovaEconomyGUIModule.class);
             }
         }
 
-        saveDefaultConfig();
+        if (getServer().getPluginManager().isPluginEnabled("AuraSkills")) {
+            modules.add(AuraSkillsHook.class);
+        }
 
-        if (getServer().getPluginManager().getPlugin("LuckPerms") != null) {
-            RegisteredServiceProvider<LuckPerms> provider = getServer().getServicesManager()
-                    .getRegistration(LuckPerms.class);
-            if (provider != null) {
+        if (getServer().getPluginManager().isPluginEnabled("MythicMobs")) {
+            modules.add(MythicHook.class);
+        }
+
+        if (getServer().getPluginManager().isPluginEnabled("MythicCrucible")) {
+            modules.add(MythicRecipes.class);
+        }
+
+        if (getServer().getPluginManager().isPluginEnabled("ProtectionStones")) {
+            modules.add(ProtectionStonesModule.class);
+        }
+
+        if (getServer().getPluginManager().isPluginEnabled("NoteBlockMusicPlayer")) {
+            modules.add(MusicHook.class);
+        }
+
+        if (getServer().getPluginManager().isPluginEnabled("Citizens")) {
+            modules.add(HoverMessages.class);
+        }
+
+        for (Class<? extends Module> clazz : modules) {
+            Module module;
+            try {
+                module = clazz.getDeclaredConstructor(SGCraftLinkSpigot.class).newInstance(this);
+            } catch (Throwable e) {
+                getLogger().warning("This version cannot run " + clazz.getSimpleName());
+                e.printStackTrace();
+                continue;
+            }
+
+            this.modules.add(module);
+            try {
+                if (!module.isUniversallyCompatible()) {
+                    testPaperOr1_8Above();
+                }
+            } catch (Throwable e) {
+                getLogger().warning("This version cannot run " + module);
+                this.modules.remove(module);
+            }
+
+            module.initConfig();
+            if (!module.isEnabled()) {
+                this.modules.remove(module);
+            }
+        }
+
+        for (Module module : this.modules) {
+            module.enable();
+            if (module instanceof Listener) {
                 try {
-                    modules.add(new LuckPermsHook(this, provider.getProvider()));
-                } catch (Exception e) {
-                    getLogger().warning("This version cannot run LuckPermsModule!");
+                    getServer().getPluginManager().registerEvents((Listener) module, this);
+                } catch (Throwable e) {
+                    e.printStackTrace();
                 }
             }
         }
 
-        if (getServer().getPluginManager().getPlugin("DiscordSRV") != null) {
-            try {
-                testPaperOr1_8Above();
-                modules.add(new DiscordSRVHook(this));
-            } catch (Exception e) {
-                getLogger().warning("This version cannot run DiscordSRV Hook!");
-            }
-        }
-
-        if (getServer().getPluginManager().getPlugin("CoreProtect") != null) {
-            try {
-                testPaperOr1_8Above();
-                modules.add(new CoreProtectHook(this));
-            } catch (Exception e) {
-                getLogger().warning("This version cannot run CoreProtect Hook!");
-            }
-        }
-
-        if (getServer().getPluginManager().getPlugin("dynmap") != null) {
-            try {
-                modules.add(new DynmapHook(this));
-            } catch (Exception e) {
-                getLogger().warning("This version cannot run Dynmap Hook!");
-            }
-        }
-
-        if (getServer().getPluginManager().getPlugin("Nova") != null) {
-            if (getServer().getPluginManager().getPlugin("SuperiorSkyblock2") != null) {
-                try {
-                    modules.add(new NovaSkyblockModule(this));
-                } catch (Exception e) {
-                    getLogger().warning("This version cannot run Nova & SuperiorSkyblock Hook!");
-                }
-            }
-            if (getServer().getPluginManager().getPlugin("EconomyShopGUI") != null) {
-                try {
-                    modules.add(new NovaEconomyGUIModule(this));
-                } catch (Exception e) {
-                    getLogger().warning("This version cannot run Nova & EconomyShopGUI Hook!");
-                }
-            }
-        }
-
-        if (getServer().getPluginManager().getPlugin("AuraSkills") != null) {
-            try {
-                modules.add(new AuraSkillsHook(this));
-            } catch (Exception e) {
-                getLogger().warning("This version cannot run MythicItemAbilities Hook!");
-            }
-        }
-
-        if (getServer().getPluginManager().getPlugin("MythicMobs") != null) {
-            try {
-                modules.add(new MythicItemAbilities(this));
-            } catch (Exception e) {
-                getLogger().warning("This version cannot run MythicItemAbilities Hook!");
-            }
-        }
-
-        if (getServer().getPluginManager().getPlugin("ProtectionStones") != null) {
-            try {
-                modules.add(new ProtectionStonesModule(this));
-            } catch (Exception e) {
-                getLogger().warning("This version cannot run ProtectionStonesHook!");
-            }
-        }
-
-        if (getServer().getPluginManager().getPlugin("NoteBlockMusicPlayer") != null) {
-            try {
-                modules.add(new MusicHook(this));
-            } catch (Exception e) {
-                getLogger().warning("This version cannot run MusicHook!");
-            }
-        }
-
-        if (getServer().getPluginManager().getPlugin("MythicCrucible") != null) {
-            try {
-                testPaperOr1_8Above();
-                modules.add(new CustomRecipes(this));
-            } catch (Exception e) {
-                getLogger().warning("This version cannot run CustomRecipes!");
-            }
-        }
-
-        try {
-            testPaperOr1_8Above();
-            modules.add(new VanillaAddon(this));
-        } catch (Exception e) {
-            getLogger().warning("This version cannot run VanillaAddon!");
-        }
-
-        if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
+        if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             try {
                 papiHook = new PAPIHook(this);
                 papiHook.register();
@@ -347,18 +255,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             }
         }
 
-        for (Module module : modules) {
-            if (module instanceof Listener) {
-                try {
-                    getServer().getPluginManager().registerEvents((Listener) module, this);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
-
-        getLogger().info("Registered " + modules.size() + " modules " + new JSONArray(modules.stream().map(m -> m.getClass().getSimpleName()).collect(Collectors.toList())).toString().replace("\"", ""));
+        getLogger().info("Registered " + this.modules.size() + " modules " + new JSONArray(this.modules.stream().map(Module::toString).collect(Collectors.toList())).toString().replace("\"", ""));
     }
 
     @Override
@@ -383,7 +280,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
 
         HandlerList.unregisterAll(this);
         scheduler.cancelTasks();
-        modules.clear();
+        modules.removeIf(f -> !(f instanceof WorldGuardModule));
     }
 
     @Override
@@ -450,24 +347,30 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
     private static final Pattern hexBracketPattern = Pattern.compile("\\{#([A-Fa-f0-9]){6}}");
 
     public static String color(String s) {
-        Matcher matcher = hexPattern.matcher(s);
-        while (matcher.find()) {
-            final net.md_5.bungee.api.ChatColor hexColor = net.md_5.bungee.api.ChatColor
-                    .of(matcher.group().substring(1, matcher.group().length() - 1));
-            final String before = s.substring(0, matcher.start());
-            final String after = s.substring(matcher.end());
-            s = before + hexColor + after;
-            matcher = hexPattern.matcher(s);
-        }
-        matcher = hexBracketPattern.matcher(s);
-        while (matcher.find()) {
-            final net.md_5.bungee.api.ChatColor hexColor = net.md_5.bungee.api.ChatColor
-                    .of(matcher.group().substring(1, matcher.group().length() - 1));
-            final String before = s.substring(0, matcher.start());
-            final String after = s.substring(matcher.end());
-            s = before + hexColor + after;
+        try {
+            testPaperOr1_8Above();
+            Matcher matcher = hexPattern.matcher(s);
+            while (matcher.find()) {
+                final ChatColor hexColor = ChatColor.of(matcher.group().substring(1, matcher.group().length() - 1));
+                final String before = s.substring(0, matcher.start());
+                final String after = s.substring(matcher.end());
+                s = before + hexColor + after;
+                matcher = hexPattern.matcher(s);
+            }
             matcher = hexBracketPattern.matcher(s);
-        }
-        return ChatColor.translateAlternateColorCodes('&', s);
+            while (matcher.find()) {
+                final ChatColor hexColor = ChatColor.of(matcher.group().substring(1, matcher.group().length() - 1));
+                final String before = s.substring(0, matcher.start());
+                final String after = s.substring(matcher.end());
+                s = before + hexColor + after;
+                matcher = hexBracketPattern.matcher(s);
+            }
+        } catch (Throwable e) {}
+
+        return org.bukkit.ChatColor.translateAlternateColorCodes('&', s);
+    }
+
+    public static void testPaperOr1_8Above() throws ClassNotFoundException {
+        Class.forName("com.destroystokyo.paper.profile.PlayerProfile");
     }
 }

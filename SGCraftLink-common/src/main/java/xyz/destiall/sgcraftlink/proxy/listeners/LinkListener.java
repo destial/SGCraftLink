@@ -66,10 +66,18 @@ public class LinkListener extends ListenerAdapter {
             if (!node.getKey().startsWith("suffix"))
                 return;
 
-            String[] args = node.getKey().split("//.");
-            String suffix = ColorProvider.ChatColor.strip(args[args.length - 1]);
-
-            plugin.getScheduler().schedule(() -> plugin.getDiscordProvider().updateNickname(member, playerName, suffix), 1L, TimeUnit.SECONDS);
+            plugin.getScheduler().schedule(() -> {
+                String name = playerName;
+                if (player != null) {
+                    String suffix = player.getSuffix();
+                    if (suffix != null) {
+                        name += " " + suffix;
+                    }
+                }
+                try {
+                    member.modifyNickname(name).delay(3, TimeUnit.SECONDS).queue(q -> {}, err -> {});
+                } catch (Exception ignored) {}
+            }, 1L, TimeUnit.SECONDS);
         });
     }
 
@@ -209,6 +217,10 @@ public class LinkListener extends ListenerAdapter {
             }
         });
 
+        if (!member.getRoles().contains(plugin.getDiscordProvider().getLinkedRole())) {
+            member.getGuild().addRoleToMember(member, plugin.getDiscordProvider().getLinkedRole()).queue();
+        }
+
         plugin.getDiscordProvider().updateNickname(member, player);
         plugin.getDiscordProvider().updateRankStatus(player, member);
     }
@@ -256,22 +268,28 @@ public class LinkListener extends ListenerAdapter {
                 message.reply("You are already linked to " + name).queue();
                 return;
             }
+
+            int code;
             try {
-                int code = Integer.parseInt(content);
-                name = plugin.getLinkProvider().getName(code);
-                if (name == null) {
-                    message.reply("That is not a valid code!").queue();
-                    return;
-                }
-                if (plugin.getLinkProvider().link(name, user)) {
-                    message.reply("You have linked your account to " + name).queue();
-                    plugin.getLinkProvider().invalidate(code);
-                } else {
-                    message.reply("Player " + name + " is not online!").queue();
-                }
-            } catch (Exception e) {
-                message.reply("That is not a valid code!").queue();
+                code = Integer.parseInt(content);
+            } catch (NumberFormatException e) {
+                message.reply("That is not a valid code! It is 6 digits!").queue();
+                return;
             }
+
+            name = plugin.getLinkProvider().getName(code);
+            if (name == null) {
+                message.reply("That is not a valid code!").queue();
+                return;
+            }
+
+            if (!plugin.getLinkProvider().link(name, user)) {
+                message.reply("Player " + name + " is not online!").queue();
+                return;
+            }
+
+            message.reply("You have linked your account to " + name).queue();
+            plugin.getLinkProvider().invalidate(code);
         }
     }
 
@@ -291,9 +309,7 @@ public class LinkListener extends ListenerAdapter {
             }
         }
         try {
-            member.modifyNickname(name).delay(5, TimeUnit.SECONDS).queue(q -> {
-            }, err -> {
-            });
+            member.modifyNickname(name).delay(5, TimeUnit.SECONDS).queue(q -> {}, err -> {});
         } catch (Exception ignored) {}
     }
 

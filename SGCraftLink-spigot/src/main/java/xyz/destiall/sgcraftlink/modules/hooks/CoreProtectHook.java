@@ -25,17 +25,6 @@ public class CoreProtectHook extends Module implements Listener {
     private CoreProtectAPI api;
     public CoreProtectHook(SGCraftLinkSpigot plugin) {
         super(plugin);
-
-        Plugin cp = plugin.getServer().getPluginManager().getPlugin("CoreProtect");
-        if (!(cp instanceof CoreProtect)) {
-            return;
-        }
-
-        if (!cp.isEnabled()) {
-            return;
-        }
-
-        api = ((CoreProtect) cp).getAPI();
     }
 
     @EventHandler
@@ -149,4 +138,18 @@ public class CoreProtectHook extends Module implements Listener {
 
     @Override
     public void disable() {}
+
+    @Override
+    public void enable() {
+        Plugin cp = plugin.getServer().getPluginManager().getPlugin("CoreProtect");
+        if (!(cp instanceof CoreProtect)) {
+            return;
+        }
+
+        if (!cp.isEnabled()) {
+            return;
+        }
+
+        api = ((CoreProtect) cp).getAPI();
+    }
 }

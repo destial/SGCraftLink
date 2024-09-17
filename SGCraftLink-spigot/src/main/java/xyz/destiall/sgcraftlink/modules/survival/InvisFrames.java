@@ -12,8 +12,6 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.hanging.HangingBreakByEntityEvent;
 import org.bukkit.event.hanging.HangingBreakEvent;
@@ -39,16 +37,7 @@ public class InvisFrames extends Module implements Listener, CommandExecutor, Ta
 
     public InvisFrames(SGCraftLinkSpigot plugin) {
         super(plugin, "invis-frames.yml");
-        if (!config.getBoolean("enabled"))
-            return;
-
-        invisibleKey = new NamespacedKey(plugin, "invisible");
-        try {
-            glowFrame = Material.valueOf("GLOW_ITEM_FRAME");
-            glowFrameEntity = EntityType.valueOf("GLOW_ITEM_FRAME");
-        } catch(IllegalArgumentException ignored) {}
-
-        plugin.getCommand("invisframes").setExecutor(this);
+        setCommandExecutor("invisframes");
     }
 
     @Override
@@ -74,7 +63,7 @@ public class InvisFrames extends Module implements Listener, CommandExecutor, Ta
         return item;
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    //@EventHandler(priority = EventPriority.HIGHEST)
     public void onHangingPlace(HangingPlaceEvent event) {
         if (!isFrameEntity(event.getEntity()) || event.getPlayer() == null) {
             return;
@@ -104,7 +93,7 @@ public class InvisFrames extends Module implements Listener, CommandExecutor, Ta
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    //@EventHandler(priority = EventPriority.HIGHEST)
     public void onHangingBreak(HangingBreakByEntityEvent event) {
         if (!isFrameEntity(event.getEntity()) || !event.getEntity().getPersistentDataContainer().has(invisibleKey, PersistentDataType.BYTE)) {
             return;
@@ -146,7 +135,7 @@ public class InvisFrames extends Module implements Listener, CommandExecutor, Ta
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    //@EventHandler(priority = EventPriority.HIGHEST)
     public void onHangingBreak(HangingBreakEvent event) {
         if (!isFrameEntity(event.getEntity()) || !event.getEntity().getPersistentDataContainer().has(invisibleKey, PersistentDataType.BYTE)) {
             return;
@@ -161,7 +150,16 @@ public class InvisFrames extends Module implements Listener, CommandExecutor, Ta
 
     @Override
     public void disable() {
-        plugin.getCommand("invisframes").setExecutor(null);
+        unsetCommandExecutor("invisframes");
+    }
+
+    @Override
+    public void enable() {
+        invisibleKey = new NamespacedKey(plugin, "invisible");
+        try {
+            glowFrame = Material.valueOf("GLOW_ITEM_FRAME");
+            glowFrameEntity = EntityType.valueOf("GLOW_ITEM_FRAME");
+        } catch(IllegalArgumentException ignored) {}
     }
 
     @Override

@@ -8,6 +8,7 @@ import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.modules.Module;
 
 import java.util.Collection;
+import java.util.stream.Collectors;
 
 public class ProtectionStonesModule extends Module implements Listener {
     public ProtectionStonesModule(SGCraftLinkSpigot plugin) {
@@ -31,6 +32,13 @@ public class ProtectionStonesModule extends Module implements Listener {
         return ProtectionStones.getInstance().getConfiguredBlocks();
     }
 
+    public Collection<ItemStack> getBlockItems() {
+        return ProtectionStones.getInstance().getConfiguredBlocks().stream().map(PSProtectBlock::createItem).collect(Collectors.toSet());
+    }
+
     @Override
     public void disable() {}
+
+    @Override
+    public void enable() {}
 }

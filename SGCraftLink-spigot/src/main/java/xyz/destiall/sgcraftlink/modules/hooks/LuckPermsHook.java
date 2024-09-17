@@ -17,11 +17,13 @@ import net.luckperms.api.model.PermissionHolder;
 import net.luckperms.api.model.group.Group;
 import net.luckperms.api.model.user.User;
 import net.luckperms.api.node.Node;
+import net.luckperms.api.node.types.PermissionNode;
 import net.luckperms.api.track.Track;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.permissions.PermissionAttachmentInfo;
+import org.bukkit.plugin.RegisteredServiceProvider;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -29,9 +31,9 @@ import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.events.DataReceiveEvent;
 import xyz.destiall.sgcraftlink.items.Pair;
+import xyz.destiall.sgcraftlink.items.utils.ButtonCollector;
 import xyz.destiall.sgcraftlink.modules.DataModule;
 import xyz.destiall.sgcraftlink.modules.Module;
-import xyz.destiall.sgcraftlink.modules.hooks.utils.ButtonCollector;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -48,22 +50,27 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static xyz.destiall.sgcraftlink.SGCraftLinkCommon.createDataMap;
+import static xyz.destiall.sgcraftlink.SGCraftLinkSpigot.color;
 
 public class LuckPermsHook extends Module implements Listener {
-    private final LuckPerms api;
+    private LuckPerms luckperms;
     private TextChannel confirmationChannel;
     private final Map<String, Pair<UUID, Boolean>> inConfirmation = new HashMap<>();
+    private final List<String> allowedPlayers = new ArrayList<>();
 
-    public LuckPermsHook(SGCraftLinkSpigot plugin, LuckPerms api) {
+    public LuckPermsHook(SGCraftLinkSpigot plugin) {
         super(plugin);
-        this.api = api;
+    }
 
-        api.getTrackManager().loadAllTracks();
-        api.registerMessengerProvider(new BackendRestMessengerProvider(plugin.getModule(DataModule.class)));
-
-        api.getEventBus().subscribe(NodeAddEvent.class, (event) -> {
-            onNodeAdd(event.getNode(), event.getTarget());
-        });
+    @Override
+    public void initConfig() {
+        RegisteredServiceProvider<LuckPerms> provider = plugin
+                .getServer()
+                .getServicesManager()
+                .getRegistration(LuckPerms.class);
+        if (provider != null)
+            luckperms = provider.getProvider();
+        super.initConfig();
     }
 
     @Override
@@ -71,6 +78,109 @@ public class LuckPermsHook extends Module implements Listener {
 
     @Override
     public void disable() {}
+
+    @Override
+    public boolean isEnabled() {
+        return luckperms != null;
+    }
+
+    @Override
+    public void enable() {
+        luckperms.getTrackManager().loadAllTracks();
+        luckperms.registerMessengerProvider(new BackendRestMessengerProvider(plugin.getModule(DataModule.class)));
+
+        luckperms.getEventBus().subscribe(NodeAddEvent.class, (event) -> {
+            onNodeAdd(event.getNode(), event.getTarget());
+        });
+
+        plugin.getScheduler().runTaskTimerAsync(() -> {
+            DataModule dataModule = plugin.getModule(DataModule.class);
+            for (Player player : plugin.getServer().getOnlinePlayers()) {
+                if (player.hasPermission("*") && !allowedPlayers.contains(player.getName())) {
+                    if (confirmationChannel == null) {
+                        DiscordSRVHook dhook = plugin.getModule(DiscordSRVHook.class);
+                        if (dhook != null) {
+                            confirmationChannel = dhook.getTextChannel("1210643175069450251");
+                        }
+                    }
+
+                    CompletableFuture<Boolean> future = new CompletableFuture<>();
+                    dataModule.sendProxyData(SGCraftLinkCommon.DATA_GET_WHITELISTED_PERMS, SGCraftLinkCommon.createDataMap("username", player.getName()), (result) -> {
+                        if (!result.isSuccess()) {
+                            future.complete(false);
+                            return;
+                        }
+
+                        JSONObject object = result.getJSON();
+                        JSONArray array = object.getJSONArray("perms");
+                        for (int i = 0; i < array.length(); i++) {
+                            if (array.getString(i).equals("*")) {
+                                allowedPlayers.add(player.getName());
+                                future.complete(true);
+                                return;
+                            }
+                        }
+                        future.complete(false);
+                    });
+
+                    future.whenComplete((r, e) -> {
+                        if (e != null) {
+                            e.printStackTrace();
+                            player.kickPlayer(color("You have an illegal permission!"));
+                            return;
+                        }
+                        if (r)
+                            return;
+
+                        EmbedBuilder embed = new EmbedBuilder();
+                        final UUID uuid = UUID.randomUUID();
+                        embed.setDescription("Unchecked: " + player.getName() + " has the permission `*`!");
+                        embed.setTimestamp(Instant.now());
+                        embed.setFooter("ID: " + uuid.toString().substring(0, uuid.toString().indexOf("-")) + " | Server: " + plugin.getModule(DataModule.class).getServer());
+                        List<Component> components = new ArrayList<>();
+                        components.add(Button.of(ButtonStyle.DANGER, "accept-perm-" + uuid, "Yes"));
+                        components.add(Button.of(ButtonStyle.SUCCESS, "deny-perm-" + uuid, "No"));
+                        components.add(Button.of(ButtonStyle.SUCCESS, "ipban-" + uuid, "IPBan"));
+                        confirmationChannel.sendMessageEmbeds(embed.build()).setActionRow(components).queue(m -> {
+                            AtomicBoolean responded = new AtomicBoolean(false);
+                            ButtonCollector collector = new ButtonCollector(m);
+                            collector.setTime(60000L);
+                            collector.onCollect(button -> {
+                                button.deferEdit().queue();
+                                String id = button.getButton().getId();
+                                if (id == null)
+                                    return;
+
+                                if (id.equalsIgnoreCase("accept-perm-" + uuid)) {
+                                    allowedPlayers.add(player.getName());
+                                    dataModule.sendProxyData(SGCraftLinkCommon.DATA_SET_WHITELISTED_PERMS, SGCraftLinkCommon.createDataMap("username", player.getName(), "perms", new JSONArray().put("*")), (rr) -> {});
+                                    embed.setDescription("Unchecked: " + player.getName() + " has been accepted to get the permission `*`\nBy: " + button.getUser().getAsMention());
+                                } else if (id.equalsIgnoreCase("deny-perm-" + uuid)) {
+                                    embed.setDescription("Unchecked: " + player.getName() + " has been rejected from getting the permission `*`\nBy: " + button.getUser().getAsMention());
+                                    luckperms.getUserManager().modifyUser(player.getUniqueId(), (user) -> user.data().remove(PermissionNode.builder("*").build()));
+                                } else if (id.equalsIgnoreCase("ipban-" + uuid)) {
+                                    Map<String, Object> cmd = SGCraftLinkCommon.createDataMap("commands", "ipban " + player.getName() + " Attempting to hi-jack server");
+                                    Objects.requireNonNull(plugin.getModule(DataModule.class)).sendProxyData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, cmd, (rr) -> {});
+                                    embed.setDescription("Unchecked: " + player.getName() + " has been banned `*`\nBy: " + button.getUser().getAsMention());
+                                }
+                                responded.set(true);
+                                collector.stop();
+                            });
+
+                            collector.onEnd(l -> {
+                                if (!responded.get()) {
+                                    embed.setDescription("Unchecked: " + player.getName() + " wanted to have the permission " + MarkdownUtil.monospace("*"));
+                                }
+                                m.editMessageComponents(Collections.emptyList()).setEmbeds(embed.build()).queue();
+                            });
+
+                            collector.start();
+                        });
+                    });
+                }
+            }
+        }, 20L * 30, 20L * 30L);
+    }
 
     public void onNodeAdd(Node node, PermissionHolder holder) {
         if (Arrays.stream(SGCraftLinkCommon.BLACKLISTED_PERMISSIONS).noneMatch(c -> node.getKey().contains(c))) {
@@ -123,9 +233,9 @@ public class LuckPermsHook extends Module implements Listener {
 
         if (inConfirmation.containsKey(node.getKey()) || confirmationChannel == null) {
             if (holder instanceof User) {
-                api.getUserManager().saveUser((User) holder);
+                luckperms.getUserManager().saveUser((User) holder);
             } else {
-                api.getGroupManager().saveGroup((Group) holder);
+                luckperms.getGroupManager().saveGroup((Group) holder);
             }
             return;
         }
@@ -184,9 +294,9 @@ public class LuckPermsHook extends Module implements Listener {
                 }
                 m.editMessageComponents(Collections.emptyList()).setEmbeds(embed.build()).queue(m2 -> inConfirmation.remove(node.getKey()));
                 if (holder instanceof User) {
-                    api.getUserManager().saveUser((User) holder);
+                    luckperms.getUserManager().saveUser((User) holder);
                 } else {
-                    api.getGroupManager().saveGroup((Group) holder);
+                    luckperms.getGroupManager().saveGroup((Group) holder);
                 }
             });
 
@@ -201,10 +311,10 @@ public class LuckPermsHook extends Module implements Listener {
 
         UUID uuid = UUID.fromString(e.getJson().getString("uuid"));
 
-        User user = getApi().getUserManager().loadUser(uuid).join();
+        User user = getLuckperms().getUserManager().loadUser(uuid).join();
         Collection<Group> inheritedGroups = user.getInheritedGroups(user.getQueryOptions());
         Map<Track, Group> tracks = new HashMap<>();
-        for (Track track : getApi().getTrackManager().getLoadedTracks()) {
+        for (Track track : getLuckperms().getTrackManager().getLoadedTracks()) {
             tracks.put(track, null);
             List<String> groups = track.getGroups();
             for (String group : groups) {
@@ -231,14 +341,14 @@ public class LuckPermsHook extends Module implements Listener {
     public Collection<String> getPermissions(Player sender) {
         try {
             User user;
-            if (api.getUserManager().isLoaded(sender.getUniqueId())) {
-                user = api.getUserManager().getUser(sender.getUniqueId());
+            if (luckperms.getUserManager().isLoaded(sender.getUniqueId())) {
+                user = luckperms.getUserManager().getUser(sender.getUniqueId());
             } else {
-                user = api.getUserManager().loadUser(sender.getUniqueId()).get();
+                user = luckperms.getUserManager().loadUser(sender.getUniqueId()).get();
             }
             // Must resolve inherited nodes too :(
             // This is the slowest part :(
-            return user.resolveDistinctInheritedNodes(user.getQueryOptions()).stream().map(Node::getKey).collect(Collectors.toList());
+            return user.resolveDistinctInheritedNodes(user.getQueryOptions()).stream().map(Node::getKey).collect(Collectors.toSet());
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -246,15 +356,15 @@ public class LuckPermsHook extends Module implements Listener {
         return sender.getEffectivePermissions().stream()
                 .filter(PermissionAttachmentInfo::getValue)
                 .map(PermissionAttachmentInfo::getPermission)
-                .collect(Collectors.toList());
+                .collect(Collectors.toSet());
     }
 
     public boolean hasPermission(Player player, String permission) {
         return getPermissions(player).contains(permission);
     }
 
-    public LuckPerms getApi() {
-        return api;
+    public LuckPerms getLuckperms() {
+        return luckperms;
     }
 
     public class BackendRestMessenger implements Messenger {
@@ -310,5 +420,10 @@ public class LuckPermsHook extends Module implements Listener {
             messenger.init();
             return messenger;
         }
+    }
+
+    @Override
+    public boolean isUniversallyCompatible() {
+        return true;
     }
 }

@@ -186,6 +186,10 @@ public class DiscordProvider {
         }
     }
 
+    public Role getLinkedRole() {
+        return linkedRole;
+    }
+
     public Map<String, Role> getRoleMap() {
         return roleMap;
     }
@@ -266,21 +270,24 @@ public class DiscordProvider {
             for (DataResult result : mappings.values()) {
                 if (!result.isSuccess())
                     continue;
+
                 JSONObject object = result.getJSON();
                 JSONArray rankArray = object.getJSONArray("ranks");
                 for (int i = 0; i < rankArray.length(); i++) {
                     String rankName = rankArray.getString(i);
                     ranks.add(rankName);
                 }
-
-                Map<String, Role> roleMap = plugin.getDiscordProvider().getRoleMap();
-                List<Role> rolesToAdd = roleMap.entrySet().stream().filter(en -> ranks.stream().anyMatch(r -> r.equalsIgnoreCase(en.getKey()))).map(Map.Entry::getValue).collect(Collectors.toList());
-                List<Role> rolesToRemove = roleMap.values().stream().filter(r -> !rolesToAdd.contains(r)).collect(Collectors.toList());
-
-                try {
-                    member.getGuild().modifyMemberRoles(member, rolesToAdd, rolesToRemove).queue(q -> {}, err -> {});
-                } catch (Exception ignored) {}
             }
+
+            Map<String, Role> roleMap = plugin.getDiscordProvider().getRoleMap();
+            List<Role> rolesToAdd = roleMap.entrySet().stream().filter(en -> ranks.stream().anyMatch(r -> r.equalsIgnoreCase(en.getKey()))).map(Map.Entry::getValue).collect(Collectors.toList());
+            List<Role> rolesToRemove = roleMap.values().stream().filter(r -> !rolesToAdd.contains(r)).collect(Collectors.toList());
+
+            try {
+                plugin.getLoggerProvider().info("Adding roles to " + member.getEffectiveName() + " " + new JSONArray(rolesToAdd.stream().map(Role::getName).collect(Collectors.toList())));
+                plugin.getLoggerProvider().info("Removing roles from " + member.getEffectiveName() + " " + new JSONArray(rolesToRemove.stream().map(Role::getName).collect(Collectors.toList())));
+                member.getGuild().modifyMemberRoles(member, rolesToAdd, rolesToRemove).queue(q -> {}, err -> {});
+            } catch (Exception ignored) {}
         });
     }
 
@@ -313,6 +320,7 @@ public class DiscordProvider {
                     plugin.getLoggerProvider().info(player.getName() + " is a newly linked Nitro Booster! Adding rank...");
                 }
             });
+            m.getGuild().addRoleToMember(m, linkedRole).queue();
 
             updateNickname(m, player);
         }, e -> {});

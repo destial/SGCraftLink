@@ -1,4 +1,4 @@
-package xyz.destiall.sgcraftlink.modules.hooks.utils;
+package xyz.destiall.sgcraftlink.items.font;
 
 public final class DefaultFont extends Font {
     public DefaultFont() {

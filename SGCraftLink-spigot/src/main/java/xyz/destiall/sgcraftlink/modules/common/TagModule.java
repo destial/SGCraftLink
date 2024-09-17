@@ -22,16 +22,21 @@ public class TagModule extends Module implements CommandExecutor {
     public TagModule(SGCraftLinkSpigot plugin) {
         super(plugin, "tags.yml");
         allTags = new ArrayList<>();
-        enable();
-        plugin.getLogger().info("Registered " + allTags.size() + " tags " + new JSONArray(allTags.stream().map(Tag::getName).collect(Collectors.toList())).toString().replace("\"", ""));
-        plugin.getCommand("tags").setExecutor(this);
+        setCommandExecutor("tags");
     }
 
+    @Override
     public void enable() {
         for (String key : config.getKeys(false)) {
             Tag tag = new Tag(key, config.getString(key));
             allTags.add(tag);
         }
+        plugin.getLogger().info("Registered " + allTags.size() + " tags " + new JSONArray(allTags.stream().map(Tag::getName).collect(Collectors.toList())).toString().replace("\"", ""));
+    }
+
+    @Override
+    public boolean isUniversallyCompatible() {
+        return true;
     }
 
     @Override
@@ -42,7 +47,7 @@ public class TagModule extends Module implements CommandExecutor {
     @Override
     public void disable() {
         allTags.clear();
-        plugin.getCommand("tags").setExecutor(null);
+        unsetCommandExecutor("tags");
     }
 
     public List<Tag> getAllTags() {
@@ -58,7 +63,7 @@ public class TagModule extends Module implements CommandExecutor {
 
         if (args[0].equalsIgnoreCase("reload")) {
             allTags.clear();
-            load();
+            loadConfig();
             enable();
             return false;
         }
@@ -82,8 +87,29 @@ public class TagModule extends Module implements CommandExecutor {
             config.set(name, display);
             Tag tag = new Tag(name, display);
             allTags.add(tag);
-            save();
+            saveConfig();
             sender.sendMessage(color("&aAdded new tag &e" + tag.getName() + " &a(" + tag.getDisplay() + "&a)"));
+            return false;
+        }
+
+        if (args[0].equalsIgnoreCase("edit")) {
+            if (args.length < 3) {
+                sender.sendMessage(color("&cUsage: /tags [edit] [name] [display]"));
+                return false;
+            }
+
+            String name = args[1];
+            if (!config.contains(name)) {
+                sender.sendMessage(color("&cTag '" + name + "' doesn't exist!"));
+                return false;
+            }
+            String display = String.join(" ", Arrays.copyOfRange(args, 2, args.length));
+            config.set(name, display);
+            Tag tag = allTags.stream().filter(t -> t.getName().equalsIgnoreCase(name)).findFirst().orElse(null);
+            String old = tag.getDisplay();
+            tag.setDisplay(display);
+            saveConfig();
+            sender.sendMessage(color("&aEdited tag &e" + tag.getName() + " &a(" + old + "&a) -> &a(" + tag.getDisplay() + "&a)"));
             return false;
         }
         return false;

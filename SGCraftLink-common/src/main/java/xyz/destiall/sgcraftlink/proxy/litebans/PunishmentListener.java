@@ -103,9 +103,7 @@ public class PunishmentListener extends Events.Listener {
                 "\n" +
                 "Server: " + MarkdownUtil.monospace(punishment.getServer()) +
                 "\n" +
-                "Until: " + (punishment.getUntil() <= 0 ? "`Forever`" : TimeFormat.DATE_TIME_LONG.format(punishment.getUntil()) + " (" + TimeFormat.RELATIVE.format(punishment.getUntil()) + ")") +
-                "\n" +
-                "Date: " + TimeFormat.DATE_TIME_LONG.format(punishment.getTime()) + " (" + TimeFormat.RELATIVE.format(punishment.getUntil()) + ")";
+                "Until: " + (punishment.getUntil() <= 0 ? "`Forever`" : TimeFormat.DATE_TIME_LONG.format(punishment.getUntil()) + " (" + TimeFormat.RELATIVE.format(punishment.getUntil()) + ")");
         EmbedBuilder embed = new EmbedBuilder();
         embed.setColor(Color.YELLOW);
         embed.setAuthor(author, null, "https://cravatar.eu/helmavatar/{username}/16.png".replace("{username}", author));

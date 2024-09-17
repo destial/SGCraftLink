@@ -66,9 +66,11 @@ public class DiscordCommand implements CommandProvider, TabProvider {
             message.setClick(ComponentClickProvider.of(ComponentClickProvider.Action.COPY_TO_CLIPBOARD, "" + code));
             ComponentProvider<?> message2 = ComponentProvider.of("Privately message " + plugin.getDiscordProvider().getJda().getSelfUser().getAsTag() + " the code to link your account.");
             message2.setColor(ColorProvider.ChatColor.AQUA);
-            ComponentProvider<?> message3 = ComponentProvider.of("You have 5 minutes to respond, or this code will be expired!");
-            message3.setColor(ColorProvider.ChatColor.GOLD);
-            player.sendMessageComponent(message, message2, message3);
+            ComponentProvider<?> message3 = ComponentProvider.of("Or type in the command /mclink [code] in the SGCraft Discord Server.");
+            message3.setColor(ColorProvider.ChatColor.AQUA);
+            ComponentProvider<?> message4 = ComponentProvider.of("You have 5 minutes to respond, or this code will be expired!");
+            message4.setColor(ColorProvider.ChatColor.GOLD);
+            player.sendMessageComponent(message, message2, message3, message4);
 
             plugin.getScheduler().schedule(() -> {
                 if (plugin.getLinkProvider().invalidate(code)) {

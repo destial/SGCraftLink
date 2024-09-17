@@ -2,10 +2,13 @@ package xyz.destiall.sgcraftlink.gamemode;
 
 import com.alessiodp.parties.api.Parties;
 import com.alessiodp.parties.api.interfaces.Party;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TextComponent;
-import net.kyori.adventure.text.event.ClickEvent;
-import net.kyori.adventure.text.event.HoverEvent;
+import me.clip.placeholderapi.util.Msg;
+import net.md_5.bungee.api.ChatColor;
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -40,10 +43,53 @@ public class OnePersonDeath extends Module implements Listener, CommandExecutor,
 
     public OnePersonDeath(SGCraftLinkSpigot plugin) {
         super(plugin, "one-person-death.yml");
-        plugin.getCommand("opd").setExecutor(this);
+
+
         this.groups = new HashSet<>();
         this.dyingCache = ConcurrentHashMap.newKeySet();
+    }
 
+    @Override
+    public void loadDefaultConfig() {
+        config.set("enabled", false);
+        config.set("use-party-hook", true);
+        config.set("everyone", false);
+        config.set("same-world", true);
+        config.set("keep-inventory", true);
+    }
+
+    @Override
+    public void saveConfig() {
+        if (isEveryone()) {
+            super.saveConfig();
+            return;
+        }
+
+        if (isUsingParties()) {
+            super.saveConfig();
+            return;
+        }
+
+        if (groups != null) {
+            int i = 1;
+            for (OPDGroup group : groups) {
+                for (Pair<UUID, String> member : group.getMembers()) {
+                    config.set("groups." + i + "." + member.getValue(), member.getKey());
+                }
+                i++;
+            }
+        }
+
+        super.saveConfig();
+    }
+
+    @Override
+    public void disable() {
+        unsetCommandExecutor("opd");
+    }
+
+    @Override
+    public void enable() {
         ConfigurationSection groupSection = config.getConfigurationSection("groups");
         if (groupSection == null)
             return;
@@ -62,45 +108,6 @@ public class OnePersonDeath extends Module implements Listener, CommandExecutor,
 
             groups.add(opdGroup);
         }
-    }
-
-    @Override
-    public void loadDefaultConfig() {
-        config.set("enabled", false);
-        config.set("use-party-hook", true);
-        config.set("everyone", false);
-        config.set("same-world", true);
-        config.set("keep-inventory", true);
-    }
-
-    @Override
-    public void save() {
-        if (isEveryone()) {
-            super.save();
-            return;
-        }
-
-        if (isUsingParties()) {
-            super.save();
-            return;
-        }
-
-        if (groups != null) {
-            int i = 1;
-            for (OPDGroup group : groups) {
-                for (Pair<UUID, String> member : group.getMembers()) {
-                    config.set("groups." + i + "." + member.getValue(), member.getKey());
-                }
-                i++;
-            }
-        }
-
-        super.save();
-    }
-
-    @Override
-    public void disable() {
-        plugin.getCommand("opd").setExecutor(null);
     }
 
     public boolean isEnabled() {
@@ -122,7 +129,7 @@ public class OnePersonDeath extends Module implements Listener, CommandExecutor,
     public boolean isKeepInventory() {
         if (!config.contains("keep-inventory")) {
             config.set("keep-inventory", true);
-            save();
+            saveConfig();
         }
         return config.getBoolean("keep-inventory", true);
     }
@@ -194,6 +201,11 @@ public class OnePersonDeath extends Module implements Listener, CommandExecutor,
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String s, @NotNull String[] args) {
+        if (!isEnabled()) {
+            sender.sendMessage(Msg.color("&cThis feature is not enabled!"));
+            return false;
+        }
+
         if (args.length == 0) {
             sender.sendMessage(color("&cUsage: /opd [join|leave|accept|deny|kick|info" + (sender.hasPermission("opd.admin") ? "|toggle|everyone|party|world" : "") + "]"));
             return false;
@@ -208,7 +220,7 @@ public class OnePersonDeath extends Module implements Listener, CommandExecutor,
             config.set("enabled", !isEnabled());
             sender.sendMessage(color("&eToggled OnePersonDeath: " + (isEnabled() ? "&a&lENABLED" : "&c&lDISABLED")));
 
-            save();
+            saveConfig();
             return false;
         }
 
@@ -221,7 +233,7 @@ public class OnePersonDeath extends Module implements Listener, CommandExecutor,
             config.set("everyone", !isEveryone());
             sender.sendMessage(color("&eToggled OnePersonDeath everyone: " + (isEveryone() ? "&a&lENABLED" : "&c&lDISABLED")));
 
-            save();
+            saveConfig();
             return false;
         }
 
@@ -234,7 +246,7 @@ public class OnePersonDeath extends Module implements Listener, CommandExecutor,
             config.set("use-party-hook", !config.getBoolean("use-party-hook"));
             sender.sendMessage(color("&eToggled OnePersonDeath party: " + (isUsingParties() ? "&a&lENABLED" : "&c&lDISABLED")));
 
-            save();
+            saveConfig();
             return false;
         }
 
@@ -247,7 +259,7 @@ public class OnePersonDeath extends Module implements Listener, CommandExecutor,
             config.set("same-world", !isSameWorld());
             sender.sendMessage(color("&eToggled OnePersonDeath same world: " + (isSameWorld() ? "&a&lENABLED" : "&c&lDISABLED")));
 
-            save();
+            saveConfig();
             return false;
         }
 
@@ -310,9 +322,9 @@ public class OnePersonDeath extends Module implements Listener, CommandExecutor,
 
             Pair<UUID, String> invite = new Pair<>(player.getUniqueId(), player.getName());
             otherGroup.getInvites().add(invite);
-            TextComponent component = Component.text(color("&b" + player.getName() + " wants to join your group!"));
-            component.hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text(color("&aClick to accept"))));
-            component.clickEvent(ClickEvent.clickEvent(ClickEvent.Action.RUN_COMMAND, "/opd accept " + player.getName()));
+            BaseComponent component = TextComponent.fromLegacy(player.getName() + " wants to join your group!", ChatColor.AQUA);
+            component.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(color("&aClick to accept"))));
+            component.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/opd accept " + player.getName()));
             other.sendMessage(component);
 
             OPDGroup finalGroup = otherGroup;
@@ -368,7 +380,7 @@ public class OnePersonDeath extends Module implements Listener, CommandExecutor,
                 member.sendMessage(color("&b" + pair.getValue() + " has joined this group!"));
             }
 
-            save();
+            saveConfig();
             return false;
         }
 
@@ -442,7 +454,7 @@ public class OnePersonDeath extends Module implements Listener, CommandExecutor,
                 onlineMember.sendMessage(color("&c" + player.getName() + " has kicked you from their group!"));
             }
 
-            save();
+            saveConfig();
             return false;
         }
 
@@ -462,7 +474,7 @@ public class OnePersonDeath extends Module implements Listener, CommandExecutor,
             group.getMembers().remove(member);
             sender.sendMessage(color("&bYou have left your current group!"));
 
-            save();
+            saveConfig();
             return false;
         }
 
