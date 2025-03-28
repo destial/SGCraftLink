@@ -17,7 +17,6 @@ import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.items.packets.PacketArmorStand;
-import xyz.destiall.sgcraftlink.items.packets.ProtocolLibArmorStand;
 import xyz.destiall.sgcraftlink.modules.Module;
 import xyz.destiall.sgcraftlink.utils.Pair;
 
@@ -108,7 +107,7 @@ public class HoverMessages extends Module implements Listener, CommandExecutor {
             return;
         }
 
-        PacketArmorStand as = new ProtocolLibArmorStand(entity.getWorld(), loc.getX(), loc.getY(), loc.getZ());
+        PacketArmorStand as = PacketArmorStand.get(entity.getWorld(), loc.getX(), loc.getY(), loc.getZ());
         as.setCustomName(color(message));
         as.setCustomNameVisible(true);
         as.setInvisible(true);

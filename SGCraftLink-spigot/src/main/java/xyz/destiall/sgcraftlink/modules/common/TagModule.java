@@ -28,6 +28,9 @@ public class TagModule extends Module implements CommandExecutor {
     @Override
     public void enable() {
         for (String key : config.getKeys(false)) {
+            if (key.equalsIgnoreCase("enabled"))
+                continue;
+
             Tag tag = new Tag(key, config.getString(key));
             allTags.add(tag);
         }

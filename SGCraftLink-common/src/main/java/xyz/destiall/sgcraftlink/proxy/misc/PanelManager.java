@@ -9,7 +9,6 @@ import xyz.destiall.sgcraftlink.utils.HTTPManager;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 public class PanelManager {
     private final String baseUrl = "https://panel.destial.xyz/api/client/servers/{PANEL_ID}/";

@@ -129,6 +129,18 @@
             <id>citizens-repo</id>
             <url>https://maven.citizensnpcs.co/repo</url>
         </repository>
+        <repository>
+            <id>uhccore</id>
+            <url>https://gitlab.com/api/v4/groups/uhccore/-/packages/maven</url>
+        </repository>
+        <repository>
+            <id>voicechat</id>
+            <url>https://maven.maxhenkel.de/repository/public</url>
+        </repository>
+        <repository>
+            <id>codemc-releases</id>
+            <url>https://repo.codemc.io/repository/maven-releases/</url>
+        </repository>
         <!-- <repository>
             <id>md_5-repository</id>
             <url>https://repo.md-5.net/content/repositories/snapshots/</url>
@@ -151,19 +163,19 @@
         <dependency>
             <groupId>dev.folia</groupId>
             <artifactId>folia-api</artifactId>
-            <version>1.20.4-R0.1-SNAPSHOT</version>
+            <version>1.21.4-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.discordsrv</groupId>
             <artifactId>discordsrv</artifactId>
-            <version>1.27.0</version>
+            <version>1.28.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.comphenix.protocol</groupId>
             <artifactId>ProtocolLib</artifactId>
-            <version>5.1.0</version>
+            <version>5.4.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -271,13 +283,13 @@
         <dependency>
             <groupId>io.lumine</groupId>
             <artifactId>Mythic-Dist</artifactId>
-            <version>5.7.0-SNAPSHOT</version>
+            <version>5.8.0-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.lumine</groupId>
             <artifactId>MythicCrucible</artifactId>
-            <version>2.0.0</version>
+            <version>2.2.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -348,9 +360,27 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>com.github.retrooper</groupId>
+            <artifactId>packetevents-spigot</artifactId>
+            <version>2.7.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>com.comphenix.packetwrapper</groupId>
             <artifactId>PacketWrapper</artifactId>
             <version>1.20-2.2.1</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.zerodind</groupId>
+            <artifactId>uhccore</artifactId>
+            <version>1.20.11</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>de.maxhenkel.voicechat</groupId>
+            <artifactId>voicechat-api</artifactId>
+            <version>2.5.27</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

@@ -1,22 +1,23 @@
 package xyz.destiall.sgcraftlink.items.packets;
 
-import com.comphenix.packetwrapper.wrappers.play.clientbound.WrapperPlayServerEntityDestroy;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
+import com.comphenix.protocol.ProtocolLibrary;
+import com.comphenix.protocol.utility.MinecraftVersion;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class PacketArmorStand {
     protected static final AtomicInteger entityId = new AtomicInteger(-6969);
+    protected static final MinecraftVersion v1_21_2 = new MinecraftVersion("1.21.2");
     protected final UUID uuid;
-    protected final int id;
+    protected int id;
     protected Location location;
     protected Vector offset;
     protected List<Player> players;
@@ -46,33 +47,6 @@ public abstract class PacketArmorStand {
 
     public abstract void remove();
 
-    public static void remove(Collection<PacketArmorStand> armorStands) {
-        try {
-            WrapperPlayServerEntityDestroy remove = new WrapperPlayServerEntityDestroy();
-            Collection<Player> players = new ArrayList<>();
-            List<Integer> ids = new ArrayList<>();
-            for (PacketArmorStand as : armorStands) {
-                players.addAll(as.players);
-                ids.add(as.id);
-                as.location = null;
-                as.offset = null;
-                as.players.clear();
-                as.players = null;
-            }
-            remove.setEntityIds(new IntArrayList(ids));
-            for (Player player : players) {
-                try {
-                    remove.sendPacket(player);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        } catch (Exception e) {
-            for (PacketArmorStand as : armorStands) {
-                as.remove();
-            }
-        }
-    }
 
     public void setPos(double x, double y, double z) {
         location.setX(x);
@@ -93,4 +67,13 @@ public abstract class PacketArmorStand {
     public abstract void setCustomNameVisible(boolean visible);
 
     public abstract void setCustomName(String name);
+
+    public static PacketArmorStand get(World world, double x, double y, double z) {
+        if (ProtocolLibrary.getProtocolManager().getMinecraftVersion().isAtLeast(v1_21_2))
+            return new ProtocolLibArmorStand_1_21_2(world, x, y, z);
+        else if (Bukkit.getServer().getPluginManager().isPluginEnabled("PacketWrapper"))
+            return new PacketWrapperArmorStand(world, x, y, z);
+        else
+            return new ProtocolLibArmorStand_1_20_3(world, x, y, z);
+    }
 }

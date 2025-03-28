@@ -2,6 +2,8 @@ package xyz.destiall.sgcraftlink.modules;
 
 import com.Zrips.CMI.CMI;
 import com.gmail.jyckosianjaya.easywhitelist.EasyWhiteList;
+import com.gmail.val59000mc.game.GameManager;
+import com.gmail.val59000mc.game.GameState;
 import express.Express;
 import express.utils.Status;
 import me.clip.placeholderapi.util.Msg;
@@ -77,12 +79,28 @@ public class DataModule extends Module implements Listener, CommandExecutor {
             } catch (NoClassDefFoundError e) {}
         }
         Map<String, Object> data = createDataMap(
-                "port", config.getInt("port", 1034),
+                "port", config.getInt("port", 9999),
                 "auth", authToken,
                 "panel_id", config.getString("panel_id", "null"),
                 "whitelisted", whitelisted,
-                "announce", config.getBoolean("announce", true)
+                "announce", config.getBoolean("announce", true),
+                "ip", config.getString("proxy-ip", "172.18.0.1")
         );
+
+        if (plugin.getServer().getPluginManager().isPluginEnabled("UhcCore")) {
+            data.put("announce", false);
+            new Scheduler.TaskRunnable() {
+                @Override
+                public void run() {
+                    if (GameManager.getGameManager().getGameState() == GameState.WAITING) {
+                        data.put("announce", true);
+                        tryRegisterServer(data);
+                        this.cancel();
+                    }
+                }
+            }.runTaskTimer(plugin.getScheduler(), 5L, 5L);
+            return;
+        }
         tryRegisterServer(data);
     }
 
@@ -91,7 +109,6 @@ public class DataModule extends Module implements Listener, CommandExecutor {
         Map<String, Object> data = createDataMap("auth", authToken);
         tryUnregisterServer(data);
     }
-
 
     private void tryRegisterServer(Map<String, Object> data) {
         sendProxyData(SGCraftLinkCommon.DATA_SERVER_REGISTER, data, (result) -> {
@@ -127,12 +144,12 @@ public class DataModule extends Module implements Listener, CommandExecutor {
     public void sendProxyData(String type, Map<?, ?> map, Consumer<DataResult> result, boolean now) {
         JSONObject object = new JSONObject(map);
         object.put("data-type", type);
-        object.put("server", config.getString("server-name", "lobby"));
+        object.put("server", config.getString("server-name", "new server"));
         Map<String, String> headers = HTTPManager.asMap("X-Authorization", config.getString("authentication-key"));
         Runnable runnable = () -> {
             try {
                 plugin.getLogger().warning("Sending " + type + " to proxy");
-                CompletableFuture<DataResult> response = manager.fetch("http://" + config.getString("proxy-ip", "192.168.1.99"), config.getInt("proxy-port", 1035), HTTPManager.Method.POST, headers, object);
+                CompletableFuture<DataResult> response = manager.fetch("http://" + config.getString("proxy-ip", "172.18.0.1"), config.getInt("proxy-port", 1035), HTTPManager.Method.POST, headers, object);
                 response.whenComplete((res, err) -> {
                     if (err != null) {
                         plugin.getLogger().warning("Responded back with 404");
@@ -162,12 +179,13 @@ public class DataModule extends Module implements Listener, CommandExecutor {
     @Override
     public void loadDefaultConfig() {
         config.set("enabled", true);
-        config.set("server-name", "lobby");
-        config.set("port", 1034);
+        config.set("server-name", "new server");
+        config.set("port", 9999);
         config.set("proxy-port", 1035);
-        config.set("proxy-ip", "192.168.1.99");
+        config.set("proxy-ip", "172.18.0.1");
         config.set("announce", false);
         config.set("authentication-key", generateNewToken());
+        config.set("check-proxy", false);
     }
 
     @Override
@@ -230,6 +248,20 @@ public class DataModule extends Module implements Listener, CommandExecutor {
                         break;
                     }
                     case SGCraftLinkCommon.DATA_SERVER_UNREGISTER: {
+                        if (json.has("server") && !json.getString("server").equalsIgnoreCase(getServer())) {
+                            DataReceiveEvent event = new DataReceiveEvent(json);
+                            try {
+                                plugin.getServer().getPluginManager().callEvent(event);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            if (event.getResponse() == null) {
+                                response.sendStatus(event.getStatus());
+                            } else {
+                                response.setStatus(event.getStatus()).send(event.getResponse().toString());
+                            }
+                            break;
+                        }
                         plugin.getLogger().warning("Proxy has unregistered this server! This is probably due to a proxy plugin reload!");
                         plugin.getLogger().warning("We will try to register this server again!");
                         response.sendStatus(Status._200);
@@ -326,20 +358,22 @@ public class DataModule extends Module implements Listener, CommandExecutor {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent e) {
-        plugin.getScheduler().runTaskLater(() -> {
-            Map<String, Object> map = createDataMap("uuid", e.getPlayer().getUniqueId().toString());
-            sendProxyData(SGCraftLinkCommon.DATA_SECURITY_CHECK, map, (result) -> {
-                if (result.isSuccess()) {
-                    plugin.sendFirstJoin(e.getPlayer());
-                    return;
-                }
-
-                plugin.getScheduler().runTask(() -> {
-                    if (e.getPlayer().isOnline()) {
-                        e.getPlayer().kickPlayer("You are not joined via the proxy!");
+        if (config.getBoolean("check-proxy", true)) {
+            plugin.getScheduler().runTaskLater(() -> {
+                Map<String, Object> map = createDataMap("uuid", e.getPlayer().getUniqueId().toString());
+                sendProxyData(SGCraftLinkCommon.DATA_SECURITY_CHECK, map, (result) -> {
+                    if (result.isSuccess()) {
+                        plugin.sendFirstJoin(e.getPlayer());
+                        return;
                     }
-                }, e.getPlayer());
-            });
-        }, e.getPlayer(), 5L);
+
+                    plugin.getScheduler().runTask(() -> {
+                        if (e.getPlayer().isOnline()) {
+                            e.getPlayer().kickPlayer("You are not joined via the proxy!");
+                        }
+                    }, e.getPlayer());
+                });
+            }, e.getPlayer(), 5L);
+        }
     }
 }

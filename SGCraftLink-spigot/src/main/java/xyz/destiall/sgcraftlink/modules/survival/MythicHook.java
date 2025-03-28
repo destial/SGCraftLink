@@ -7,10 +7,14 @@ import io.lumine.mythic.bukkit.events.MythicMechanicLoadEvent;
 import io.lumine.mythic.bukkit.events.MythicReloadedEvent;
 import io.lumine.mythic.bukkit.utils.Events;
 import io.lumine.mythic.core.items.MythicItem;
+import io.lumine.mythic.core.menus.items.editor.EditDurabilityMaxButton;
+import io.lumine.mythiccrucible.MythicCrucible;
+import io.lumine.mythiccrucible.items.durability.DurabilityListener;
 import org.bukkit.entity.Allay;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -18,9 +22,12 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.PrepareSmithingEvent;
+import org.bukkit.event.inventory.SmithItemEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
@@ -52,7 +59,7 @@ public class MythicHook extends Module implements Listener {
         plugin.getLogger().info("Registered " + items.size() + " mythic item abilities");
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onInteractAllay(PlayerInteractAtEntityEvent e) {
         Entity entity = e.getRightClicked();
         if (!(entity instanceof Allay))
@@ -60,6 +67,25 @@ public class MythicHook extends Module implements Listener {
 
         if (mythic.getMobManager().isMythicMob(entity))
             e.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onArmorTrim(SmithItemEvent e) {
+        if ((e.getInventory().getInputEquipment() != null && mythic.getItemManager().isMythicItem(e.getInventory().getInputEquipment())) ||
+            (e.getInventory().getInputMineral() != null && mythic.getItemManager().isMythicItem(e.getInventory().getInputMineral())) ||
+            (e.getInventory().getInputTemplate() != null && mythic.getItemManager().isMythicItem(e.getInventory().getInputTemplate()))) {
+            e.setCancelled(true);
+            e.setResult(Event.Result.DENY);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onArmorTrim(PrepareSmithingEvent e) {
+        if ((e.getInventory().getInputEquipment() != null && mythic.getItemManager().isMythicItem(e.getInventory().getInputEquipment())) ||
+                (e.getInventory().getInputMineral() != null && mythic.getItemManager().isMythicItem(e.getInventory().getInputMineral())) ||
+                (e.getInventory().getInputTemplate() != null && mythic.getItemManager().isMythicItem(e.getInventory().getInputTemplate()))) {
+            e.setResult(null);
+        }
     }
 
     public void injectMechanics() {

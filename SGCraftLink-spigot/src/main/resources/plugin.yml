@@ -11,6 +11,7 @@ softdepend:
   - PlaceholderAPI
   - ProtocolLib
   - PacketWrapper
+  - packetevents
   - dynmap
   - PiggyBank
   - TryMe
@@ -30,6 +31,7 @@ softdepend:
   - BetonQuest
   - Citizens
   - EasyWhitelist
+  - UhcCore
 commands:
   hovermessages:
     permission: sgc.hovermessages
@@ -45,7 +47,6 @@ commands:
     aliases:
       - resourcepack
       - texturepack
-      - tp
   font:
     permission: sgc.font
   datacomm:

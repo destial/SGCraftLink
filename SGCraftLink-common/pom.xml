@@ -13,6 +13,8 @@
     <artifactId>SGCraftLink-common</artifactId>
     <packaging>jar</packaging>
 
+    <name>SGCraftLink Common</name>
+
     <build>
         <plugins>
             <plugin>

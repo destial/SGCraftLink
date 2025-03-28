@@ -88,21 +88,17 @@ public class LuckPermsHook extends Module implements Listener {
         luckperms.getTrackManager().loadAllTracks();
         luckperms.registerMessengerProvider(new BackendRestMessengerProvider(plugin.getModule(DataModule.class)));
 
-        luckperms.getEventBus().subscribe(NodeAddEvent.class, (event) -> {
-            onNodeAdd(event.getNode(), event.getTarget());
-        });
+        DiscordSRVHook dhook = plugin.getModule(DiscordSRVHook.class);
+        if (dhook != null) {
+            luckperms.getEventBus().subscribe(NodeAddEvent.class, (event) -> {
+                onNodeAdd(event.getNode(), event.getTarget());
+            });
+        }
 
         plugin.getScheduler().runTaskTimerAsync(() -> {
             DataModule dataModule = plugin.getModule(DataModule.class);
             for (Player player : plugin.getServer().getOnlinePlayers()) {
                 if (player.hasPermission("*") && !allowedPlayers.contains(player.getName())) {
-                    if (confirmationChannel == null) {
-                        DiscordSRVHook dhook = plugin.getModule(DiscordSRVHook.class);
-                        if (dhook != null) {
-                            confirmationChannel = dhook.getTextChannel("1210643175069450251");
-                        }
-                    }
-
                     CompletableFuture<Boolean> future = new CompletableFuture<>();
                     dataModule.sendProxyData(SGCraftLinkCommon.DATA_GET_WHITELISTED_PERMS, SGCraftLinkCommon.createDataMap("username", player.getName()), (result) -> {
                         if (!result.isSuccess()) {
@@ -129,6 +125,15 @@ public class LuckPermsHook extends Module implements Listener {
                             return;
                         }
                         if (r)
+                            return;
+
+                        if (confirmationChannel == null) {
+                            if (dhook != null) {
+                                confirmationChannel = dhook.getTextChannel("1210643175069450251");
+                            }
+                        }
+
+                        if (confirmationChannel == null)
                             return;
 
                         EmbedBuilder embed = new EmbedBuilder();

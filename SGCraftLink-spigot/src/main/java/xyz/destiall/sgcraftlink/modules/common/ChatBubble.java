@@ -18,7 +18,6 @@ import org.jetbrains.annotations.NotNull;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.Scheduler;
 import xyz.destiall.sgcraftlink.items.packets.PacketArmorStand;
-import xyz.destiall.sgcraftlink.items.packets.ProtocolLibArmorStand;
 import xyz.destiall.sgcraftlink.modules.Module;
 
 import java.util.ArrayList;
@@ -164,7 +163,7 @@ public class ChatBubble extends Module implements Listener, CommandExecutor {
             AtomicDouble deltaY = new AtomicDouble(lines.size() * spacing);
             String finalColor = color;
             List<PacketArmorStand> bubbles = lines.stream().map(line -> {
-                PacketArmorStand as = new ProtocolLibArmorStand(loc.getWorld(), loc.getX(), loc.getY(), loc.getZ());
+                PacketArmorStand as = PacketArmorStand.get(loc.getWorld(), loc.getX(), loc.getY(), loc.getZ());
                 as.getOffset().setY(height + deltaY.getAndAdd(-spacing));
                 as.setPos(loc.getX() + as.getOffset().getX(), loc.getY() + as.getOffset().getY(), loc.getZ() + as.getOffset().getZ());
                 as.setCustomName(finalColor + (player.hasPermission("chatbubbles.color") ? color(line) : line));
@@ -197,7 +196,7 @@ public class ChatBubble extends Module implements Listener, CommandExecutor {
                 }
 
                 public void remove() {
-                    PacketArmorStand.remove(bubbles);
+                    bubbles.forEach(PacketArmorStand::remove);
                     bubbles.clear();
                     playerBubbles.lines.remove(this);
                     if (playerBubbles.lines.isEmpty()) {

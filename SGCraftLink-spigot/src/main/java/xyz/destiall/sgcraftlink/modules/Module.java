@@ -32,7 +32,8 @@ public abstract class Module {
         configFile = new File(plugin.getDataFolder(), configName);
         if (!configFile.exists()) {
             loadDefaultConfig();
-            config.set("enabled", false);
+            if (!config.contains("enabled"))
+                config.set("enabled", false);
             saveConfig();
         } else {
             loadConfig();

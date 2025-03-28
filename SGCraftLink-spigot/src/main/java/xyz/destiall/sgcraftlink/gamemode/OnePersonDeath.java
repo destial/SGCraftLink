@@ -44,9 +44,9 @@ public class OnePersonDeath extends Module implements Listener, CommandExecutor,
     public OnePersonDeath(SGCraftLinkSpigot plugin) {
         super(plugin, "one-person-death.yml");
 
-
         this.groups = new HashSet<>();
         this.dyingCache = ConcurrentHashMap.newKeySet();
+        setCommandExecutor("opd");
     }
 
     @Override

@@ -216,7 +216,7 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
             });
 
             block.setType(Material.AIR);
-            block.getWorld().spawnParticle(Particle.TOTEM, block.getLocation(), 1);
+            block.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, block.getLocation(), 1);
 
             getAllRemaining().whenComplete((remaining, err) -> {
                 if (remaining == 0) {

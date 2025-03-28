@@ -90,18 +90,16 @@ public final class DataManager {
                 String serverName = server.substring(0, 1).toUpperCase() + server.substring(1);
                 switch (datatype) {
                     case SGCraftLinkCommon.DATA_SERVER_REGISTER: {
-                        int serverport = json.getInt("port");
-                        String auth = json.getString("auth");
-                        String panelId = "null";
-                        if (json.has("panel_id"))
-                            panelId = json.getString("panel_id");
-                        boolean whitelisted = json.has("whitelisted") && json.getBoolean("whitelisted");
-                        boolean announce = json.has("announce") && json.getBoolean("announce");
-                        RegisteredServer registration = new RegisteredServer(serverport, auth, panelId);
+                        RegisteredServer registration = new RegisteredServer(json);
+                        if (registeredServers.containsKey(server)) {
+                            RegisteredServer existing = registeredServers.get(server);
+                            if (!existing.getToken().equalsIgnoreCase(registration.getToken())) {
+                                response.sendStatus(Status._403);
+                                break;
+                            }
+                        }
                         registeredServers.put(server, registration);
-                        String ip = json.has("ip") ? json.getString("ip") : registration.getIp();
-                        registration.setIp(ip);
-                        plugin.getLoggerProvider().info("Registered server " + server + " to " + registration.getIp() + ":" + serverport);
+                        plugin.getLoggerProvider().info("Registered server " + server + " to " + registration.getIp() + ":" + registration.getPort());
                         plugin.getDiscordProvider().getDiscordCommands().addPanelServer(server);
                         response.sendStatus(Status._200);
                         panelManager.getServerDetails(registration).whenComplete((details, e) -> {
@@ -113,10 +111,17 @@ public final class DataManager {
                             registration.setMaxMemory(maxMemory);
                         });
 
-                        if (!announce)
+                        for (String s : registeredServers.keySet()) {
+                            if (s.equalsIgnoreCase(server))
+                                continue;
+
+                            sendData(SGCraftLinkCommon.DATA_SERVER_REGISTER, s, json.toMap(), r -> {});
+                        }
+
+                        if (!registration.isAnnounce())
                             break;
 
-                        ComponentProvider<?> component = ColorProvider.ofComponent("&b&lꜱᴇʀᴠᴇʀ &8&l» &a" + serverName + " is now online! " + (whitelisted ? "(Whitelisted)" : ""));
+                        ComponentProvider<?> component = ColorProvider.ofComponent("&b&lꜱᴇʀᴠᴇʀ &8&l» &a" + serverName + " is now online! " + (registration.isWhitelisted() ? "(Whitelisted)" : ""));
                         component.setHover(ComponentHoverProvider.of(ComponentHoverProvider.Action.SHOW_TEXT, ColorProvider.ofComponent("&eClick to join " + server)));
                         component.setClick(ComponentClickProvider.of(ComponentClickProvider.Action.RUN_COMMAND, "/server " + server));
                         plugin.getPlayers().forEach(p -> p.sendMessageComponent(component));
@@ -125,13 +130,22 @@ public final class DataManager {
                     case SGCraftLinkCommon.DATA_SERVER_UNREGISTER: {
                         plugin.getLoggerProvider().info("Unregistered server " + server);
                         plugin.getDiscordProvider().getDiscordCommands().removePanelServer(server);
-                        registeredServers.remove(server);
+                        RegisteredServer registration = registeredServers.remove(server);
                         response.sendStatus(Status._200);
 
-                        ComponentProvider<?> component = ColorProvider.ofComponent("&b&lꜱᴇʀᴠᴇʀ &8&l» &c" + serverName + " is now offline!");
-                        component.setHover(ComponentHoverProvider.of(ComponentHoverProvider.Action.SHOW_TEXT, ColorProvider.ofComponent("&cJoin back later!")));
-                        plugin.getPlayers().forEach(p -> p.sendMessageComponent(component));
-                        plugin.getConsole().sendMessageComponent(component);
+                        for (String s : registeredServers.keySet()) {
+                            if (s.equalsIgnoreCase(server))
+                                continue;
+
+                            sendData(SGCraftLinkCommon.DATA_SERVER_UNREGISTER, s, json.toMap(), r -> {});
+                        }
+
+                        if (registration != null && registration.isAnnounce()) {
+                            ComponentProvider<?> component = ColorProvider.ofComponent("&b&lꜱᴇʀᴠᴇʀ &8&l» &c" + serverName + " is now offline!");
+                            component.setHover(ComponentHoverProvider.of(ComponentHoverProvider.Action.SHOW_TEXT, ColorProvider.ofComponent("&cJoin back later!")));
+                            plugin.getPlayers().forEach(p -> p.sendMessageComponent(component));
+                            plugin.getConsole().sendMessageComponent(component);
+                        }
                         break;
                     }
                     case SGCraftLinkCommon.DATA_EXECUTE_COMMAND: {
@@ -287,7 +301,9 @@ public final class DataManager {
 
     public CompletableFuture<Void> shutdown() {
         CompletableFuture<Void> future = new CompletableFuture<>();
-        sendDataToAll(null, SGCraftLinkCommon.DATA_SERVER_UNREGISTER, new HashMap<>(), (result) -> {
+        JSONObject obj = new JSONObject();
+        obj.put("from_proxy", true);
+        sendDataToAll(null, SGCraftLinkCommon.DATA_SERVER_UNREGISTER, obj, (result) -> {
             try {
                 manager.shutdown();
                 registeredServers.clear();
@@ -324,6 +340,20 @@ public final class DataManager {
         for (String server : registeredServers.keySet()) {
             if (server.equalsIgnoreCase(origin))
                 continue;
+
+            if (object.has("from_proxy")) {
+                JSONObject obj = new JSONObject(object.toMap());
+                obj.put("server", server);
+                sendData(type, server, obj, (result) -> {
+                    results.put(server, result);
+                    if (i.decrementAndGet() <= 0 && !called.get()) {
+                        called.set(true);
+                        callback.accept(results);
+                        future.complete(null);
+                    }
+                });
+                continue;
+            }
 
             sendData(type, server, object, (result) -> {
                 results.put(server, result);

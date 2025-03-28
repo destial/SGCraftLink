@@ -1,4 +1,4 @@
-package xyz.destiall.sgcraftlink.items;
+package xyz.destiall.sgcraftlink.utils;
 
 import java.util.HashSet;
 
