@@ -8,6 +8,7 @@ import net.dv8tion.jda.api.interactions.components.buttons.ButtonStyle;
 import net.dv8tion.jda.api.utils.MarkdownUtil;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.LuckPermsProvider;
+import net.luckperms.api.actionlog.Action;
 import net.luckperms.api.context.ImmutableContextSet;
 import net.luckperms.api.event.node.NodeAddEvent;
 import net.luckperms.api.messenger.IncomingMessageConsumer;
@@ -138,6 +139,13 @@ public class LuckPermsManager {
                                 plugin.getLinkProvider().updateUser(user.getUsername(), data);
                             }
                         }
+                        Action action = api.getActionLogger().actionBuilder()
+                                .description("accepted to get " + node.getKey())
+                                .timestamp(Instant.now())
+                                .sourceName(button.getUser().getName())
+                                .targetName(holder.getFriendlyName())
+                                .build();
+                        api.getActionLogger().broadcastAction(action);
                         embed.setDescription(holder.getClass().getSimpleName() + ": " + holder.getFriendlyName() + " has been accepted to get the permission " + MarkdownUtil.monospace(node.getKey()) + "\nBy: " + button.getUser().getAsMention());
                     } else if (id.equalsIgnoreCase("deny-perm-" + uuid)) {
                         embed.setDescription(holder.getClass().getSimpleName() + ": " + holder.getFriendlyName() + " has been rejected from getting the permission " + MarkdownUtil.monospace(node.getKey()) + "\nBy: " + button.getUser().getAsMention());

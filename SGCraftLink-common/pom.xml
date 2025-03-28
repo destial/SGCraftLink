@@ -66,6 +66,10 @@
 
     <repositories>
         <repository>
+            <id>destial</id>
+            <url>https://repo.destial.xyz/repository/maven-snapshots/</url>
+        </repository>
+        <repository>
             <id>sonatype</id>
             <url>https://oss.sonatype.org/content/groups/public/</url>
         </repository>

@@ -7,6 +7,7 @@ import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.But
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.Component;
 import github.scarsz.discordsrv.dependencies.jda.api.utils.MarkdownUtil;
 import net.luckperms.api.LuckPerms;
+import net.luckperms.api.actionlog.Action;
 import net.luckperms.api.event.node.NodeAddEvent;
 import net.luckperms.api.messenger.IncomingMessageConsumer;
 import net.luckperms.api.messenger.Messenger;
@@ -274,6 +275,13 @@ public class LuckPermsHook extends Module implements Listener {
                         dataModule.sendProxyData(SGCraftLinkCommon.DATA_SET_WHITELISTED_PERMS, SGCraftLinkCommon.createDataMap("username", user.getUsername(), "perms", new JSONArray().put(node.getKey())), (r) -> {});
                     }
                     embed.setDescription(holder.getClass().getSimpleName() + ": " + holder.getFriendlyName() + " has been accepted to get the permission `" + node.getKey() + "`\nBy: " + button.getUser().getAsMention());
+                    Action action = api.getActionLogger().actionBuilder()
+                            .description("accepted to get " + node.getKey())
+                            .timestamp(Instant.now())
+                            .sourceName(button.getUser().getName())
+                            .targetName(holder.getFriendlyName())
+                            .build();
+                    api.getActionLogger().broadcastAction(action);
                 } else if (id.equalsIgnoreCase("deny-perm-" + uuid)) {
                     embed.setDescription(holder.getClass().getSimpleName() + ": " + holder.getFriendlyName() + " has been rejected from getting the permission `" + node.getKey() + "`\nBy: " + button.getUser().getAsMention());
                 } else if (id.equalsIgnoreCase("ipban-" + uuid)) {
