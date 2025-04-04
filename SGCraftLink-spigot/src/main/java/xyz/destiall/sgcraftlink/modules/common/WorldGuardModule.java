@@ -53,4 +53,9 @@ public class WorldGuardModule extends Module {
 
     @Override
     public void enable() {}
+
+    @Override
+    public boolean isPersistent() {
+        return true;
+    }
 }

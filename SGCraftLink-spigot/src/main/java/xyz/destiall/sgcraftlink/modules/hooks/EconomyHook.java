@@ -57,4 +57,9 @@ public class EconomyHook extends Module {
 
     @Override
     public void enable() {}
+
+    @Override
+    public boolean isPersistent() {
+        return true;
+    }
 }

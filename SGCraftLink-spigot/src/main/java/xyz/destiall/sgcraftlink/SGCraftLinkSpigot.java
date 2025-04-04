@@ -294,10 +294,10 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             disable();
             reloadConfig();
             enable();
-
             sender.sendMessage(color("&aReloaded SGCraftLink."));
             return true;
         }
+
         String moduleName = args[0];
         Class<? extends Module> moduleClass = moduleClazzes.stream()
                 .filter(m -> m.getSimpleName().equalsIgnoreCase(moduleName))
@@ -309,17 +309,23 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
 
         Module module = modules.stream().filter(m -> m.getClass().equals(moduleClass)).findFirst().orElse(null);
         if (module != null) {
+            if (module.isPersistent()) {
+                sender.sendMessage(color("&cPersistent module cannot be reloaded!"));
+                return false;
+            }
+
             module.disable();
             if (module instanceof Listener) {
                 HandlerList.unregisterAll((Listener) module);
             }
             modules.remove(module);
         }
+        boolean wasEnabled = module.isEnabled();
 
         try {
             module = moduleClass.getDeclaredConstructor(SGCraftLinkSpigot.class).newInstance(this);
         } catch (Throwable e) {
-            sender.sendMessage(color("&cThis version cannot run " + moduleClass.getSimpleName()));
+            sender.sendMessage(color("&cThis server version cannot run " + moduleClass.getSimpleName()));
             e.printStackTrace();
             return false;
         }
@@ -332,12 +338,17 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         } catch (Throwable e) {
             sender.sendMessage(color("&c" + module + " cannot run here!"));
             modules.remove(module);
+            return false;
         }
 
         module.initConfig();
         if (!module.isEnabled()) {
             modules.remove(module);
-            sender.sendMessage(color("&aReloaded " + module + " but is disabled!"));
+            if (wasEnabled) {
+                sender.sendMessage(color("&aDisabled " + module + "!"));
+            } else {
+                sender.sendMessage(color("&aReloaded " + module + " but is disabled!"));
+            }
         } else {
             module.enable();
             if (module instanceof Listener) {
@@ -357,7 +368,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
                 papiHook = new PAPIHook(this);
                 papiHook.register();
             } catch (Exception e) {
-                getLogger().warning("This version cannot run PAPI Hook!");
+                getLogger().warning("This server version cannot run PAPI Hook!");
             }
         }
 
@@ -367,8 +378,8 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
         if (args.length == 1) {
-            return modules.stream()
-                    .map(Module::toString)
+            return moduleClazzes.stream()
+                    .map(Class::getSimpleName)
                     .filter(m -> m.toLowerCase().startsWith(args[0].toLowerCase()))
                     .collect(Collectors.toList());
         }

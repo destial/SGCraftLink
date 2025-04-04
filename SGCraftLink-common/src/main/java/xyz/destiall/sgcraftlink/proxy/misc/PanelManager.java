@@ -49,7 +49,7 @@ public class PanelManager {
                         return;
 
                     double usage = memoryBytes / (double) maxMemory;
-                    if (usage >= 0.95d) {
+                    if (usage >= 0.9d) {
                         plugin.getLoggerProvider().warning(serverName + " is overloading soon! Restarting! (" + (usage * 100d) + "%)");
                         plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, serverName, SGCraftLinkCommon.createCommandsData("cmi schedule stopserver"), (r) -> {});
                     }

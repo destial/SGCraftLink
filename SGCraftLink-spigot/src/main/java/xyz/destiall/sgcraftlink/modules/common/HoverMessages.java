@@ -42,11 +42,16 @@ public class HoverMessages extends Module implements Listener, CommandExecutor {
     @Override
     public void loadDefaultConfig() {
         config.set("enabled", true);
+        config.set("hover-distance", 3);
     }
 
     @Override
     public void disable() {
         messages.clear();
+        for (Map.Entry<UUID, Pair<Integer, PacketArmorStand>> entry : seeing.entrySet()) {
+            entry.getValue().getValue().remove();
+        }
+        seeing.clear();
         unsetCommandExecutor("hovermessages");
     }
 
@@ -84,20 +89,19 @@ public class HoverMessages extends Module implements Listener, CommandExecutor {
 
         Vector loc = null;
         try {
-            loc = e.getPlayer().getTargetEntityInfo(3).getHitVector();
+            loc = e.getPlayer().getTargetEntityInfo(config.getInt("hover-distance", 3)).getHitVector();
         } catch (NoSuchMethodError ex) {
-            RayTraceResult rs = e.getPlayer().rayTraceEntities(3);
+            RayTraceResult rs = e.getPlayer().rayTraceEntities(config.getInt("hover-distance", 3));
             if (rs != null)
                 loc = rs.getHitPosition();
         }
 
         if (loc == null) {
+            loc = entity.getLocation().toVector();
             if (entity instanceof LivingEntity) {
                 Vector bottom = entity.getLocation().toVector();
                 Vector top = ((LivingEntity) entity).getEyeLocation().toVector();
                 loc = bottom.add(top).divide(new Vector(2f, 2f, 2f));
-            } else {
-                loc = entity.getLocation().toVector();
             }
         }
 
@@ -123,8 +127,6 @@ public class HoverMessages extends Module implements Listener, CommandExecutor {
             sender.sendMessage(color("&cThis feature is not enabled!"));
             return false;
         }
-
-
 
         return false;
     }

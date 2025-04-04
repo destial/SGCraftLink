@@ -152,4 +152,9 @@ public class CoreProtectHook extends Module implements Listener {
 
         api = ((CoreProtect) cp).getAPI();
     }
+
+    @Override
+    public boolean isPersistent() {
+        return true;
+    }
 }

@@ -90,4 +90,8 @@ public abstract class Module {
     public boolean isUniversallyCompatible() {
         return false;
     }
+
+    public boolean isPersistent() {
+        return false;
+    }
 }
