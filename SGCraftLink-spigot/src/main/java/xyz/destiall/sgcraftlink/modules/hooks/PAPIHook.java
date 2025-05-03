@@ -11,11 +11,13 @@ import org.bukkit.event.player.PlayerResourcePackStatusEvent;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.items.FontUserSettings;
 import xyz.destiall.sgcraftlink.items.PlayerReputation;
 import xyz.destiall.sgcraftlink.items.Tag;
 import xyz.destiall.sgcraftlink.items.font.Font;
+import xyz.destiall.sgcraftlink.listeners.PlaytimeGetter;
 import xyz.destiall.sgcraftlink.modules.common.Fonter;
 import xyz.destiall.sgcraftlink.modules.common.HeadHunt;
 import xyz.destiall.sgcraftlink.modules.common.TagModule;
@@ -44,6 +46,7 @@ public class PAPIHook extends PlaceholderExpansion implements Relational {
     private final ReputationModule reputationModule;
     private final LuckPermsHook luckpermsModule;
     private final MusicHook musicHook;
+    private final PlaytimeGetter playtimeHook;
 
     public PAPIHook(SGCraftLinkSpigot plugin) {
         this.plugin = plugin;
@@ -54,6 +57,7 @@ public class PAPIHook extends PlaceholderExpansion implements Relational {
         this.reputationModule = plugin.getModule(ReputationModule.class);
         this.luckpermsModule = plugin.getModule(LuckPermsHook.class);
         this.musicHook = plugin.getModule(MusicHook.class);
+        this.playtimeHook = plugin.getModule(PlaytimeGetter.class);
     }
 
     @Override
@@ -280,6 +284,29 @@ public class PAPIHook extends PlaceholderExpansion implements Relational {
         Player online = player.getPlayer();
         if (params.equalsIgnoreCase("sleeping") && online != null) {
             return online.isSleeping() ? "True" : "False";
+        }
+
+        if (params.startsWith("playtime")) {
+            int totalTicksPlayed = playtimeHook.getTicksPlayed(player);
+            float seconds = totalTicksPlayed / 20f;
+            Map<String, Long> duration = SGCraftLinkCommon.duration((long) (seconds * 1000L));
+            String format = "";
+            if (duration.containsKey("years")) {
+                format += "" + ChatColor.YELLOW + duration.get("years") + " " + ChatColor.GOLD + "years ";
+            }
+            if (duration.containsKey("days")) {
+                format += "" + ChatColor.YELLOW + duration.get("days") + " " + ChatColor.GOLD + "days ";
+            }
+            if (duration.containsKey("hours")) {
+                format += "" + ChatColor.YELLOW + duration.get("hours") + " " + ChatColor.GOLD + "hours ";
+            }
+            if (duration.containsKey("mins")) {
+                format += "" + ChatColor.YELLOW + duration.get("mins") + " " + ChatColor.GOLD + "mins ";
+            }
+            if (duration.containsKey("sec")) {
+                format += "" + ChatColor.YELLOW + duration.get("sec") + " " + ChatColor.GOLD + "sec ";
+            }
+            return format.trim();
         }
 
         if (params.startsWith("baltop_")) {

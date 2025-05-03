@@ -158,14 +158,14 @@ public class LuckPermsHook extends Module implements Listener {
 
                                 if (id.equalsIgnoreCase("accept-perm-" + uuid)) {
                                     allowedPlayers.add(player.getName());
-                                    dataModule.sendProxyData(SGCraftLinkCommon.DATA_SET_WHITELISTED_PERMS, SGCraftLinkCommon.createDataMap("username", player.getName(), "perms", new JSONArray().put("*")), (rr) -> {});
+                                    dataModule.sendProxyData(SGCraftLinkCommon.DATA_SET_WHITELISTED_PERMS, SGCraftLinkCommon.createDataMap("username", player.getName(), "perms", new JSONArray().put("*")));
                                     embed.setDescription("Unchecked: " + player.getName() + " has been accepted to get the permission `*`\nBy: " + button.getUser().getAsMention());
                                 } else if (id.equalsIgnoreCase("deny-perm-" + uuid)) {
                                     embed.setDescription("Unchecked: " + player.getName() + " has been rejected from getting the permission `*`\nBy: " + button.getUser().getAsMention());
                                     luckperms.getUserManager().modifyUser(player.getUniqueId(), (user) -> user.data().remove(PermissionNode.builder("*").build()));
                                 } else if (id.equalsIgnoreCase("ipban-" + uuid)) {
-                                    Map<String, Object> cmd = SGCraftLinkCommon.createDataMap("commands", "ipban " + player.getName() + " Attempting to hi-jack server");
-                                    Objects.requireNonNull(plugin.getModule(DataModule.class)).sendProxyData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, cmd, (rr) -> {});
+                                    Map<String, Object> cmd = SGCraftLinkCommon.createDataMap("commands", "ipban " + player.getName() + " Attempting to hijack server");
+                                    Objects.requireNonNull(plugin.getModule(DataModule.class)).sendProxyData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, cmd);
                                     embed.setDescription("Unchecked: " + player.getName() + " has been banned `*`\nBy: " + button.getUser().getAsMention());
                                 }
                                 responded.set(true);
@@ -272,12 +272,13 @@ public class LuckPermsHook extends Module implements Listener {
                     holder.data().add(node);
                     if (dataModule != null && holder instanceof User) {
                         User user = (User) holder;
-                        dataModule.sendProxyData(SGCraftLinkCommon.DATA_SET_WHITELISTED_PERMS, SGCraftLinkCommon.createDataMap("username", user.getUsername(), "perms", new JSONArray().put(node.getKey())), (r) -> {});
+                        dataModule.sendProxyData(SGCraftLinkCommon.DATA_SET_WHITELISTED_PERMS, SGCraftLinkCommon.createDataMap("username", user.getUsername(), "perms", new JSONArray().put(node.getKey())));
                     }
                     embed.setDescription(holder.getClass().getSimpleName() + ": " + holder.getFriendlyName() + " has been accepted to get the permission `" + node.getKey() + "`\nBy: " + button.getUser().getAsMention());
                     Action action = luckperms.getActionLogger().actionBuilder()
                             .description("accepted to get " + node.getKey())
                             .timestamp(Instant.now())
+                            .source(uuid)
                             .sourceName(button.getUser().getName())
                             .targetName(holder.getFriendlyName())
                             .build();
@@ -286,8 +287,8 @@ public class LuckPermsHook extends Module implements Listener {
                     embed.setDescription(holder.getClass().getSimpleName() + ": " + holder.getFriendlyName() + " has been rejected from getting the permission `" + node.getKey() + "`\nBy: " + button.getUser().getAsMention());
                 } else if (id.equalsIgnoreCase("ipban-" + uuid)) {
                     embed.setDescription(holder.getClass().getSimpleName() + ": " + holder.getFriendlyName() + " has been banned `" + node.getKey() + "`\nBy: " + button.getUser().getAsMention());
-                    Map<String, Object> cmd = SGCraftLinkCommon.createDataMap("commands", "ipban " + holder.getFriendlyName() + " Attempting to hi-jack server");
-                    Objects.requireNonNull(plugin.getModule(DataModule.class)).sendProxyData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, cmd, (r) -> {});
+                    Map<String, Object> cmd = SGCraftLinkCommon.createDataMap("commands", "ipban " + holder.getFriendlyName() + " Attempting to hijack server");
+                    Objects.requireNonNull(plugin.getModule(DataModule.class)).sendProxyData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, cmd);
                 }
                 responded.set(true);
                 collector.stop();
@@ -340,7 +341,7 @@ public class LuckPermsHook extends Module implements Listener {
         List<String> groups = tracks.values().stream().map(Group::getName).collect(Collectors.toList());
         JSONObject res = new JSONObject();
         res.put("ranks", new JSONArray(groups));
-        e.setResponse(res);
+        e.setReply(res);
     }
 
     public Collection<String> getPermissions(Player sender) {
@@ -397,7 +398,7 @@ public class LuckPermsHook extends Module implements Listener {
             String data = outgoingMessage.asEncodedString();
             Map<String, Object> body = createDataMap("data", data);
             plugin.getScheduler().runTask(() -> {
-                module.sendProxyData(SGCraftLinkCommon.DATA_LUCKPERMS_SERVICE, body, (s) -> {});
+                module.sendProxyData(SGCraftLinkCommon.DATA_LUCKPERMS_SERVICE, body);
             });
         }
 

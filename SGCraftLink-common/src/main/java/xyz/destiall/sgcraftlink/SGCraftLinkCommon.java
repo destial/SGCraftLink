@@ -1,15 +1,19 @@
 package xyz.destiall.sgcraftlink;
 
+import org.json.JSONObject;
+import xyz.destiall.sgcraftlink.providers.LoggerProvider;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class SGCraftLinkCommon {
@@ -38,10 +42,12 @@ public class SGCraftLinkCommon {
     public static final String DATA_UNLINK_DISCORDSRV = "SGC_UNLINK_DISCORDSRV";
     public static final String DATA_GET_WHITELISTED_PERMS = "SGC_GET_WHITELISTED_PERMS";
     public static final String DATA_SET_WHITELISTED_PERMS = "SGC_SET_WHITELISTED_PERMS";
+    public static final String DATA_GET_RESOURCES = "SGC_GET_RESOURCES";
+    public static final String DATA_GET_PLAYTIME = "SGC_GET_PLAYTIME";
 
     public static final String[] BLACKLISTED_PERMISSIONS = {"*", "luckperms", "owner", "admin"};
 
-    private static final Map<String, Object> emptyMap = Collections.emptyMap();
+    public static LoggerProvider LOGGER;
 
     public static Map<String, Object> createCommandsData(String... commands) {
         Map<String, Object> data = new HashMap<>();
@@ -53,67 +59,74 @@ public class SGCraftLinkCommon {
         Map<String, Object> data = new HashMap<>();
         data.put(first, second);
         if (others != null) {
-            for (int i = 0; i < others.length; i += 2) {
+            for (int i = 0; i < others.length; i+=2) {
                 data.put(String.valueOf(others[i]), others[i + 1]);
             }
         }
         return data;
     }
 
-    public static Map<String, Object> emptyDataMap() {
-        return emptyMap;
+    public static Map<String, String> createStringMap(String key, String... values) {
+        Map<String, String> map = new HashMap<>();
+        if (values.length == 0) {
+            return map;
+        }
+        List<String> list = new ArrayList<>();
+        list.add(key);
+        list.addAll(Arrays.asList(values));
+        for (int i = 0; i < values.length; i+=2) {
+            map.put(list.get(i), list.get(i + 1));
+        }
+        return map;
     }
 
-    public static String formatDate(Date date) {
-        return format.format(date.toInstant());
-    }
+    public static Map<String, Long> duration(long difference_In_Millis) {
+        Map<String, Long> map = new HashMap<>();
+        long difference_In_Years
+                = (difference_In_Millis
+                / (1000L * 60 * 60 * 24 * 365));
 
-    public static String relativeDate(long end) {
-        long start = System.currentTimeMillis();
-        // Calculate time difference
-        // in milliseconds
-        long difference_In_Time = end - start;
-
-        String format = "";
-
+        if (difference_In_Years > 0) {
+            map.put("years", difference_In_Years);
+        }
 
         long difference_In_Days
-                = (difference_In_Time
+                = (difference_In_Millis
                 / (1000L * 60 * 60 * 24))
                 % 365;
 
         if (difference_In_Days > 0) {
-            format += difference_In_Days + " days ";
+            map.put("days", difference_In_Days);
         }
 
         long difference_In_Hours
-                = (difference_In_Time
+                = (difference_In_Millis
                 / (1000L * 60 * 60))
                 % 24;
 
         if (difference_In_Hours > 0) {
-            format += difference_In_Hours + " hours ";
+            map.put("hours", difference_In_Hours);
         }
 
         long difference_In_Minutes
-                = (difference_In_Time
+                = (difference_In_Millis
                 / (1000L * 60))
                 % 60;
 
         if (difference_In_Minutes > 0) {
-            format += difference_In_Minutes + " mins ";
+            map.put("mins", difference_In_Minutes);
         }
 
         long difference_In_Seconds
-                = (difference_In_Time
+                = (difference_In_Millis
                 / 1000L)
                 % 60;
 
         if (difference_In_Seconds > 0) {
-            format += difference_In_Seconds + " s";
+            map.put("sec", difference_In_Seconds);
         }
 
-        return format.trim();
+        return map;
     }
 
     public static String convertStreamToString(InputStream is) {

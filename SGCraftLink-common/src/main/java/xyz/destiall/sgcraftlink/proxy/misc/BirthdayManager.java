@@ -54,7 +54,7 @@ public class BirthdayManager {
             return;
 
         Map<String, Object> map = createDataMap("celebrated", birthday.hasAlreadyCelebrated(), "name", player.getName());
-        plugin.getDataManager().sendDataToAll(null, SGCraftLinkCommon.DATA_BIRTHDAY, map, mapping -> {
+        plugin.getDataManager().sendDataToAll(null, SGCraftLinkCommon.DATA_BIRTHDAY, map).thenAccept((mapping) -> {
             if (!birthday.hasAlreadyCelebrated()) {
                 birthday.setLastCelebrated(Year.now().getValue());
                 saveBirthday(player, birthday);

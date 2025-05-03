@@ -266,7 +266,7 @@ public class DiscordProvider {
     public CompletableFuture<Void> updateRankStatus(PlayerProvider player, Member member) {
         Map<String, Object> body = createDataMap("uuid", player.getUUID().toString());
         Set<String> ranks = ConcurrentHashMap.newKeySet();
-        return plugin.getDataManager().sendDataToAll(null, SGCraftLinkCommon.DATA_GET_RANKS, body, (mappings) -> {
+        return plugin.getDataManager().sendDataToAll(null, SGCraftLinkCommon.DATA_GET_RANKS, body).thenAccept((mappings) -> {
             for (DataResult result : mappings.values()) {
                 if (!result.isSuccess())
                     continue;
@@ -296,7 +296,7 @@ public class DiscordProvider {
         JSONArray linked = new JSONArray();
         linked.put(new JSONObject().put("username", username).put("id", id));
         object.put("linked", linked);
-        plugin.getDataManager().sendDataToAll(null, SGCraftLinkCommon.DATA_LINK_DISCORDSRV, object, (result) -> {});
+        plugin.getDataManager().sendDataToAll(null, SGCraftLinkCommon.DATA_LINK_DISCORDSRV, object);
     }
 
     public void sendUnlinkedToDiscordSRV(String id) {
@@ -304,7 +304,7 @@ public class DiscordProvider {
         JSONArray linked = new JSONArray();
         linked.put(new JSONObject().put("id", id));
         object.put("linked", linked);
-        plugin.getDataManager().sendDataToAll(null, SGCraftLinkCommon.DATA_UNLINK_DISCORDSRV, object, (result) -> {});
+        plugin.getDataManager().sendDataToAll(null, SGCraftLinkCommon.DATA_UNLINK_DISCORDSRV, object);
     }
 
     public void link(PlayerProvider player, User user) {

@@ -89,6 +89,7 @@ public class SGCraftLinkVelocity implements PluginProvider {
 
     @Subscribe
     public void onProxyInitialization(ProxyInitializeEvent ignored) {
+        SGCraftLinkCommon.LOGGER = this.logger;
         new VelocityColor();
         new VelocityTextComponent();
         new VelocityClickEvent();

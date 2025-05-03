@@ -91,6 +91,9 @@ public class ScheduledCommands extends Module implements CommandExecutor {
     @Override
     public void enable() {
         for (String datekey : config.getKeys(false)) {
+            if (datekey.equalsIgnoreCase("enabled"))
+                continue;
+
             Date date = new Date(Long.parseLong(datekey));
             List<String> commands = config.getStringList(datekey);
 
@@ -101,10 +104,8 @@ public class ScheduledCommands extends Module implements CommandExecutor {
 
     @Override
     public void saveConfig() {
-        if (scheduledCommands != null) {
-            for (ScheduledCommand cmd : scheduledCommands) {
-                config.set(String.valueOf(cmd.date.getTime()), cmd.commands);
-            }
+        for (ScheduledCommand cmd : scheduledCommands) {
+            config.set(String.valueOf(cmd.date.getTime()), cmd.commands);
         }
         super.saveConfig();
     }

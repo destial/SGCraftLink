@@ -142,6 +142,7 @@ public class LuckPermsManager {
                         Action action = api.getActionLogger().actionBuilder()
                                 .description("accepted to get " + node.getKey())
                                 .timestamp(Instant.now())
+                                .source(uuid)
                                 .sourceName(button.getUser().getName())
                                 .targetName(holder.getFriendlyName())
                                 .build();
@@ -226,14 +227,14 @@ public class LuckPermsManager {
             String data = outgoingMessage.asEncodedString();
             Map<String, String> body = new HashMap<>();
             body.put("data", data);
-            module.sendDataToAll(null, SGCraftLinkCommon.DATA_LUCKPERMS_SERVICE, body, (mappings) -> {});
+            module.sendDataToAll(null, SGCraftLinkCommon.DATA_LUCKPERMS_SERVICE, body);
         }
 
         public boolean handleIncomingMessage(JSONObject object) {
             String encoded = object.getString("data");
             String server = object.getString("server");
             Map<String, Object> body = createDataMap("data", encoded, "server", server);
-            module.sendDataToAll(server, SGCraftLinkCommon.DATA_LUCKPERMS_SERVICE, body, (mappings) -> {});
+            module.sendDataToAll(server, SGCraftLinkCommon.DATA_LUCKPERMS_SERVICE, body);
             return this.consumer.consumeIncomingMessageAsString(encoded);
         }
     }

@@ -50,7 +50,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-import static xyz.destiall.sgcraftlink.SGCraftLinkCommon.emptyDataMap;
 import static xyz.destiall.sgcraftlink.SGCraftLinkSpigot.color;
 import static xyz.destiall.sgcraftlink.SGCraftLinkSpigot.testPaperOr1_8Above;
 
@@ -114,7 +113,7 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
                     players.put(score.getKey(), score.getValue());
                 }
                 res.put("score", players);
-                e.setResponse(res);
+                e.setReply(res);
                 break;
             }
             case SGCraftLinkCommon.DATA_START_HEADHUNT: {
@@ -162,7 +161,7 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
             if (module == null)
                 return;
 
-            module.sendProxyData(SGCraftLinkCommon.DATA_START_HEADHUNT, new HashMap<>(), (s) -> {});
+            module.sendProxyData(SGCraftLinkCommon.DATA_START_HEADHUNT);
         }
     }
 
@@ -180,7 +179,7 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
                 if (module == null)
                     return;
 
-                module.sendProxyData(SGCraftLinkCommon.DATA_END_HEADHUNT, emptyDataMap(), (s) -> {});
+                module.sendProxyData(SGCraftLinkCommon.DATA_END_HEADHUNT);
                 return;
             }
             e.getPlayer().sendMessage(color("&cRight click this egg to claim it!"));
@@ -227,7 +226,7 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
                     if (module == null)
                         return;
 
-                    module.sendProxyData(SGCraftLinkCommon.DATA_END_HEADHUNT, emptyDataMap(), (s) -> {});
+                    module.sendProxyData(SGCraftLinkCommon.DATA_END_HEADHUNT);
                 }
             });
         }
@@ -314,7 +313,7 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
                     if (module == null)
                         return;
 
-                    module.sendProxyData(SGCraftLinkCommon.DATA_GET_HEADHUNT, emptyDataMap(), (result) -> {
+                    module.sendProxyData(SGCraftLinkCommon.DATA_GET_HEADHUNT, (result) -> {
                         if (result.isSuccess()) {
                             JSONObject obj = result.getJSON();
                             JSONObject score = obj.getJSONObject("score");
@@ -373,7 +372,7 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
             future.complete(getRemaining());
             return future;
         }
-        module.sendProxyData(SGCraftLinkCommon.DATA_GET_HEADHUNT, emptyDataMap(), (result) -> {
+        module.sendProxyData(SGCraftLinkCommon.DATA_GET_HEADHUNT, (result) -> {
             if (result.getStatus() == 200) {
                 JSONObject obj = result.getJSON();
                 int total = obj.getInt("total") + getRemaining();
@@ -399,7 +398,7 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
         if (module == null)
             return;
 
-        module.sendProxyData(SGCraftLinkCommon.DATA_GET_HEADHUNT, emptyDataMap(), (result) -> {
+        module.sendProxyData(SGCraftLinkCommon.DATA_GET_HEADHUNT, (result) -> {
             if (result.getStatus() == 200) {
                 JSONObject obj = result.getJSON();
                 JSONObject score = obj.getJSONObject("score");
@@ -467,7 +466,7 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
             if (module == null)
                 return true;
 
-            module.sendProxyData(SGCraftLinkCommon.DATA_START_HEADHUNT, new HashMap<>(), (s) -> {});
+            module.sendProxyData(SGCraftLinkCommon.DATA_START_HEADHUNT);
             return true;
         }
 
@@ -480,7 +479,7 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
             if (module == null)
                 return true;
 
-            module.sendProxyData(SGCraftLinkCommon.DATA_CLEAR_SCORE_HEADHUNT, emptyDataMap(), (s) -> {});
+            module.sendProxyData(SGCraftLinkCommon.DATA_CLEAR_SCORE_HEADHUNT);
             return true;
         }
 
@@ -495,7 +494,7 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
             if (module == null)
                 return true;
 
-            module.sendProxyData(SGCraftLinkCommon.DATA_REMOVE_HEAD_HEADHUNT, emptyDataMap(), (s) -> {});
+            module.sendProxyData(SGCraftLinkCommon.DATA_REMOVE_HEAD_HEADHUNT);
             return true;
         }
 

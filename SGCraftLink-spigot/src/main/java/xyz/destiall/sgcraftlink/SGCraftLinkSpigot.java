@@ -1,5 +1,6 @@
 package xyz.destiall.sgcraftlink;
 
+import de.tr7zw.changeme.nbtapi.NBT;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -13,10 +14,11 @@ import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
 import xyz.destiall.sgcraftlink.gamemode.MoveIfGay;
 import xyz.destiall.sgcraftlink.gamemode.OnePersonDeath;
-import xyz.destiall.sgcraftlink.utils.ClassSet;
+import xyz.destiall.sgcraftlink.items.SpigotLogger;
 import xyz.destiall.sgcraftlink.listeners.AirBlockPlaceListener;
 import xyz.destiall.sgcraftlink.listeners.PML;
 import xyz.destiall.sgcraftlink.listeners.PlayerListener;
+import xyz.destiall.sgcraftlink.listeners.PlaytimeGetter;
 import xyz.destiall.sgcraftlink.modules.DataModule;
 import xyz.destiall.sgcraftlink.modules.Module;
 import xyz.destiall.sgcraftlink.modules.common.BirthdayModule;
@@ -56,6 +58,7 @@ import xyz.destiall.sgcraftlink.modules.vanilla.Casino;
 import xyz.destiall.sgcraftlink.modules.vanilla.LastLocation;
 import xyz.destiall.sgcraftlink.modules.vanilla.PiggyBankModule;
 import xyz.destiall.sgcraftlink.modules.vanilla.ReputationModule;
+import xyz.destiall.sgcraftlink.utils.ClassSet;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -84,6 +87,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
                 e.printStackTrace();
             }
         }
+        SGCraftLinkCommon.LOGGER = new SpigotLogger(this);
     }
 
     @Override
@@ -97,6 +101,10 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         }
         if (getServer().getMessenger().registerIncomingPluginChannel(this, "BungeeCord", pml).isValid()) {
             getLogger().info("Registered incoming plugin channel BungeeCord");
+        }
+
+        if (!NBT.preloadApi()) {
+            getLogger().warning("NBT-API wasn't initialized properly!");
         }
 
         getCommand("sgcreload").setExecutor(this);
@@ -214,6 +222,12 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             moduleClazzes.add(HoverMessages.class);
         }
 
+        if (NBT.preloadApi()) {
+            moduleClazzes.add(PlaytimeGetter.class);
+        }
+
+        // -=-=-=-=-=-=-=-=-=-=-=-=-=- Add all your modules before this line! -=-=-=-=-=-=-=-=-=-=-=-=-=-
+
         for (Class<? extends Module> clazz : moduleClazzes) {
             Module module;
             try {
@@ -230,7 +244,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
                     testPaperOr1_8Above();
                 }
             } catch (Throwable e) {
-                getLogger().warning("This version cannot run " + module);
+                getLogger().warning(module + " cannot run here!");
                 this.modules.remove(module);
             }
 

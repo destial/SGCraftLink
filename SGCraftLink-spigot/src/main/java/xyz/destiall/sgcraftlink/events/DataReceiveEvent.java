@@ -1,12 +1,13 @@
 package xyz.destiall.sgcraftlink.events;
 
 import express.utils.Status;
+import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 
-public class DataReceiveEvent extends Event {
+public class DataReceiveEvent extends Event implements Cancellable {
     public static final HandlerList handlers=new HandlerList();
     @Override public @NotNull HandlerList getHandlers(){return handlers;}
     public static HandlerList getHandlerList(){return handlers;}
@@ -27,11 +28,11 @@ public class DataReceiveEvent extends Event {
         return json;
     }
 
-    public void setResponse(JSONObject returning) {
+    public void setReply(JSONObject returning) {
         this.response = returning;
     }
 
-    public JSONObject getResponse() {
+    public JSONObject getReply() {
         return response;
     }
 
@@ -46,4 +47,8 @@ public class DataReceiveEvent extends Event {
     public void setStatus(Status status) {
         this.status = status;
     }
+
+    // This is only added to ensure the reply can be seen!
+    @Override public boolean isCancelled(){return false;}
+    @Override public void setCancelled(boolean cancel){}
 }

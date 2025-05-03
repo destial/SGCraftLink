@@ -164,7 +164,7 @@ public class Migration {
 
         DataModule dataModule = module.getPlugin().getModule(DataModule.class);
         if (dataModule != null) {
-            dataModule.sendProxyData(SGCraftLinkCommon.DATA_PLAYER_MIGRATE, SGCraftLinkCommon.createDataMap("old_name", oldName, "new_name", newName), (r) -> {});
+            dataModule.sendProxyData(SGCraftLinkCommon.DATA_PLAYER_MIGRATE, SGCraftLinkCommon.createDataMap("old_name", oldName, "new_name", newName));
         }
 
         module.getPlugin().getLogger().info("Saved migrated data!");

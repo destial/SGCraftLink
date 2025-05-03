@@ -9,18 +9,13 @@ import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.modules.Module;
 
 public class PlayerListener extends Module implements Listener {
+
     public PlayerListener(SGCraftLinkSpigot plugin) {
         super(plugin);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerDeath(PlayerDeathEvent e) {
-        try {
-            plugin.testPaperOr1_8Above();
-        } catch (Exception ex) {
-            return;
-        }
-
         if (plugin.getConfig().getBoolean("keep-inv-pvp", true)) {
             Player killer = e.getPlayer().getKiller();
             if (killer != null) {
@@ -41,8 +36,4 @@ public class PlayerListener extends Module implements Listener {
     @Override
     public void enable() {}
 
-    @Override
-    public boolean isUniversallyCompatible() {
-        return true;
-    }
 }

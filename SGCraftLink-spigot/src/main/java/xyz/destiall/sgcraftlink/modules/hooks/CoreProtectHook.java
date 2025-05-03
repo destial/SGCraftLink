@@ -44,7 +44,7 @@ public class CoreProtectHook extends Module implements Listener {
             res.put("messages", array);
             plugin.getLogger().warning("No messages found!");
             plugin.getLogger().info("Sending back to proxy");
-            e.setResponse(res);
+            e.setReply(res);
             return;
         }
 
@@ -59,7 +59,7 @@ public class CoreProtectHook extends Module implements Listener {
 
         res.put("messages", array);
         plugin.getLogger().info("Sending back " + array.length() + " messages to proxy");
-        e.setResponse(res);
+        e.setReply(res);
     }
 
     public List<ChatMessageResult> getChats(@Nullable String player, int limit, long since) {

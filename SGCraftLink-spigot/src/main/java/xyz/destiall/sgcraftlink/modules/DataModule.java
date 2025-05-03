@@ -14,6 +14,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
@@ -42,6 +43,8 @@ public class DataModule extends Module implements Listener, CommandExecutor {
     private final HTTPManager manager;
     private Scheduler.Task currentRegistrationTask = null;
     private final List<LuckPermsHook.BackendRestMessenger> messengers;
+    private long maxMemory;
+    private long usedMemory;
 
     public DataModule(SGCraftLinkSpigot plugin) {
         super(plugin, "comms.yml");
@@ -49,6 +52,15 @@ public class DataModule extends Module implements Listener, CommandExecutor {
         manager = new HTTPManager();
         messengers = new ArrayList<>();
         setCommandExecutor("datacomm");
+        //startHeartbeat();
+    }
+
+    public long getUsedMemory() {
+        return usedMemory;
+    }
+
+    public long getMaxMemory() {
+        return maxMemory;
     }
 
     public String generateNewToken() {
@@ -137,32 +149,51 @@ public class DataModule extends Module implements Listener, CommandExecutor {
         }, true);
     }
 
-    public void sendProxyData(String type, Map<?, ?> map, Consumer<DataResult> result) {
+    public void sendProxyData(String type) {
+        sendProxyData(type, null, null, false);
+    }
+
+    public void sendProxyData(String type, @Nullable Map<?, ?> map) {
+        sendProxyData(type, map, null, false);
+    }
+
+    public void sendProxyData(String type, @Nullable Consumer<DataResult> result) {
+        sendProxyData(type, null, result, false);
+    }
+
+    public void sendProxyData(String type, @Nullable Map<?, ?> map, @Nullable Consumer<DataResult> result) {
         sendProxyData(type, map, result, false);
     }
 
-    public void sendProxyData(String type, Map<?, ?> map, Consumer<DataResult> result, boolean now) {
-        JSONObject object = new JSONObject(map);
+    public void sendProxyData(String type, @Nullable Map<?, ?> map, @Nullable Consumer<DataResult> result, boolean now) {
+        JSONObject object;
+        if (map != null) {
+            object = new JSONObject(map);
+        } else {
+            object = new JSONObject();
+        }
         object.put("data-type", type);
         object.put("server", config.getString("server-name", "new server"));
-        Map<String, String> headers = HTTPManager.asMap("X-Authorization", config.getString("authentication-key"));
+        Map<String, String> headers = SGCraftLinkCommon.createStringMap("X-Authorization", config.getString("authentication-key"));
         Runnable runnable = () -> {
             try {
                 plugin.getLogger().warning("Sending " + type + " to proxy");
                 CompletableFuture<DataResult> response = manager.fetch("http://" + config.getString("proxy-ip", "172.18.0.1"), config.getInt("proxy-port", 1035), HTTPManager.Method.POST, headers, object);
                 response.whenComplete((res, err) -> {
                     if (err != null) {
-                        plugin.getLogger().warning("Responded back with 404");
-                        plugin.getLogger().warning(err.getLocalizedMessage());
-                        result.accept(new DataResult(404, null));
+                        plugin.getLogger().severe(err.getLocalizedMessage());
+                        if (result != null)
+                            result.accept(new DataResult(404, null));
                         return;
                     }
                     plugin.getLogger().warning("Responded back with " + res.getStatus());
-                    result.accept(res);
+                    if (result != null)
+                        result.accept(res);
                 });
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 e.printStackTrace();
-                result.accept(new DataResult(404, null));
+                if (result != null)
+                    result.accept(new DataResult(404, null));
             }
         };
         if (plugin.getScheduler().isNotAccepting() || now) {
@@ -218,6 +249,7 @@ public class DataModule extends Module implements Listener, CommandExecutor {
         express.post("/", (request, response) -> {
             try {
                 String body = SGCraftLinkCommon.convertStreamToString(request.getBody()).trim();
+                plugin.getLogger().warning("Received data " + body);
                 JSONObject json = new JSONObject(body);
 
                 if (!json.has("data-type")) {
@@ -227,7 +259,6 @@ public class DataModule extends Module implements Listener, CommandExecutor {
                 }
 
                 String datatype = json.getString("data-type").toUpperCase();
-                plugin.getLogger().warning("Received data " + datatype);
 
                 if (!datatype.equalsIgnoreCase(SGCraftLinkCommon.DATA_SERVER_REGISTER)) {
                     String auth = config.getString("authentication-key");
@@ -252,14 +283,16 @@ public class DataModule extends Module implements Listener, CommandExecutor {
                             DataReceiveEvent event = new DataReceiveEvent(json);
                             try {
                                 plugin.getServer().getPluginManager().callEvent(event);
-                            } catch (Exception e) {
+                            } catch (Throwable e) {
                                 e.printStackTrace();
                             }
-                            if (event.getResponse() == null) {
-                                response.sendStatus(event.getStatus());
-                            } else {
-                                response.setStatus(event.getStatus()).send(event.getResponse().toString());
-                            }
+                            plugin.getScheduler().runTaskLater(() -> {
+                                if (event.getReply() == null) {
+                                    response.sendStatus(event.getStatus());
+                                } else {
+                                    response.setStatus(event.getStatus()).send(event.getReply().toString());
+                                }
+                            }, 1L);
                             break;
                         }
                         plugin.getLogger().warning("Proxy has unregistered this server! This is probably due to a proxy plugin reload!");
@@ -285,14 +318,17 @@ public class DataModule extends Module implements Listener, CommandExecutor {
                             DataReceiveEvent event = new DataReceiveEvent(json);
                             try {
                                 plugin.getServer().getPluginManager().callEvent(event);
-                            } catch (Exception e) {
+                            } catch (Throwable e) {
                                 e.printStackTrace();
                             }
-                            if (event.getResponse() == null) {
-                                response.sendStatus(event.getStatus());
-                            } else {
-                                response.setStatus(event.getStatus()).send(event.getResponse().toString());
-                            }
+                            plugin.getScheduler().runTaskLater(() -> {
+                                if (event.getReply() == null) {
+                                    response.sendStatus(event.getStatus());
+                                } else {
+                                    plugin.getLogger().warning("Replied to " + datatype);
+                                    response.send(event.getReply().toString());
+                                }
+                            }, 1L);
                         }
                         break;
                     }
@@ -304,6 +340,12 @@ public class DataModule extends Module implements Listener, CommandExecutor {
         });
         express.listen(config.getInt("port"));
         registerServer();
+    }
+
+    private void startHeartbeat() {
+        plugin.getScheduler().runTaskTimer(() -> {
+            sendProxyData(SGCraftLinkCommon.DATA_GET_RESOURCES);
+        }, 20L * 60, 20L * 600);
     }
 
     public String getAuthToken() {

@@ -498,7 +498,7 @@ public class DiscordCommandListener extends ListenerAdapter {
         data.put("limit", limit);
         data.put("time", millis);
         List<MessageEmbed> embeds = new ArrayList<>();
-        plugin.getDataManager().sendDataToAll(null, SGCraftLinkCommon.DATA_CHATS, data, (result) -> {
+        plugin.getDataManager().sendDataToAll(null, SGCraftLinkCommon.DATA_CHATS, data).thenAccept((result) -> {
             for (Map.Entry<String, DataResult> serverResults : result.entrySet()) {
                 if (!serverResults.getValue().isSuccess())
                     continue;

@@ -5,6 +5,7 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.json.JSONObject;
+import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
 import xyz.destiall.sgcraftlink.proxy.misc.JSONContentProvider;
 
 import java.net.HttpCookie;
@@ -36,38 +37,38 @@ public class HTTPManager {
         queueStack = new Stack<>();
         service = Executors.newSingleThreadExecutor();
         service.submit(() -> {
-            while (!stopping) {
-                if (!queueStack.isEmpty()) {
-                    Pair<Request, CompletableFuture<DataResult>> pair = queueStack.pop();
-                    try {
-                        ContentResponse response = pair.getKey().timeout(10L, TimeUnit.SECONDS).send();
-                        pair.getValue().complete(new DataResult(response));
-                    } catch (Exception e) {
-                        pair.getValue().completeExceptionally(e);
-                    }
-                }
+            while (!isStopping()) {
+                tick();
             }
         });
+    }
+
+    private void tick() {
+        while (!queueStack.isEmpty()) {
+            Pair<Request, CompletableFuture<DataResult>> pair = queueStack.remove(0);
+            try {
+                ContentResponse response = pair.getKey().timeout(10L, TimeUnit.SECONDS).send();
+                pair.getValue().complete(new DataResult(response));
+            } catch (Throwable e) {
+                pair.getValue().completeExceptionally(e);
+            }
+        }
     }
 
     public void shutdown() {
         stopping = true;
         try {
-            while (!queueStack.isEmpty()) {
-                Pair<Request, CompletableFuture<DataResult>> pair = queueStack.pop();
-                try {
-                    ContentResponse response = pair.getKey().timeout(10L, TimeUnit.SECONDS).send();
-                    pair.getValue().complete(new DataResult(response));
-                } catch (Exception e) {
-                    pair.getValue().completeExceptionally(e);
-                }
-            }
             service.awaitTermination(1L, TimeUnit.SECONDS);
+            tick();
             client.stop();
             queueStack.clear();
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public boolean isStopping() {
+        return stopping;
     }
 
     public CompletableFuture<DataResult> fetch(String url, Method method, JSONObject... body) {
@@ -127,20 +128,6 @@ public class HTTPManager {
         Pair<Request, CompletableFuture<DataResult>> pair = new Pair<>(builder, future);
         queueStack.push(pair);
         return future;
-    }
-
-    public static Map<String, String> asMap(String key, String... values) {
-        Map<String, String> map = new HashMap<>();
-        if (values.length == 0) {
-            return map;
-        }
-        List<String> list = new ArrayList<>();
-        list.add(key);
-        list.addAll(Arrays.asList(values));
-        for (int i = 0; i < values.length; i+=2) {
-            map.put(list.get(i), list.get(i + 1));
-        }
-        return map;
     }
 
     public enum Method {

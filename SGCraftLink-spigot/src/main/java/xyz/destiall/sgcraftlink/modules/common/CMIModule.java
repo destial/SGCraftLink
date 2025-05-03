@@ -73,7 +73,7 @@ public class CMIModule extends Module implements Listener, CommandExecutor {
                     "jailed", true
                     );
 
-            module.sendProxyData(SGCraftLinkCommon.DATA_JAILED, json, (result) -> {});
+            module.sendProxyData(SGCraftLinkCommon.DATA_JAILED, json);
         }, e.getUser().getPlayer(), 2L);
     }
 
@@ -106,7 +106,7 @@ public class CMIModule extends Module implements Listener, CommandExecutor {
                 "jailed", false
         );
 
-        module.sendProxyData(SGCraftLinkCommon.DATA_JAILED, json, (result) -> {});
+        module.sendProxyData(SGCraftLinkCommon.DATA_JAILED, json);
     }
 
     @EventHandler

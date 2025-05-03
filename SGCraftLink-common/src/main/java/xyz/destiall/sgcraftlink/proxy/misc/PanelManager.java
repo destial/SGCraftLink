@@ -21,7 +21,7 @@ public class PanelManager {
     public PanelManager(PluginProvider plugin, HTTPManager hm) {
         this.plugin = plugin;
         this.hm = hm;
-        this.headers = HTTPManager.asMap(
+        this.headers = SGCraftLinkCommon.createStringMap(
                 "Accept", "application/json",
                 "Content-Type", "application/json",
                 "Authorization", "Bearer ptlc_kg2OtOFBIjxxKDoJNcl4wkcsytGDjnpooizyDhz2mGn"
@@ -45,13 +45,16 @@ public class PanelManager {
 
                     long memoryBytes = resources.getJSON().getJSONObject("attributes").getJSONObject("resources").getLong("memory_bytes");
                     long maxMemory = server.getMaxMemory();
+                    server.setUsedMemory(memoryBytes);
+
                     if (maxMemory <= 0)
                         return;
 
                     double usage = memoryBytes / (double) maxMemory;
-                    if (usage >= 0.9d) {
+                    if (usage >= 0.88d && !server.isRestarting()) {
                         plugin.getLoggerProvider().warning(serverName + " is overloading soon! Restarting! (" + (usage * 100d) + "%)");
-                        plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, serverName, SGCraftLinkCommon.createCommandsData("cmi schedule stopserver"), (r) -> {});
+                        server.setRestarting(true);
+                        plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, serverName, SGCraftLinkCommon.createCommandsData("cmi schedule stopserver"));
                     }
                 });
             }

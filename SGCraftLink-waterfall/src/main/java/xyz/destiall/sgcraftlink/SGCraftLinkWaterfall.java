@@ -102,6 +102,7 @@ public final class SGCraftLinkWaterfall extends Plugin implements PluginProvider
         } catch (Exception e) {
             e.printStackTrace();
         }
+        SGCraftLinkCommon.LOGGER = this.logger;
         try {
             pluginMessager = new BungeePluginMessager(this);
         } catch (Exception e) {

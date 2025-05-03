@@ -94,14 +94,14 @@ public class MigrationModule extends Module implements Listener, CommandExecutor
             config.set(oldName, null);
             config.set(newName, null);
             awaitingMigration.removeIf(m -> m.getNewName().equalsIgnoreCase(newName) || m.getOldName().equalsIgnoreCase(oldName));
-            e.setResponse(new JSONObject().put("success", true));
+            e.setReply(new JSONObject().put("success", true));
             return;
         }
         Migration migration = addMigration(oldName, newName);
         if (migration.hasMigrated() && !migration.migrate(true))
             return;
 
-        e.setResponse(new JSONObject().put("success", true));
+        e.setReply(new JSONObject().put("success", true));
     }
 
     @EventHandler

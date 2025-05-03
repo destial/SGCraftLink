@@ -100,7 +100,7 @@ public class DiscordCommand implements CommandProvider, TabProvider {
                 linked.put(new JSONObject().put("username", username).put("id", id));
             }
             object.put("linked", linked);
-            plugin.getDataManager().sendDataToAll(null, SGCraftLinkCommon.DATA_LINK_DISCORDSRV, object, (result) -> {});
+            plugin.getDataManager().sendDataToAll(null, SGCraftLinkCommon.DATA_LINK_DISCORDSRV, object);
             ComponentProvider<?> message = ComponentProvider.of("Updated individual servers' DiscordSRV linked accounts!");
             message.setColor(ColorProvider.ChatColor.RED);
             player.sendMessageComponent(message);

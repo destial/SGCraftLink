@@ -8,8 +8,10 @@ public class RegisteredServer {
     private final String panelId;
     private String ip = "192.168.1.99";
     private long maxMemory = -1;
+    private long usedMemory = -1;
     private final boolean whitelisted;
     private final boolean announce;
+    private boolean restarting;
 
     public RegisteredServer(JSONObject json) {
         port = json.getInt("port");
@@ -33,12 +35,28 @@ public class RegisteredServer {
         return whitelisted;
     }
 
+    public boolean isRestarting() {
+        return restarting;
+    }
+
+    public void setRestarting(boolean restarting) {
+        this.restarting = restarting;
+    }
+
     public long getMaxMemory() {
         return maxMemory;
     }
 
     public void setMaxMemory(long maxMemory) {
         this.maxMemory = maxMemory;
+    }
+
+    public long getUsedMemory() {
+        return usedMemory;
+    }
+
+    public void setUsedMemory(long usedMemory) {
+        this.usedMemory = usedMemory;
     }
 
     public String getPanelId() {

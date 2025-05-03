@@ -3,6 +3,7 @@ package xyz.destiall.sgcraftlink.proxy.misc;
 import express.Express;
 import express.utils.Status;
 import net.dv8tion.jda.api.entities.User;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -36,7 +37,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static xyz.destiall.sgcraftlink.SGCraftLinkCommon.convertStreamToString;
-import static xyz.destiall.sgcraftlink.SGCraftLinkCommon.emptyDataMap;
 
 public final class DataManager {
     private static DataManager instance;
@@ -111,12 +111,7 @@ public final class DataManager {
                             registration.setMaxMemory(maxMemory);
                         });
 
-                        for (String s : registeredServers.keySet()) {
-                            if (s.equalsIgnoreCase(server))
-                                continue;
-
-                            sendData(SGCraftLinkCommon.DATA_SERVER_REGISTER, s, json.toMap(), r -> {});
-                        }
+                        sendDataToAll(server, SGCraftLinkCommon.DATA_SERVER_REGISTER, json.toMap());
 
                         if (!registration.isAnnounce())
                             break;
@@ -133,12 +128,7 @@ public final class DataManager {
                         RegisteredServer registration = registeredServers.remove(server);
                         response.sendStatus(Status._200);
 
-                        for (String s : registeredServers.keySet()) {
-                            if (s.equalsIgnoreCase(server))
-                                continue;
-
-                            sendData(SGCraftLinkCommon.DATA_SERVER_UNREGISTER, s, json.toMap(), r -> {});
-                        }
+                        sendDataToAll(server, SGCraftLinkCommon.DATA_SERVER_UNREGISTER, json.toMap());
 
                         if (registration != null && registration.isAnnounce()) {
                             ComponentProvider<?> component = ColorProvider.ofComponent("&b&lꜱᴇʀᴠᴇʀ &8&l» &c" + serverName + " is now offline!");
@@ -170,36 +160,32 @@ public final class DataManager {
                         break;
                     }
                     case SGCraftLinkCommon.DATA_GET_HEADHUNT: {
-                        AtomicInteger i = new AtomicInteger(registeredServers.size() - 1);
-                        AtomicInteger remaining = new AtomicInteger(0);
-                        JSONObject res = new JSONObject();
-                        JSONObject score = new JSONObject();
-                        JSONObject servers = new JSONObject();
-                        for (String svr : registeredServers.keySet()) {
-                            if (svr.equalsIgnoreCase(server))
-                                continue;
+                        sendDataToAll(server, SGCraftLinkCommon.DATA_GET_HEADHUNT).thenAccept((result) -> {
+                            int remaining = 0;
+                            JSONObject res = new JSONObject();
+                            JSONObject score = new JSONObject();
+                            JSONObject servers = new JSONObject();
 
-                            sendData(SGCraftLinkCommon.DATA_GET_HEADHUNT, svr, emptyDataMap(), (result) -> {
-                                if (result.getStatus() == 200) {
-                                    JSONObject obj = result.getJSON();
-                                    int r = obj.getInt("remaining");
-                                    remaining.addAndGet(r);
-                                    servers.put(svr, r);
+                            for (Map.Entry<String, DataResult> entry : result.entrySet()) {
+                                JSONObject obj = entry.getValue().getJSON();
+                                if (obj == null)
+                                    continue;
 
-                                    JSONObject players = obj.getJSONObject("score");
-                                    for (String name : players.keySet()) {
-                                        score.put(name, score.has(name) ? score.getInt(name) + players.getInt(name) : players.getInt(name));
-                                    }
+                                int r = obj.getInt("remaining");
+                                remaining += r;
+
+                                JSONObject players = obj.getJSONObject("score");
+                                for (String name : players.keySet()) {
+                                    score.put(name, score.has(name) ? score.getInt(name) + players.getInt(name) : players.getInt(name));
                                 }
-                                if (i.decrementAndGet() == 0) {
-                                    res.put("servers", servers);
-                                    res.put("total", remaining.get());
-                                    res.put("score", score);
-                                    plugin.getLoggerProvider().warning("Responding to " + server + " with " + res);
-                                    response.setStatus(Status._200).send(res.toString());
-                                }
-                            });
-                        }
+                            }
+
+                            res.put("servers", servers);
+                            res.put("total", remaining);
+                            res.put("score", score);
+                            plugin.getLoggerProvider().warning("Responding to " + server + " with " + res);
+                            response.setStatus(Status._200).send(res.toString());
+                        });
                         break;
                     }
                     case SGCraftLinkCommon.DATA_LUCKPERMS_SERVICE: {
@@ -226,7 +212,7 @@ public final class DataManager {
                         JSONObject obj = new JSONObject();
                         JSONArray perms = new JSONArray();
                         if (data == null || !data.contains("perms")) {
-                            response.send(obj.put("perms", perms).toString());
+                            response.setStatus(Status._200).send(obj.put("perms", perms).toString());
                             break;
                         }
 
@@ -235,7 +221,7 @@ public final class DataManager {
                         }
 
                         plugin.getLoggerProvider().info(username + " has whitelisted perms " + perms);
-                        response.send(obj.put("perms", perms).toString());
+                        response.setStatus(Status._200).send(obj.put("perms", perms).toString());
                         break;
                     }
                     case SGCraftLinkCommon.DATA_SET_WHITELISTED_PERMS: {
@@ -250,6 +236,11 @@ public final class DataManager {
                         data.set("perms", perms);
                         plugin.getLinkProvider().updateUser(username, data);
                         response.sendStatus(Status._202);
+                        break;
+                    }
+                    case SGCraftLinkCommon.DATA_GET_RESOURCES: {
+                        RegisteredServer regServer = registeredServers.get(server);
+                        response.setStatus(Status._200).send(new JSONObject().put("used", regServer.getUsedMemory()).put("max", regServer.getMaxMemory()).toString());
                         break;
                     }
                     case SGCraftLinkCommon.DATA_PLAYER_MIGRATE: {
@@ -271,18 +262,21 @@ public final class DataManager {
                         }
                         // Do not break here!
                     }
-                    case SGCraftLinkCommon.DATA_START_HEADHUNT:
-                    case SGCraftLinkCommon.DATA_REMOVE_HEAD_HEADHUNT:
-                    case SGCraftLinkCommon.DATA_CLEAR_SCORE_HEADHUNT:
-                    case SGCraftLinkCommon.DATA_END_HEADHUNT:
                     default: {
-                        for (String svr : registeredServers.keySet()) {
-                            if (svr.equalsIgnoreCase(server))
-                                continue;
+                        sendDataToAll(server, datatype, json).thenAccept((r) -> {
+                            JSONObject obj = new JSONObject();
+                            for (String key : r.keySet()) {
+                                DataResult res = r.get(key);
+                                JSONObject a = res.getJSON();
+                                if (a == null)
+                                    continue;
 
-                            sendData(datatype, svr, json.toMap(), (s) -> {});
-                        }
-                        response.sendStatus(Status._200);
+                                obj.put(key, a);
+                            }
+
+                            getPlugin().getLoggerProvider().warning("Reply: " + obj);
+                            response.setStatus(Status._200).send(obj.toString());
+                        });
                         break;
                     }
                 }
@@ -303,7 +297,7 @@ public final class DataManager {
         CompletableFuture<Void> future = new CompletableFuture<>();
         JSONObject obj = new JSONObject();
         obj.put("from_proxy", true);
-        sendDataToAll(null, SGCraftLinkCommon.DATA_SERVER_UNREGISTER, obj, (result) -> {
+        sendDataToAll(null, SGCraftLinkCommon.DATA_SERVER_UNREGISTER, obj).thenAccept((result) -> {
             try {
                 manager.shutdown();
                 registeredServers.clear();
@@ -328,80 +322,90 @@ public final class DataManager {
         return registeredServers.values();
     }
 
-    public CompletableFuture<Void> sendDataToAll(@Nullable String origin, String type, Map<?, ?> map, Consumer<Map<String, DataResult>> callback) {
-        return sendDataToAll(origin, type, new JSONObject(map), callback);
+    public CompletableFuture<Map<String, DataResult>> sendDataToAll(@Nullable String origin, String type) {
+        return sendDataToAll(origin, type, new JSONObject());
     }
 
-    public CompletableFuture<Void> sendDataToAll(@Nullable String origin, String type, JSONObject object, Consumer<Map<String, DataResult>> callback) {
-        CompletableFuture<Void> future = new CompletableFuture<>();
-        AtomicInteger i = new AtomicInteger(registeredServers.size() - (origin != null ? 1 : 0));
+    public CompletableFuture<Map<String, DataResult>> sendDataToAll(@Nullable String origin, String type, @Nullable Map<?, ?> map) {
+        return sendDataToAll(origin, type, map != null ? new JSONObject(map) : new JSONObject());
+    }
+
+    public CompletableFuture<Map<String, DataResult>> sendDataToAll(@Nullable String origin, String type, JSONObject object) {
+        CompletableFuture<Map<String, DataResult>> future = new CompletableFuture<>();
+        Map<String, RegisteredServer> servers = new HashMap<>(registeredServers);
+
+        AtomicInteger i = new AtomicInteger(servers.size() - (origin != null ? 1 : 0));
         Map<String, DataResult> results = new ConcurrentHashMap<>();
         AtomicBoolean called = new AtomicBoolean();
-        for (String server : registeredServers.keySet()) {
+        for (String server : servers.keySet()) {
             if (server.equalsIgnoreCase(origin))
                 continue;
 
             if (object.has("from_proxy")) {
-                JSONObject obj = new JSONObject(object.toMap());
-                obj.put("server", server);
-                sendData(type, server, obj, (result) -> {
-                    results.put(server, result);
-                    if (i.decrementAndGet() <= 0 && !called.get()) {
-                        called.set(true);
-                        callback.accept(results);
-                        future.complete(null);
-                    }
-                });
-                continue;
+                object.remove("from_proxy");
+                object.put("server", server);
             }
 
             sendData(type, server, object, (result) -> {
                 results.put(server, result);
                 if (i.decrementAndGet() <= 0 && !called.get()) {
                     called.set(true);
-                    callback.accept(results);
-                    future.complete(null);
+                    future.complete(new HashMap<>(results));
                 }
             });
         }
         return future;
     }
 
-    public boolean sendData(String type, String server, Map<?, ?> map, Consumer<DataResult> result) {
-        return sendData(type, server, new JSONObject(map), result);
+    public boolean sendData(String type, String server) {
+        return sendData(type, server, (Map<?, ?>) null, null);
     }
 
-    public boolean sendData(String type, String server, JSONObject object, Consumer<DataResult> result) {
+    public boolean sendData(String type, String server, @Nullable Map<?, ?> map) {
+        return sendData(type, server, map != null ? new JSONObject(map) : new JSONObject(), null);
+    }
+
+    public boolean sendData(String type, String server, @Nullable Map<?, ?> map, @Nullable Consumer<DataResult> callback) {
+        return sendData(type, server, map != null ? new JSONObject(map) : new JSONObject(), callback);
+    }
+
+    public boolean sendData(String type, String server, @Nullable Consumer<DataResult> callback) {
+        return sendData(type, server, new JSONObject(), callback);
+    }
+
+    public boolean sendData(String type, String server, @NotNull JSONObject object, @Nullable Consumer<DataResult> callback) {
         RegisteredServer registration = registeredServers.get(server);
         if (registration == null) {
             return false;
         }
         object.put("data-type", type);
-        Map<String, String> headers = HTTPManager.asMap("X-Authorization", registration.getToken());
+        Map<String, String> headers = SGCraftLinkCommon.createStringMap("X-Authorization", registration.getToken());
         Runnable runnable = () -> {
             try {
                 plugin.getLoggerProvider().warning("Sending " + type + " to " + server);
                 CompletableFuture<DataResult> response = manager.fetch("http://" + registration.getIp(), registration.getPort(), HTTPManager.Method.POST, headers, object);
                 response.whenComplete((res, err) -> {
                     if (err != null) {
-                        plugin.getLoggerProvider().warning("Responded back with 404");
                         plugin.getLoggerProvider().error(err.getLocalizedMessage());
-                        result.accept(new DataResult(404, null));
+                        if (callback != null)
+                            callback.accept(new DataResult(404, null));
                         return;
                     }
                     plugin.getLoggerProvider().warning("Responded back with " + res.getStatus());
-                    result.accept(res);
+                    if (callback != null)
+                        callback.accept(res);
                 });
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 e.printStackTrace();
+                if (callback != null)
+                    callback.accept(new DataResult(404, null));
             }
-            result.accept(new DataResult(404, null));
         };
 
         if (plugin.getScheduler().isNotAccepting()) {
             runnable.run();
         } else {
-            plugin.getScheduler().schedule(runnable, 0L, TimeUnit.MILLISECONDS);
+            plugin.getScheduler().schedule(runnable, 1L, TimeUnit.MILLISECONDS);
         }
 
         return true;

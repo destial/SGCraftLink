@@ -19,7 +19,7 @@ public abstract class Module {
         this(plugin, null);
     }
 
-    public Module(SGCraftLinkSpigot plugin, String configName) {
+    protected Module(SGCraftLinkSpigot plugin, String configName) {
         this.plugin = plugin;
         this.configName = configName;
     }
