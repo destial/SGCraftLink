@@ -157,6 +157,10 @@
             <url>https://repo.codemc.io/repository/maven-public/</url>
             <layout>default</layout>
         </repository>
+        <repository>
+            <id>alessiodp-repo</id>
+            <url>https://repo.alessiodp.com/releases</url>
+        </repository>
         <!-- <repository>
             <id>md_5-repository</id>
             <url>https://repo.md-5.net/content/repositories/snapshots/</url>
