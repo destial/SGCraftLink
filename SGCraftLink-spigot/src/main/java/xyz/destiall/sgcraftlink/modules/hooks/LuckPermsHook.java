@@ -24,6 +24,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.plugin.RegisteredServiceProvider;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -35,6 +36,9 @@ import xyz.destiall.sgcraftlink.items.utils.ButtonCollector;
 import xyz.destiall.sgcraftlink.modules.DataModule;
 import xyz.destiall.sgcraftlink.modules.Module;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -84,8 +88,33 @@ public class LuckPermsHook extends Module implements Listener {
         return luckperms != null;
     }
 
+    public void purgeOldBackups() {
+        plugin.getScheduler().runTask(() -> {
+            File lpfolder = plugin.getServer().getPluginManager().getPlugin("LuckPerms").getDataFolder();
+            File[] backups = lpfolder.listFiles((f, s) -> s.endsWith(".json.gz"));
+            if (backups == null)
+                return;
+
+            plugin.getLogger().info("Purging old luckperms backups [" + backups.length + " files]");
+            long now = System.currentTimeMillis();
+            long one_month = 1000L * 60 * 60 * 24 * 31;
+            for (File backup : backups) {
+                long ago = now - backup.lastModified();
+                if (ago > one_month) {
+                    try {
+                        Files.delete(backup.toPath());
+                    } catch (Throwable e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
+    }
+
     @Override
     public void enable() {
+        purgeOldBackups();
+
         luckperms.getTrackManager().loadAllTracks();
         luckperms.registerMessengerProvider(new BackendRestMessengerProvider(plugin.getModule(DataModule.class)));
 
@@ -279,6 +308,7 @@ public class LuckPermsHook extends Module implements Listener {
                             .description("accepted to get " + node.getKey())
                             .timestamp(Instant.now())
                             .source(uuid)
+                            .targetType(holder instanceof User ? Action.Target.Type.USER : Action.Target.Type.GROUP)
                             .sourceName(button.getUser().getName())
                             .targetName(holder.getFriendlyName())
                             .build();

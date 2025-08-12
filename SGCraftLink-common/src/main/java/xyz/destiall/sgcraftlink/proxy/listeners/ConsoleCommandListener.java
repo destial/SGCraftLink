@@ -3,14 +3,14 @@ package xyz.destiall.sgcraftlink.proxy.listeners;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
-import xyz.destiall.sgcraftlink.providers.DiscordProvider;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
+import xyz.destiall.sgcraftlink.proxy.misc.DiscordManager;
 
 public final class ConsoleCommandListener extends ListenerAdapter {
     private final PluginProvider plugin;
-    private final DiscordProvider discordProvider;
+    private final DiscordManager discordProvider;
 
-    public ConsoleCommandListener(PluginProvider plugin, DiscordProvider discordProvider) {
+    public ConsoleCommandListener(PluginProvider plugin, DiscordManager discordProvider) {
         this.plugin = plugin;
         this.discordProvider = discordProvider;
     }

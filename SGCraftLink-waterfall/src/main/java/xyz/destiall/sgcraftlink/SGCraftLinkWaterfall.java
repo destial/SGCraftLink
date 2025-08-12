@@ -20,7 +20,6 @@ import xyz.destiall.sgcraftlink.managers.BungeeConfigProvider;
 import xyz.destiall.sgcraftlink.managers.BungeeLinkProvider;
 import xyz.destiall.sgcraftlink.managers.BungeePlaytimeProvider;
 import xyz.destiall.sgcraftlink.managers.BungeePluginMessager;
-import xyz.destiall.sgcraftlink.providers.DiscordProvider;
 import xyz.destiall.sgcraftlink.providers.PlayerProvider;
 import xyz.destiall.sgcraftlink.providers.PluginMessageProvider;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
@@ -31,6 +30,7 @@ import xyz.destiall.sgcraftlink.proxy.commands.StaffCommand;
 import xyz.destiall.sgcraftlink.proxy.luckperms.LuckPermsManager;
 import xyz.destiall.sgcraftlink.proxy.misc.BirthdayManager;
 import xyz.destiall.sgcraftlink.proxy.misc.DataManager;
+import xyz.destiall.sgcraftlink.proxy.misc.DiscordManager;
 import xyz.destiall.sgcraftlink.proxy.skins.PerServerSkin;
 
 import java.util.Collection;
@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 public final class SGCraftLinkWaterfall extends Plugin implements PluginProvider {
     private BungeeScheduler scheduler;
     private BungeeConfigProvider configManager;
-    private DiscordProvider discordManager;
+    private DiscordManager discordManager;
     private BungeeLinkProvider linkManager;
     private BungeePlaytimeProvider playtimeManager;
     private BungeePluginMessager pluginMessager;
@@ -124,7 +124,7 @@ public final class SGCraftLinkWaterfall extends Plugin implements PluginProvider
             e.printStackTrace();
         }
         try {
-            discordManager = new DiscordProvider(this);
+            discordManager = new DiscordManager(this);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -187,7 +187,7 @@ public final class SGCraftLinkWaterfall extends Plugin implements PluginProvider
     }
 
     @Override
-    public DiscordProvider getDiscordProvider() {
+    public DiscordManager getDiscordProvider() {
         return discordManager;
     }
 

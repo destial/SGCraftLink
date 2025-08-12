@@ -3,6 +3,7 @@ package xyz.destiall.sgcraftlink.providers;
 import xyz.destiall.sgcraftlink.proxy.luckperms.LuckPermsManager;
 import xyz.destiall.sgcraftlink.proxy.misc.BirthdayManager;
 import xyz.destiall.sgcraftlink.proxy.misc.DataManager;
+import xyz.destiall.sgcraftlink.proxy.misc.DiscordManager;
 import xyz.destiall.sgcraftlink.proxy.skins.PerServerSkin;
 
 import java.io.File;
@@ -11,7 +12,7 @@ import java.util.UUID;
 
 public interface PluginProvider {
 
-    DiscordProvider getDiscordProvider();
+    DiscordManager getDiscordProvider();
     ConfigProvider<?> getConfigProvider();
     LinkProvider getLinkProvider();
     PlaytimeProvider getPlaytimeProvider();
@@ -51,7 +52,7 @@ public interface PluginProvider {
             e.printStackTrace();
         }
         try {
-            getDataManager().shutdown().join();
+            getDataManager().shutdown().get();
         } catch (Exception e) {
             e.printStackTrace();
         }

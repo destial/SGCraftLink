@@ -5,15 +5,9 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.json.JSONObject;
-import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
-import xyz.destiall.sgcraftlink.proxy.misc.JSONContentProvider;
 
 import java.net.HttpCookie;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 import java.util.concurrent.CompletableFuture;

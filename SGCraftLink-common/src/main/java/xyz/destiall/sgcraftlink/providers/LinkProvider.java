@@ -58,21 +58,21 @@ public abstract class LinkProvider {
     }
 
     public boolean link(String name, User user) {
+        PlayerProvider player = plugin.getPlayer(name);
+        if (player == null)
+            return false;
+
         ConfigSectionProvider<?> map = plugin.getConfigProvider().createSection();
         map.set("id", user.getId());
         map.set("messages", 0);
         database.set(name, map);
 
-        PlayerProvider player = plugin.getPlayer(name);
-        if (player == null) {
-            return false;
-        }
+        plugin.getPlaytimeProvider().link(name);
+        plugin.getDiscordProvider().link(player, user);
+
         ComponentProvider<?> message = ComponentProvider.of("You have linked your account to " + user.getAsTag());
         message.setColor(ColorProvider.ChatColor.AQUA);
         player.sendMessageComponent(message);
-
-        plugin.getDiscordProvider().link(player, user);
-        plugin.getPlaytimeProvider().link(player.getName());
         return true;
     }
 

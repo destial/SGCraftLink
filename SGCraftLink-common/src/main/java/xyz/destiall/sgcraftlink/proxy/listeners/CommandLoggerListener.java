@@ -37,7 +37,7 @@ public abstract class CommandLoggerListener {
 
         List<String> consoleOnlyCommands = plugin.getConfigProvider().getConfig().getStringList("console-only-commands");
         if (consoleOnlyCommands != null && !consoleOnlyCommands.isEmpty()) {
-            if (plugin.getDiscordProvider() == null || !plugin.getDiscordProvider().getLinkListener().getAuthorized().contains(player.getUUID())) {
+            if (plugin.getDiscordProvider() == null || !plugin.getDiscordProvider().getLinkListener().getAuthorizedCache().contains(player.getUUID())) {
                 for (String check : consoleOnlyCommands) {
                     if ((check.endsWith(":") && cmd.startsWith(check.toLowerCase())) || cmd.equalsIgnoreCase(check)) {
                         if (!tab) {

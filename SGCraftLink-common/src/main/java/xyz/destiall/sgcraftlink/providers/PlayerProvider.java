@@ -34,6 +34,8 @@ public abstract class PlayerProvider {
 
     public abstract String getIP();
 
+    public abstract void kick(String reason);
+
     public void sendPluginMessage(String... data) {
         if (!isOnline())
             return;

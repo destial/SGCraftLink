@@ -18,6 +18,7 @@ import xyz.destiall.sgcraftlink.items.PlayerReputation;
 import xyz.destiall.sgcraftlink.items.Tag;
 import xyz.destiall.sgcraftlink.items.font.Font;
 import xyz.destiall.sgcraftlink.listeners.PlaytimeGetter;
+import xyz.destiall.sgcraftlink.modules.DataModule;
 import xyz.destiall.sgcraftlink.modules.common.Fonter;
 import xyz.destiall.sgcraftlink.modules.common.HeadHunt;
 import xyz.destiall.sgcraftlink.modules.common.TagModule;
@@ -47,6 +48,7 @@ public class PAPIHook extends PlaceholderExpansion implements Relational {
     private final LuckPermsHook luckpermsModule;
     private final MusicHook musicHook;
     private final PlaytimeGetter playtimeHook;
+    private final DataModule dataModule;
 
     public PAPIHook(SGCraftLinkSpigot plugin) {
         this.plugin = plugin;
@@ -58,6 +60,7 @@ public class PAPIHook extends PlaceholderExpansion implements Relational {
         this.luckpermsModule = plugin.getModule(LuckPermsHook.class);
         this.musicHook = plugin.getModule(MusicHook.class);
         this.playtimeHook = plugin.getModule(PlaytimeGetter.class);
+        this.dataModule = plugin.getModule(DataModule.class);
     }
 
     @Override
@@ -307,6 +310,14 @@ public class PAPIHook extends PlaceholderExpansion implements Relational {
                 format += "" + ChatColor.YELLOW + duration.get("sec") + " " + ChatColor.GOLD + "sec ";
             }
             return format.trim();
+        }
+
+        if (params.startsWith("used_memory")) {
+            return String.format("%.2f", dataModule.getUsedMemory() / 1000000f);
+        }
+
+        if (params.startsWith("max_memory")) {
+            return String.format("%.2f", dataModule.getMaxMemory() / 1000000f);
         }
 
         if (params.startsWith("baltop_")) {

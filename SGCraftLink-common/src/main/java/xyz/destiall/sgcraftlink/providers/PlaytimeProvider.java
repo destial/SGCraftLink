@@ -78,14 +78,22 @@ public abstract class PlaytimeProvider {
         long now = System.currentTimeMillis();
         long firstJoin = getFirstJoin(name);
         int daysSince = (int) ((now - firstJoin) / 1000f / 60f / 60f / 24f);
+        String id = plugin.getLinkProvider().getId(name);
+        if (id == null)
+            return;
+
+        Member member = plugin.getDiscordProvider().getMember(id);
+        if (member == null)
+            return;
+
         for (Playtime playtime : plugin.getDiscordProvider().getPlaytimeMap().values()) {
             if (daysSince >= playtime.getDays()) {
-                String id = plugin.getLinkProvider().getId(name);
-                if (id == null) continue;
-                Member member = plugin.getDiscordProvider().getMember(id);
-                if (member == null || member.getRoles().contains(playtime.getRole())) continue;
+                if (member.getRoles().contains(playtime.getRole()))
+                    continue;
                 int messages = plugin.getLinkProvider().getMessages(name);
-                if (messages < playtime.getMessages()) continue;
+                if (messages < playtime.getMessages())
+                    continue;
+
                 member.getGuild().addRoleToMember(member, playtime.getRole()).queue();
             }
         }

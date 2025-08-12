@@ -55,4 +55,7 @@ public class VelocityConsolePlayer extends PlayerProvider {
     public String getIP() {
         return "localhost";
     }
+
+    @Override
+    public void kick(String reason) {}
 }

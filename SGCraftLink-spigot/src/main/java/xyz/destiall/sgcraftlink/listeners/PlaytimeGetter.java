@@ -1,6 +1,5 @@
 package xyz.destiall.sgcraftlink.listeners;
 
-import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Statistic;
 import org.bukkit.event.EventHandler;
@@ -75,14 +74,14 @@ public class PlaytimeGetter extends Module implements Listener {
 
     public int getLocalTicksPlayed(UUID uuid) {
         try {
-            OfflinePlayer player = Bukkit.getOfflinePlayer(uuid);
+            OfflinePlayer player = plugin.getServer().getOfflinePlayer(uuid);
             if (player.getPlayer() != null) {
                 return player.getPlayer().getStatistic(getStatistic());
             }
             return player.getStatistic(getStatistic());
         } catch (Throwable e) {}
 
-        File statFolder = new File(Bukkit.getWorlds().get(0).getWorldFolder(), "stats");
+        File statFolder = new File(plugin.getServer().getWorlds().get(0).getWorldFolder(), "stats");
         File statFile = new File(statFolder, uuid + ".json");
 
         if (!statFile.exists())

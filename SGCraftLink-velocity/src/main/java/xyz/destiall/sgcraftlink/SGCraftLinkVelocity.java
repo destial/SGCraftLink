@@ -21,7 +21,6 @@ import xyz.destiall.sgcraftlink.managers.VelocityConfigProvider;
 import xyz.destiall.sgcraftlink.managers.VelocityLinkProvider;
 import xyz.destiall.sgcraftlink.managers.VelocityPlaytimeProvider;
 import xyz.destiall.sgcraftlink.managers.VelocityPluginMessager;
-import xyz.destiall.sgcraftlink.providers.DiscordProvider;
 import xyz.destiall.sgcraftlink.providers.PlayerProvider;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
 import xyz.destiall.sgcraftlink.providers.ServerProvider;
@@ -31,6 +30,7 @@ import xyz.destiall.sgcraftlink.proxy.commands.StaffCommand;
 import xyz.destiall.sgcraftlink.proxy.luckperms.LuckPermsManager;
 import xyz.destiall.sgcraftlink.proxy.misc.BirthdayManager;
 import xyz.destiall.sgcraftlink.proxy.misc.DataManager;
+import xyz.destiall.sgcraftlink.proxy.misc.DiscordManager;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityClickEvent;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityColor;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityConnectedServer;
@@ -68,7 +68,7 @@ public class SGCraftLinkVelocity implements PluginProvider {
     private VelocityScheduler scheduler;
     private VelocityConfigProvider configManager;
     private VelocityLinkProvider linkManager;
-    private DiscordProvider discordManager;
+    private DiscordManager discordManager;
     private VelocityPlaytimeProvider playtimeManager;
     private VelocityPluginMessager pluginMessager;
     private VelocityPerServerSkin perServerSkin;
@@ -111,7 +111,7 @@ public class SGCraftLinkVelocity implements PluginProvider {
     }
 
     @Override
-    public DiscordProvider getDiscordProvider() {
+    public DiscordManager getDiscordProvider() {
         return discordManager;
     }
 
@@ -244,7 +244,7 @@ public class SGCraftLinkVelocity implements PluginProvider {
             e.printStackTrace();
         }
         try {
-            discordManager = new DiscordProvider(this);
+            discordManager = new DiscordManager(this);
         } catch (Exception e) {
             e.printStackTrace();
         }

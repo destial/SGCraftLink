@@ -20,6 +20,7 @@ import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.interactions.components.buttons.ButtonStyle;
 import net.dv8tion.jda.api.utils.MarkdownUtil;
 import net.dv8tion.jda.api.utils.TimeFormat;
+import net.luckperms.api.node.Node;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
@@ -42,6 +43,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -91,9 +93,13 @@ public class DiscordCommandListener extends ListenerAdapter {
         SlashCommandData mclink = Commands.slash("mclink", "Link your minecraft account to discord")
                 .addOption(OptionType.STRING, "code", "The code you have been given", true);
 
+        SlashCommandData transfer = Commands.slash("transfer", "Transfer ranks of account to another")
+                .addOption(OptionType.STRING, "from", "The player username to transfer from", true)
+                .addOption(OptionType.STRING, "to", "The player username to transfer to", true);
+
         SlashCommandData globalList = Commands.slash("globallist", "View the current players online on all servers");
 
-        slashCommands.addAll(Arrays.asList(chatHistory, history, alts, firstjoin, ipwhitelist, changepw, server, globalList, mclink));
+        slashCommands.addAll(Arrays.asList(chatHistory, history, alts, firstjoin, ipwhitelist, changepw, server, globalList, mclink, transfer));
 
         jda.updateCommands().addCommands(slashCommands).queue(commands::addAll);
 
@@ -296,11 +302,55 @@ public class DiscordCommandListener extends ListenerAdapter {
 
                 break;
             }
+            case "transfer": {
+                String from = e.getOption("from", OptionMapping::getAsString);
+                String to = e.getOption("to", OptionMapping::getAsString);
+
+                if (from == null || to == null) {
+                    e.reply("You need to provide 2 usernames!").setEphemeral(true).queue();
+                    break;
+                }
+                plugin.getLuckPermsManager().getApi().getUserManager().lookupUniqueId(from).whenComplete((uuidFrom, ex1) -> {
+                    if (ex1 != null) {
+                        e.reply(from + " not found!").setEphemeral(true).queue();
+                        return;
+                    }
+                    plugin.getLuckPermsManager().getApi().getUserManager().lookupUniqueId(to).whenComplete((uuidTo, ex2) -> {
+                        if (ex2 != null) {
+                            e.reply(to + " not found!").setEphemeral(true).queue();
+                        }
+
+                        try {
+                            net.luckperms.api.model.user.User userFrom = plugin.getLuckPermsManager().getApi().getUserManager().loadUser(uuidFrom).get();
+                            Set<Node> permissions = getPermissions(userFrom);
+                            plugin.getLuckPermsManager().getApi().getUserManager().modifyUser(uuidTo, userTo -> {
+                                for (Node permission : permissions) {
+                                    userTo.data().add(permission);
+                                }
+                            });
+                            for (Node permission : permissions) {
+                                userFrom.data().remove(permission);
+                            }
+                            plugin.getLuckPermsManager().getApi().getUserManager().saveUser(userFrom);
+
+                            e.reply("Transferred permissions from " + from + " to " + to).setEphemeral(true).queue();
+                        } catch (Throwable ex3) {
+                            e.reply("Unable to transfer ranks from " + from + " to " + to + ". See proxy console for errors!").setEphemeral(true).queue();
+                            ex3.printStackTrace();
+                        }
+                    });
+                });
+                break;
+            }
             default: {
                 super.onSlashCommandInteraction(e);
                 break;
             }
         }
+    }
+
+    public Set<Node> getPermissions(net.luckperms.api.model.user.User user) {
+        return new HashSet<>(user.getDistinctNodes());
     }
 
     @Override

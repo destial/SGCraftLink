@@ -17,11 +17,11 @@
     <distributionManagement>
         <repository>
             <id>nexus</id>
-            <url>https://repo.destial.xyz/repository/maven-releases/</url>
+            <url>https://repo.destial.xyz/releases/</url>
         </repository>
         <snapshotRepository>
             <id>nexus</id>
-            <url>https://repo.destial.xyz/repository/maven-snapshots/</url>
+            <url>https://repo.destial.xyz/snapshots/</url>
         </snapshotRepository>
     </distributionManagement>
 

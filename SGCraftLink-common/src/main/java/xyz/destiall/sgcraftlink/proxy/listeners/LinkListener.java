@@ -39,11 +39,13 @@ import java.util.concurrent.TimeUnit;
 public class LinkListener extends ListenerAdapter {
     private final PluginProvider plugin;
     private final EventSubscription<NodeAddEvent> sub;
-    private final Map<UUID, Task> authorized;
+    private final Map<UUID, Task> authorizedCache;
+    private final Map<UUID, Task> repeatingTasks;
 
     public LinkListener(PluginProvider plugin) {
         this.plugin = plugin;
-        authorized = new ConcurrentHashMap<>();
+        authorizedCache = new ConcurrentHashMap<>();
+        repeatingTasks = new ConcurrentHashMap<>();
 
         sub = plugin.getLuckPermsManager().getApi().getEventBus().subscribe(NodeAddEvent.class, (event) -> {
             Node node = event.getNode();
@@ -86,45 +88,72 @@ public class LinkListener extends ListenerAdapter {
     }
 
     public void onPlayerQuit(PlayerProvider player) {
-        if (!authorized.containsKey(player.getUUID())) {
+        cancelRepeatMessage(player);
+
+        if (!authorizedCache.containsKey(player.getUUID())) {
             return;
         }
 
-        Task task = authorized.get(player.getUUID());
+        Task task = authorizedCache.get(player.getUUID());
         task.cancel();
-        authorized.put(player.getUUID(), plugin.getScheduler().schedule(() -> authorized.remove(player.getUUID()), 10L, TimeUnit.MINUTES));
+        authorizedCache.put(player.getUUID(), plugin.getScheduler().schedule(() -> authorizedCache.remove(player.getUUID()), 10L, TimeUnit.MINUTES));
     }
 
-    public Collection<UUID> getAuthorized() {
-        return authorized.keySet();
+    public Collection<UUID> getAuthorizedCache() {
+        return authorizedCache.keySet();
     }
 
-    public void setAuthorized(PlayerProvider player) {
-        authorized.put(player.getUUID(), plugin.getScheduler().schedule(() -> {
+    public void setAuthorizedCache(PlayerProvider player) {
+        authorizedCache.put(player.getUUID(), plugin.getScheduler().schedule(() -> {
             if (!player.isOnline()) {
-                authorized.remove(player.getUUID());
+                authorizedCache.remove(player.getUUID());
             } else {
-                setAuthorized(player);
+                setAuthorizedCache(player);
             }
         }, 10L, TimeUnit.MINUTES));
     }
 
-    public void authorize(PlayerProvider player) {
+    public void cancelRepeatMessage(PlayerProvider player) {
+        Task r = repeatingTasks.remove(player.getUUID());
+        if (r != null) {
+            r.cancel();
+        }
+    }
+
+    public boolean authorize(PlayerProvider player) {
+        boolean isStaff = player.hasPermission("sgc.report.bypass");
+
         String id = plugin.getLinkProvider().getId(player.getName());
-        if (id == null)
-            return;
+        if (id == null) {
+            if (isStaff) {
+                Task repeatingTask = plugin.getScheduler().schedule(() -> {
+                    player.sendMessage(ColorProvider.of("&c! STAFF ALERT: You have to link your discord account to your minecraft account !"));
+                    player.sendMessage(ColorProvider.of("&c! Type '/discord link' in-game or '/mclink' in the discord server !"));
+                    player.sendMessage(ColorProvider.of("&c! You have 2 minutes to complete this before getting kicked !"));
+                }, 1L, 8L, TimeUnit.SECONDS);
+                repeatingTasks.put(player.getUUID(), repeatingTask);
+
+                plugin.getScheduler().schedule(() -> {
+                    if (authorizedCache.containsKey(player.getUUID())) {
+                        repeatingTasks.remove(player.getUUID());
+                        repeatingTask.cancel();
+                        return;
+                    }
+                    player.kick("Timeout exceeded! Unauthorized login!");
+                }, 2L, TimeUnit.MINUTES);
+            }
+            return false;
+        }
 
         Member member = plugin.getDiscordProvider().getMember(id);
-        if (member == null)
-            return;
 
         plugin.getScheduler().schedule(() -> {
-            if (player.isOnline() && player.hasPermission("sgc.report.bypass")) {
+            if (player.isOnline() && isStaff) {
                 ConfigSectionProvider<?> data = plugin.getLinkProvider().getData(player.getName());
                 if (data != null && data.contains("ip")) {
                     String oldIp = data.getString("ip");
                     if (player.getIP().equals(oldIp)) {
-                        setAuthorized(player);
+                        setAuthorizedCache(player);
                         return;
                     }
                 }
@@ -132,7 +161,7 @@ public class LinkListener extends ListenerAdapter {
                 plugin.getLoggerProvider().info("Asking " + player.getName() + " for authorization!");
                 member.getUser().openPrivateChannel().queue(pm -> {
                     EmbedBuilder embed = new EmbedBuilder();
-                    if (authorized.containsKey(player.getUUID())) {
+                    if (authorizedCache.containsKey(player.getUUID())) {
                         embed.setColor(Color.GREEN);
                         embed.setDescription("Continuing minecraft session!\nIGN: " + player.getName() + "\nIP: ||" + player.getIP() + "||");
                         embed.setTimestamp(Instant.now());
@@ -143,7 +172,11 @@ public class LinkListener extends ListenerAdapter {
                     embed.setColor(Color.RED);
                     embed.setDescription("Your minecraft account is online! Is this you?\nIGN: " + player.getName() + "\nIP: ||" + player.getIP() + "||");
                     embed.setTimestamp(Instant.now());
-                    ActionRow row = ActionRow.of(Button.of(ButtonStyle.PRIMARY, "yes-" + player.getName(), "Yes"), Button.of(ButtonStyle.DANGER, "no-" + player.getName(), "No"));
+                    ActionRow row = ActionRow.of(
+                            Button.of(ButtonStyle.PRIMARY, "yes-" + player.getName(), "Yes"),
+                            Button.of(ButtonStyle.DANGER, "no-" + player.getName(), "No"),
+                            Button.of(ButtonStyle.UNKNOWN, "ipban-" + player.getName(), "IP Ban")
+                    );
                     player.sendMessage(ColorProvider.of("&c&lCheck your discord direct messages for authorization!"));
                     pm.sendMessageEmbeds(embed.build()).setActionRows(row).onErrorMap((ex) -> null).queue(m -> {
                         if (m == null) {
@@ -155,17 +188,22 @@ public class LinkListener extends ListenerAdapter {
                         collector.setTime(60000L);
 
                         collector.onCollect(button -> {
-                            if (button.getButton().getId().startsWith("yes")) {
+                            String buttonId = button.getButton().getId();
+                            if (buttonId.startsWith("yes")) {
                                 embed.setDescription("You authorized your login from this IP!\nIGN: " + player.getName() + "\nIP: ||" + player.getIP() + "||");
                                 embed.setColor(Color.GREEN);
-                                setAuthorized(player);
+                                setAuthorizedCache(player);
                                 if (data != null) {
                                     data.set("ip", player.getIP());
                                     plugin.getLinkProvider().updateUser(player.getName(), data);
                                 }
-                            } else {
+                            } else if (buttonId.startsWith("no")) {
                                 embed.setDescription("You unauthorized your login!nIGN: " + player.getName() + "\nIP: ||" + player.getIP() + "||");
-                                authorized.remove(player.getUUID());
+                                player.kick("Unauthorized login");
+                                authorizedCache.remove(player.getUUID());
+                            } else {
+                                embed.setDescription("Banning IP: " + player.getIP());
+                                plugin.dispatchCommand("ipban " + player.getIP() + " -I Attempting to compromise account!");
                             }
                         });
 
@@ -179,6 +217,8 @@ public class LinkListener extends ListenerAdapter {
                 });
             }
         }, 3L, TimeUnit.SECONDS);
+
+        return true;
     }
 
     public void onPlayerJoin(PlayerProvider player) {
@@ -191,14 +231,14 @@ public class LinkListener extends ListenerAdapter {
                     plugin.getLoggerProvider().info(player.getName() + " is unlinking! Removing rank...");
                 }
             });
-            return;
         }
+
+        if (!authorize(player))
+            return;
 
         Member member = plugin.getDiscordProvider().getMember(id);
         if (member == null)
             return;
-
-        authorize(player);
 
         plugin.getLuckPermsManager().getApi().getUserManager().modifyUser(player.getUUID(), u -> {
             InheritanceNode node = InheritanceNode.builder("booster").build();

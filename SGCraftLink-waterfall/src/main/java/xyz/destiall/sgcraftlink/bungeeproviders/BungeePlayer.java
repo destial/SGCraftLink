@@ -63,6 +63,11 @@ public class BungeePlayer extends PlayerProvider {
     }
 
     @Override
+    public void kick(String reason) {
+        player.disconnect(TextComponent.fromLegacyText(reason));
+    }
+
+    @Override
     public String getSuffix() {
         String suffix = super.getSuffix();
         return suffix == null ? null : ChatColor.stripColor(ChatColor.translateAlternateColorCodes('&', suffix));

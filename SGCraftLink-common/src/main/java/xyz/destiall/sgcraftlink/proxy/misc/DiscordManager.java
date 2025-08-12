@@ -1,4 +1,4 @@
-package xyz.destiall.sgcraftlink.providers;
+package xyz.destiall.sgcraftlink.proxy.misc;
 
 import me.scarsz.jdaappender.ChannelLoggingHandler;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -19,6 +19,11 @@ import net.luckperms.api.node.types.InheritanceNode;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import xyz.destiall.sgcraftlink.SGCraftLinkCommon;
+import xyz.destiall.sgcraftlink.providers.ConfigProvider;
+import xyz.destiall.sgcraftlink.providers.ConfigSectionProvider;
+import xyz.destiall.sgcraftlink.providers.PlayerProvider;
+import xyz.destiall.sgcraftlink.providers.Playtime;
+import xyz.destiall.sgcraftlink.providers.PluginProvider;
 import xyz.destiall.sgcraftlink.proxy.listeners.AppealListener;
 import xyz.destiall.sgcraftlink.proxy.listeners.ConsoleCommandListener;
 import xyz.destiall.sgcraftlink.proxy.listeners.DiscordCommandListener;
@@ -46,20 +51,20 @@ import java.util.stream.Collectors;
 
 import static xyz.destiall.sgcraftlink.SGCraftLinkCommon.createDataMap;
 
-public class DiscordProvider {
-    protected final PluginProvider plugin;
-    protected JDA jda;
-    protected Map<String, Role> roleMap;
-    protected Map<String, Playtime> playtimeMap;
-    protected Role linkedRole;
-    protected ChannelLoggingHandler consoleLogger;
-    protected TextChannel consoleChannel;
-    protected StaffAppListener staffApp;
-    protected DiscordCommandListener dcl;
-    protected LinkListener linkListener;
-    protected PunishmentListener punishmentListener;
+public final class DiscordManager {
+    private final PluginProvider plugin;
+    private JDA jda;
+    private Map<String, Role> roleMap;
+    private Map<String, Playtime> playtimeMap;
+    private Role linkedRole;
+    private ChannelLoggingHandler consoleLogger;
+    private TextChannel consoleChannel;
+    private StaffAppListener staffApp;
+    private DiscordCommandListener dcl;
+    private LinkListener linkListener;
+    private PunishmentListener punishmentListener;
 
-    public DiscordProvider(PluginProvider plugin) {
+    public DiscordManager(PluginProvider plugin) {
         this.plugin = plugin;
         ConfigProvider<?> configManager = plugin.getConfigProvider();
         try {
@@ -309,6 +314,9 @@ public class DiscordProvider {
 
     public void link(PlayerProvider player, User user) {
         linkedRole.getGuild().retrieveMember(user).queue(m -> {
+            getLinkListener().setAuthorizedCache(player);
+            getLinkListener().cancelRepeatMessage(player);
+
             updateRankStatus(player, m).whenComplete((v, err) -> sendLinkedToDiscordSRV(player.getName(), user.getId()));
             player.sendPluginMessage(SGCraftLinkCommon.GET_FIRSTJOIN);
 

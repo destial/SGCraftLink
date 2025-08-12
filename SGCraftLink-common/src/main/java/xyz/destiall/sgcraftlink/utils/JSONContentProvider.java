@@ -1,4 +1,4 @@
-package xyz.destiall.sgcraftlink.proxy.misc;
+package xyz.destiall.sgcraftlink.utils;
 
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.json.JSONObject;

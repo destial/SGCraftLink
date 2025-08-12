@@ -33,7 +33,11 @@ public class PermissionEffects extends Module implements Listener {
             lp = plugin.getModule(LuckPermsHook.class);
 
         if (lp == null) {
-            permissions = player.getEffectivePermissions().stream().filter(PermissionAttachmentInfo::getValue).map(PermissionAttachmentInfo::getPermission).collect(Collectors.toSet());
+            permissions = player.getEffectivePermissions()
+                    .stream()
+                    .filter(PermissionAttachmentInfo::getValue)
+                    .map(PermissionAttachmentInfo::getPermission)
+                    .collect(Collectors.toSet());
         } else {
             permissions = lp.getPermissions(player.getPlayer());
         }
@@ -43,7 +47,10 @@ public class PermissionEffects extends Module implements Listener {
                 continue;
 
             String name = "permeffects." + type.getName().toLowerCase();
-            Set<String> effectPerms = permissions.stream().filter(p -> p.startsWith(name)).collect(Collectors.toSet());
+            Set<String> effectPerms = permissions
+                    .stream()
+                    .filter(p -> p.startsWith(name))
+                    .collect(Collectors.toSet());
             if (effectPerms.isEmpty())
                 continue;
 
@@ -65,9 +72,20 @@ public class PermissionEffects extends Module implements Listener {
 
     @EventHandler
     public void onMilk(PlayerItemConsumeEvent e) {
-        if (e.getItem().getType() == Material.MILK_BUCKET || e.getItem().getType() == Material.LEGACY_MILK_BUCKET) {
+        if (isMilkBucket(e.getItem().getType())) {
             plugin.getScheduler().runTaskLater(() -> applyEffects(e.getPlayer()), 3L);
         }
+    }
+
+    public boolean isMilkBucket(Material m) {
+        if (m == Material.MILK_BUCKET)
+            return true;
+
+        try {
+            return m == Material.LEGACY_MILK_BUCKET;
+        } catch (Throwable ignored) {}
+
+        return false;
     }
 
     @EventHandler

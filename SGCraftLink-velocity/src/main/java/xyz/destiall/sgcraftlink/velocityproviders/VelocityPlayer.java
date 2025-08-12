@@ -77,4 +77,9 @@ public class VelocityPlayer extends PlayerProvider {
     public String getIP() {
         return player.getRemoteAddress().getHostName();
     }
+
+    @Override
+    public void kick(String reason) {
+        player.disconnect(Component.text(reason));
+    }
 }

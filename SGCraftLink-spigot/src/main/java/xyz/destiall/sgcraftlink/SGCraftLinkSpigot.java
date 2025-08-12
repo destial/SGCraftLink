@@ -1,7 +1,12 @@
 package xyz.destiall.sgcraftlink;
 
 import de.tr7zw.changeme.nbtapi.NBT;
+import me.clip.placeholderapi.PlaceholderAPI;
 import net.md_5.bungee.api.ChatColor;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -112,11 +117,12 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         try {
             enable();
         } catch (Exception e) {
-            getLogger().warning("This version cannot be loaded!");
+            getLogger().warning("SGCraftLink cannot be loaded!");
             e.printStackTrace();
         }
     }
 
+    @SuppressWarnings("all")
     public void enable() {
         for (String cmd : Module.COMMANDS) {
             getCommand(cmd).setExecutor(null);
@@ -234,7 +240,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
                 module = clazz.getDeclaredConstructor(SGCraftLinkSpigot.class).newInstance(this);
             } catch (Throwable e) {
                 getLogger().warning("This version cannot run " + clazz.getSimpleName());
-                e.printStackTrace();
+                getLogger().severe(e.getLocalizedMessage());
                 continue;
             }
 
@@ -266,11 +272,11 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         }
 
         if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+            papiHook = new PAPIHook(this);
             try {
-                papiHook = new PAPIHook(this);
                 papiHook.register();
-            } catch (Exception e) {
-                getLogger().warning("This version cannot run PAPI Hook!");
+            } catch (Throwable e) {
+                PlaceholderAPI.registerExpansion(papiHook);
             }
         }
 
@@ -287,9 +293,14 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         getServer().getMessenger().unregisterOutgoingPluginChannel(this);
     }
 
+    @SuppressWarnings("all")
     public void disable() {
         if (papiHook != null) {
-            papiHook.unregister();
+            try {
+                papiHook.unregister();
+            } catch (Exception e) {
+                PlaceholderAPI.unregisterExpansion(papiHook);
+            }
             papiHook = null;
         }
 
@@ -302,13 +313,27 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         modules.removeIf(f -> !(f instanceof WorldGuardModule));
     }
 
+    @SuppressWarnings("all")
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length == 0) {
             disable();
             reloadConfig();
             enable();
-            sender.sendMessage(color("&aReloaded SGCraftLink."));
+            sender.sendMessage(color("&aReloaded SGCraftLink"));
+            return true;
+        }
+
+        if (args[0].equalsIgnoreCase("list")) {
+            sender.sendMessage(color("&aSGCraft Modules:"));
+            for (Class<? extends Module> clazz : moduleClazzes) {
+                Module module = getModule(clazz);
+                TextComponent component = new TextComponent(" - " + clazz.getSimpleName());
+                component.setColor(module != null ? ChatColor.GREEN : ChatColor.RED);
+                component.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "sgcreload " + clazz.getSimpleName()));
+                component.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(ChatColor.YELLOW + "Click to reload " + clazz.getSimpleName())));
+                sender.sendMessage(component);
+            }
             return true;
         }
 
@@ -324,7 +349,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         Module module = modules.stream().filter(m -> m.getClass().equals(moduleClass)).findFirst().orElse(null);
         if (module != null) {
             if (module.isPersistent()) {
-                sender.sendMessage(color("&cPersistent module cannot be reloaded!"));
+                sender.sendMessage(color("&cPersistent modules cannot be reloaded!"));
                 return false;
             }
 
@@ -334,7 +359,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             }
             modules.remove(module);
         }
-        boolean wasEnabled = module.isEnabled();
+        boolean wasEnabled = module != null ? module.isEnabled() : false;
 
         try {
             module = moduleClass.getDeclaredConstructor(SGCraftLinkSpigot.class).newInstance(this);
@@ -359,9 +384,9 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         if (!module.isEnabled()) {
             modules.remove(module);
             if (wasEnabled) {
-                sender.sendMessage(color("&aDisabled " + module + "!"));
+                sender.sendMessage(color("&aDisabled " + module));
             } else {
-                sender.sendMessage(color("&aReloaded " + module + " but is disabled!"));
+                sender.sendMessage(color("&aReloaded " + module + " but is now &cdisabled"));
             }
         } else {
             module.enable();
@@ -376,13 +401,16 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         }
 
         if (papiHook != null) {
-            papiHook.unregister();
-
             try {
-                papiHook = new PAPIHook(this);
+                papiHook.unregister();
+            } catch (Exception e) {
+                PlaceholderAPI.unregisterExpansion(papiHook);
+            }
+            papiHook = new PAPIHook(this);
+            try {
                 papiHook.register();
             } catch (Exception e) {
-                getLogger().warning("This server version cannot run PAPI Hook!");
+                PlaceholderAPI.registerExpansion(papiHook);
             }
         }
 
@@ -453,6 +481,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
     private static final Pattern hexPattern = Pattern.compile("<#([A-Fa-f0-9]){6}>");
     private static final Pattern hexBracketPattern = Pattern.compile("\\{#([A-Fa-f0-9]){6}}");
 
+    @SuppressWarnings("deprecation")
     public static String color(String s) {
         try {
             testPaperOr1_8Above();
@@ -472,7 +501,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
                 s = before + hexColor + after;
                 matcher = hexBracketPattern.matcher(s);
             }
-        } catch (Throwable e) {}
+        } catch (Throwable ignored) {}
 
         return org.bukkit.ChatColor.translateAlternateColorCodes('&', s);
     }

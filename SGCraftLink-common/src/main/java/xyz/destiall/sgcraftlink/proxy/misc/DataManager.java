@@ -31,7 +31,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -63,6 +62,9 @@ public final class DataManager {
 
         int port = config.getConfig().getInt("listen-port", 1035);
         express.post("/", (request, response) -> {
+            if (plugin.getDiscordProvider() == null)
+                return;
+
             try {
                 String body = convertStreamToString(request.getBody()).trim();
                 plugin.getLoggerProvider().warning("Received data " + body);
@@ -74,7 +76,7 @@ public final class DataManager {
                 String datatype = json.getString("data-type");
                 String server = json.getString("server");
                 if (!datatype.equalsIgnoreCase(SGCraftLinkCommon.DATA_SERVER_REGISTER) || registeredServers.containsKey(server)) {
-                    RegisteredServer registeredServer = registeredServers.get(server);
+                    RegisteredServer registeredServer = getRegisteredServer(server);
                     if (registeredServer == null) {
                         response.sendStatus(Status._403);
                         return;
@@ -92,7 +94,7 @@ public final class DataManager {
                     case SGCraftLinkCommon.DATA_SERVER_REGISTER: {
                         RegisteredServer registration = new RegisteredServer(json);
                         if (registeredServers.containsKey(server)) {
-                            RegisteredServer existing = registeredServers.get(server);
+                            RegisteredServer existing = getRegisteredServer(server);
                             if (!existing.getToken().equalsIgnoreCase(registration.getToken())) {
                                 response.sendStatus(Status._403);
                                 break;
@@ -139,10 +141,15 @@ public final class DataManager {
                         break;
                     }
                     case SGCraftLinkCommon.DATA_EXECUTE_COMMAND: {
-                        JSONArray commands = json.getJSONArray("commands");
-                        for (int i = 0; i < commands.length(); i++) {
-                            String command = commands.getString(i);
-                            plugin.dispatchCommand(command);
+                        JSONArray commands = json.optJSONArray("commands");
+                        if (commands != null) {
+                            for (int i = 0; i < commands.length(); i++) {
+                                String command = commands.getString(i);
+                                plugin.dispatchCommand(command);
+                            }
+                        } else {
+                            String cmd = json.optString("commands");
+                            plugin.dispatchCommand(cmd);
                         }
                         response.sendStatus(Status._200);
                         break;
@@ -239,7 +246,7 @@ public final class DataManager {
                         break;
                     }
                     case SGCraftLinkCommon.DATA_GET_RESOURCES: {
-                        RegisteredServer regServer = registeredServers.get(server);
+                        RegisteredServer regServer = getRegisteredServer(server);
                         response.setStatus(Status._200).send(new JSONObject().put("used", regServer.getUsedMemory()).put("max", regServer.getMaxMemory()).toString());
                         break;
                     }
@@ -297,16 +304,16 @@ public final class DataManager {
         CompletableFuture<Void> future = new CompletableFuture<>();
         JSONObject obj = new JSONObject();
         obj.put("from_proxy", true);
-        sendDataToAll(null, SGCraftLinkCommon.DATA_SERVER_UNREGISTER, obj).thenAccept((result) -> {
-            try {
-                manager.shutdown();
-                registeredServers.clear();
-                express.stop();
-                future.complete(null);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
+        try {
+            sendDataToAll(null, SGCraftLinkCommon.DATA_SERVER_UNREGISTER, obj).get();
+            manager.shutdown();
+            registeredServers.clear();
+            express.stop();
+            future.complete(null);
+        } catch (Throwable e) {
+            e.printStackTrace();
+            future.complete(null);
+        }
         return future;
     }
 
@@ -332,12 +339,12 @@ public final class DataManager {
 
     public CompletableFuture<Map<String, DataResult>> sendDataToAll(@Nullable String origin, String type, JSONObject object) {
         CompletableFuture<Map<String, DataResult>> future = new CompletableFuture<>();
-        Map<String, RegisteredServer> servers = new HashMap<>(registeredServers);
+        List<String> servers = new ArrayList<>(registeredServers.keySet());
 
-        AtomicInteger i = new AtomicInteger(servers.size() - (origin != null ? 1 : 0));
+        final int initial = servers.size() - (origin != null ? 1 : 0);
+        AtomicInteger i = new AtomicInteger(initial);
         Map<String, DataResult> results = new ConcurrentHashMap<>();
-        AtomicBoolean called = new AtomicBoolean();
-        for (String server : servers.keySet()) {
+        for (String server : servers) {
             if (server.equalsIgnoreCase(origin))
                 continue;
 
@@ -348,12 +355,19 @@ public final class DataManager {
 
             sendData(type, server, object, (result) -> {
                 results.put(server, result);
-                if (i.decrementAndGet() <= 0 && !called.get()) {
-                    called.set(true);
+                plugin.getLoggerProvider().warning(i.decrementAndGet() + " / " + initial);
+
+                if (i.get() == 0) {
                     future.complete(new HashMap<>(results));
                 }
             });
         }
+
+        plugin.getScheduler().schedule(() -> {
+            if (i.get() == 0 && !future.isDone()) {
+                future.complete(new HashMap<>(results));
+            }
+        }, 2L, TimeUnit.SECONDS);
         return future;
     }
 
@@ -374,7 +388,7 @@ public final class DataManager {
     }
 
     public boolean sendData(String type, String server, @NotNull JSONObject object, @Nullable Consumer<DataResult> callback) {
-        RegisteredServer registration = registeredServers.get(server);
+        RegisteredServer registration = getRegisteredServer(server);
         if (registration == null) {
             return false;
         }

@@ -1,6 +1,5 @@
 package xyz.destiall.sgcraftlink;
 
-import org.json.JSONObject;
 import xyz.destiall.sgcraftlink.providers.LoggerProvider;
 
 import java.io.BufferedReader;
@@ -11,7 +10,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +43,7 @@ public class SGCraftLinkCommon {
     public static final String DATA_GET_RESOURCES = "SGC_GET_RESOURCES";
     public static final String DATA_GET_PLAYTIME = "SGC_GET_PLAYTIME";
 
-    public static final String[] BLACKLISTED_PERMISSIONS = {"*", "luckperms", "owner", "admin"};
+    public static final String[] BLACKLISTED_PERMISSIONS = {"*", "luckperms", "owner", "admin", "director"};
 
     public static LoggerProvider LOGGER;
 

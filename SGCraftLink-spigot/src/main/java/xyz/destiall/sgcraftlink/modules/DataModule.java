@@ -52,7 +52,7 @@ public class DataModule extends Module implements Listener, CommandExecutor {
         manager = new HTTPManager();
         messengers = new ArrayList<>();
         setCommandExecutor("datacomm");
-        //startHeartbeat();
+        startHeartbeat();
     }
 
     public long getUsedMemory() {
@@ -270,10 +270,15 @@ public class DataModule extends Module implements Listener, CommandExecutor {
 
                 switch (datatype) {
                     case SGCraftLinkCommon.DATA_EXECUTE_COMMAND: {
-                        JSONArray commands = json.getJSONArray("commands");
-                        for (int i = 0; i < commands.length(); i++) {
-                            String command = commands.getString(i);
-                            plugin.dispatchCommand(command);
+                        JSONArray commands = json.optJSONArray("commands");
+                        if (commands != null) {
+                            for (int i = 0; i < commands.length(); i++) {
+                                String command = commands.getString(i);
+                                plugin.dispatchCommand(command);
+                            }
+                        } else {
+                            String cmd = json.optString("commands");
+                            plugin.dispatchCommand(cmd);
                         }
                         response.sendStatus(Status._200);
                         break;
@@ -343,9 +348,15 @@ public class DataModule extends Module implements Listener, CommandExecutor {
     }
 
     private void startHeartbeat() {
-        plugin.getScheduler().runTaskTimer(() -> {
-            sendProxyData(SGCraftLinkCommon.DATA_GET_RESOURCES);
-        }, 20L * 60, 20L * 600);
+        plugin.getScheduler().runTaskTimer(() ->
+            sendProxyData(SGCraftLinkCommon.DATA_GET_RESOURCES, (r) -> {
+                JSONObject obj = r.getJSON();
+                if (obj == null)
+                    return;
+
+                usedMemory = obj.getLong("used");
+                maxMemory = obj.getLong("max");
+            }), 20L * 60, 20L * 300);
     }
 
     public String getAuthToken() {

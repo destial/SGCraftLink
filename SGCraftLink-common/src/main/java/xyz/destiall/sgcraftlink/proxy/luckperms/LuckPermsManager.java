@@ -143,6 +143,7 @@ public class LuckPermsManager {
                                 .description("accepted to get " + node.getKey())
                                 .timestamp(Instant.now())
                                 .source(uuid)
+                                .targetType(holder instanceof User ? Action.Target.Type.USER : Action.Target.Type.GROUP)
                                 .sourceName(button.getUser().getName())
                                 .targetName(holder.getFriendlyName())
                                 .build();
