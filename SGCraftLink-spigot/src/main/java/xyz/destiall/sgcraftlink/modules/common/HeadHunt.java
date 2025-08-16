@@ -82,7 +82,7 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
                 meta.setPlayerProfile(playerProfile);
                 meta.setOwnerProfile(playerProfile);
             } catch (Throwable e) {
-                plugin.getLogger().warning("Unable to set Easter Egg texture for head hunt... Defaulting to my head!");
+                warn("Unable to set Easter Egg texture for head hunt... Defaulting to my head!");
                 meta.setOwner("destiall");
             }
             head.setItemMeta(meta);
@@ -220,7 +220,7 @@ public class HeadHunt extends Module implements Listener, CommandExecutor {
             getAllRemaining().whenComplete((remaining, err) -> {
                 if (remaining == 0) {
                     announceWinner();
-                    plugin.getLogger().info("All the eggs have been collected!");
+                    log("All the eggs have been collected!");
 
                     DataModule module = plugin.getModule(DataModule.class);
                     if (module == null)

@@ -104,9 +104,6 @@ public class PermissionEffects extends Module implements Listener {
     }
 
     @Override
-    public void loadDefaultConfig() {}
-
-    @Override
     public void disable() {}
 
     @Override

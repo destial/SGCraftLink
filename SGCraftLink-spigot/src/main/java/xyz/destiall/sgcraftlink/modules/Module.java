@@ -25,10 +25,15 @@ public abstract class Module {
     }
 
     public void initConfig() {
-        if (configName == null)
-            return;
-
         this.config = new YamlConfiguration();
+        if (configName == null) {
+            File testConfig = new File(plugin.getDataFolder(), this + ".yml");
+            if (!testConfig.exists())
+                return;
+
+            configName = this + ".yml";
+        }
+
         configFile = new File(plugin.getDataFolder(), configName);
         if (!configFile.exists()) {
             loadDefaultConfig();
@@ -38,6 +43,14 @@ public abstract class Module {
         } else {
             loadConfig();
         }
+    }
+
+    public void log(String log) {
+        plugin.getLogger().info(this + ": " + log);
+    }
+
+    public void warn(String warn) {
+        plugin.getLogger().warning(this + ": " + warn);
     }
 
     public boolean isEnabled() {
@@ -81,7 +94,14 @@ public abstract class Module {
         return plugin;
     }
 
-    public abstract void loadDefaultConfig();
+    public void loadDefaultConfig() {}
+
+    public void setConfig(String name) {
+        if (configName == null) {
+            configName = name;
+            configFile = new File(plugin.getDataFolder(), configName);
+        }
+    }
 
     public abstract void disable();
 
@@ -93,5 +113,12 @@ public abstract class Module {
 
     public boolean isPersistent() {
         return false;
+    }
+
+    public void toggle() {
+        if (configFile == null) {
+            setConfig(this + ".yml");
+        }
+        config.set("enabled", !isEnabled());
     }
 }

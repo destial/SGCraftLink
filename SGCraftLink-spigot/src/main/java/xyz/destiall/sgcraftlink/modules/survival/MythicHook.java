@@ -52,7 +52,7 @@ public class MythicHook extends Module implements Listener {
             Optional<MythicItem> mitem = mythic.getItemManager().getItem(key);
             mitem.ifPresent(mythicItem -> items.add(new MythicItemAbility(mythicItem, config.getConfigurationSection(key))));
         }
-        plugin.getLogger().info("Registered " + items.size() + " mythic item abilities");
+        log("Registered " + items.size() + " mythic item abilities");
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)

@@ -40,9 +40,6 @@ public class CMIModule extends Module implements Listener, CommandExecutor {
     }
 
     @Override
-    public void loadDefaultConfig() {}
-
-    @Override
     public void disable() {
         unsetCommandExecutor("sgcwake");
     }

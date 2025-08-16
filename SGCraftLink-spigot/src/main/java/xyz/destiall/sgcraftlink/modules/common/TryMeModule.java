@@ -13,9 +13,6 @@ public class TryMeModule extends Module implements CommandExecutor {
     }
 
     @Override
-    public void loadDefaultConfig() {}
-
-    @Override
     public void disable() {}
 
     @Override

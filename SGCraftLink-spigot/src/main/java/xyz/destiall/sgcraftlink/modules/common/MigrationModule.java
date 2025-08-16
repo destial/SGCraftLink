@@ -49,9 +49,6 @@ public class MigrationModule extends Module implements Listener, CommandExecutor
         setCommandExecutor("migrate");
     }
 
-    @Override
-    public void loadDefaultConfig() {}
-
     public boolean hasCmi() {
         return cmi;
     }
@@ -113,7 +110,7 @@ public class MigrationModule extends Module implements Listener, CommandExecutor
         if (migration.migrate(false)) {
             awaitingMigration.remove(migration);
             config.set(migration.getOldName(), null);
-            plugin.getLogger().info("Completed migration of " + migration.getOldName() + " to " + migration.getNewName());
+            log("Completed migration of " + migration.getOldName() + " to " + migration.getNewName());
         }
     }
 
@@ -140,7 +137,7 @@ public class MigrationModule extends Module implements Listener, CommandExecutor
             awaitingMigration.add(migration);
         }
 
-        plugin.getLogger().info("Registered " + awaitingMigration.size() + " awaiting migration " + new JSONArray(awaitingMigration.stream().map(m -> m.getOldName() + "->" + m.getNewName()).collect(Collectors.toList())).toString().replace("\"", ""));
+        log("Registered " + awaitingMigration.size() + " awaiting migration " + new JSONArray(awaitingMigration.stream().map(m -> m.getOldName() + "->" + m.getNewName()).collect(Collectors.toList())).toString().replace("\"", ""));
     }
 
     @Override
@@ -184,7 +181,7 @@ public class MigrationModule extends Module implements Listener, CommandExecutor
         if (migration.migrate(false)) {
             awaitingMigration.remove(migration);
             config.set(migration.getOldName(), null);
-            plugin.getLogger().info("Completed migration of " + migration.getOldName() + " to " + migration.getNewName());
+            log("Completed migration of " + migration.getOldName() + " to " + migration.getNewName());
             sender.sendMessage(color("&aCompleted migration of " + migration.getOldName() + " to " + migration.getNewName()));
         } else {
             sender.sendMessage(color("&cUnable to complete migration of " + migration.getOldName() + " to " + migration.getNewName()));

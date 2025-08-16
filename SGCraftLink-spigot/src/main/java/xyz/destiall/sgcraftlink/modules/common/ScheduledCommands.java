@@ -32,9 +32,6 @@ public class ScheduledCommands extends Module implements CommandExecutor {
         setCommandExecutor("schedulecmd");
     }
 
-    @Override
-    public void loadDefaultConfig() {}
-
     public void scheduleCommand(Date date, Collection<String> commands) {
         for (ScheduledCommand cmd : scheduledCommands) {
             if (cmd.date.equals(date)) {
@@ -99,7 +96,7 @@ public class ScheduledCommands extends Module implements CommandExecutor {
 
             scheduleCommand(date, commands);
         }
-        plugin.getLogger().info("Registered " + scheduledCommands.size() + " scheduled commands");
+        log("Registered " + scheduledCommands.size() + " scheduled commands");
     }
 
     @Override
@@ -180,7 +177,7 @@ public class ScheduledCommands extends Module implements CommandExecutor {
         try {
             return Duration.of(Integer.parseInt(numberString.toString()), unit);
         } catch (Exception e) {
-            plugin.getLogger().severe("Unable to parse duration " + s);
+            warn("Unable to parse duration " + s);
             return Duration.ZERO;
         }
     }

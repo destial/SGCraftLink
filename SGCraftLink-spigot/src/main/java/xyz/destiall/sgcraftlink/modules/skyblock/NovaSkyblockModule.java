@@ -75,9 +75,9 @@ public class NovaSkyblockModule extends Module implements Listener {
             }
         }
         plugin.getScheduler().runTask(() -> {
-            plugin.getLogger().info("Registered Nova Key Parser");
+            log("Registered Nova Key Parser");
             SuperiorSkyblockAPI.getBlockValues().registerKeyParser(parser);
-            plugin.getLogger().info("Registered Skyblock Nova Protection Integration");
+            log("Registered Skyblock Nova Protection Integration");
             Nova.getNova().registerProtectionIntegration(prot);
         });
 

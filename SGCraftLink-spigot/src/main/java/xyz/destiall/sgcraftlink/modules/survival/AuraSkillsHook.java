@@ -30,9 +30,6 @@ public class AuraSkillsHook extends Module {
     }
 
     @Override
-    public void loadDefaultConfig() {}
-
-    @Override
     public void disable() {}
 
     @Override

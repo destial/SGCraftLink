@@ -15,9 +15,6 @@ public class ProtectionStonesModule extends Module implements Listener {
         super(plugin);
     }
 
-    @Override
-    public void loadDefaultConfig() {}
-
     public ItemStack getProtectionStone(String name) {
         for (PSProtectBlock block : ProtectionStones.getInstance().getConfiguredBlocks()) {
             if (block.alias.equalsIgnoreCase(name)) {

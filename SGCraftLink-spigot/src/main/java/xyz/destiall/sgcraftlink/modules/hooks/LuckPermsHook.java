@@ -24,7 +24,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.plugin.RegisteredServiceProvider;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -37,7 +36,6 @@ import xyz.destiall.sgcraftlink.modules.DataModule;
 import xyz.destiall.sgcraftlink.modules.Module;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -78,9 +76,6 @@ public class LuckPermsHook extends Module implements Listener {
     }
 
     @Override
-    public void loadDefaultConfig() {}
-
-    @Override
     public void disable() {}
 
     @Override
@@ -95,7 +90,7 @@ public class LuckPermsHook extends Module implements Listener {
             if (backups == null)
                 return;
 
-            plugin.getLogger().info("Purging old luckperms backups [" + backups.length + " files]");
+            log("Purging old luckperms backups [" + backups.length + " files]");
             long now = System.currentTimeMillis();
             long one_month = 1000L * 60 * 60 * 24 * 31;
             for (File backup : backups) {
@@ -238,7 +233,7 @@ public class LuckPermsHook extends Module implements Listener {
 
                     JSONObject object = result.getJSON();
                     JSONArray array = object.getJSONArray("perms");
-                    plugin.getLogger().info(user.getUsername() + " has whitelisted perms " + array);
+                    log(user.getUsername() + " has whitelisted perms " + array);
                     for (int i = 0; i < array.length(); i++) {
                         if (array.getString(i).equals(node.getKey())) {
                             future.complete(true);
@@ -413,13 +408,13 @@ public class LuckPermsHook extends Module implements Listener {
         }
 
         public void init() {
-            module.getPlugin().getLogger().warning("Created messenger service");
+            module.warn("Created messenger service");
             module.getMessengers().add(this);
         }
 
         @Override
         public void close() {
-            module.getPlugin().getLogger().warning("Removing messenger from list");
+            module.warn("Removing messenger from list");
             module.getMessengers().remove(this);
         }
 

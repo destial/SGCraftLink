@@ -154,7 +154,7 @@ public class Fonter extends Module implements CommandExecutor, TabExecutor {
                     Font font = new Font(name, Objects.requireNonNull(fonts.getConfigurationSection(name)));
                     this.fonts.add(font);
                 } catch (Exception e) {
-                    plugin.getLogger().warning("Unable to load font '" + name + "'");
+                    warn("Unable to load font '" + name + "'");
                     e.printStackTrace();
                 }
             }
@@ -164,7 +164,7 @@ public class Fonter extends Module implements CommandExecutor, TabExecutor {
         defaultFont = getFontFromName(def);
         if (defaultFont == null) {
             defaultFont = this.fonts.get(0);
-            plugin.getLogger().warning("Unable to load font '" + def + "' as default. Using normal font...");
+            warn("Unable to load font '" + def + "' as default. Using normal font...");
             dirty = true;
         }
 
@@ -208,7 +208,7 @@ public class Fonter extends Module implements CommandExecutor, TabExecutor {
             }
         }
 
-        plugin.getLogger().info("Registered " + this.fonts.size() + " fonts " + new JSONArray(this.fonts.stream().map(Font::getName).collect(Collectors.toList())).toString().replace("\"", ""));
+        log("Registered " + this.fonts.size() + " fonts " + new JSONArray(this.fonts.stream().map(Font::getName).collect(Collectors.toList())).toString().replace("\"", ""));
 
         convertChat = config.getBoolean("conversion.chat", convertChat);
         convertEntityMetadata = config.getBoolean("conversion.entity-name", convertEntityMetadata);

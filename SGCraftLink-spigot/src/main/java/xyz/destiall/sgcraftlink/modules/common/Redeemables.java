@@ -112,7 +112,7 @@ public class Redeemables extends Module implements Listener, CommandExecutor, Ta
             }
         }
 
-        plugin.getLogger().info("Registered " + redeemables.size() + " redeemables " + new JSONArray(redeemables.stream().map(Redeemable::getName).collect(Collectors.toList())).toString().replace("\"", ""));
+        log("Registered " + redeemables.size() + " redeemables " + new JSONArray(redeemables.stream().map(Redeemable::getName).collect(Collectors.toList())).toString().replace("\"", ""));
     }
 
     @EventHandler

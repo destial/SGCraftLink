@@ -27,9 +27,6 @@ public class TrashModule extends Module implements CommandExecutor, Listener {
     }
 
     @Override
-    public void loadDefaultConfig() {}
-
-    @Override
     public void disable() {
         unsetCommandExecutor("trash");
     }
@@ -56,6 +53,7 @@ public class TrashModule extends Module implements CommandExecutor, Listener {
             sender.sendMessage(color("&cOnly players can use this command!"));
             return false;
         }
+
         Player player = (Player) sender;
         Inventory trashInventory = Bukkit.createInventory(null, 9 * 3, color("&cTrash"));
         inventories.add(trashInventory);

@@ -326,6 +326,6 @@ public class VanillaAddon extends Module implements Listener {
             addons.put(material, vanillaItem);
         }
 
-        plugin.getLogger().info("Registered " + addons.size() + " vanilla addons " + new JSONArray(addons.keySet().stream().map(Material::name).collect(Collectors.toList())).toString().replace("\"", ""));
+        log("Registered " + addons.size() + " vanilla addons " + new JSONArray(addons.keySet().stream().map(Material::name).collect(Collectors.toList())).toString().replace("\"", ""));
     }
 }

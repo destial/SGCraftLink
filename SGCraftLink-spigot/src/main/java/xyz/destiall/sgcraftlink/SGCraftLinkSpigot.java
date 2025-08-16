@@ -1,7 +1,6 @@
 package xyz.destiall.sgcraftlink;
 
 import de.tr7zw.changeme.nbtapi.NBT;
-import me.clip.placeholderapi.PlaceholderAPI;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
@@ -21,6 +20,7 @@ import xyz.destiall.sgcraftlink.gamemode.MoveIfGay;
 import xyz.destiall.sgcraftlink.gamemode.OnePersonDeath;
 import xyz.destiall.sgcraftlink.items.SpigotLogger;
 import xyz.destiall.sgcraftlink.listeners.AirBlockPlaceListener;
+import xyz.destiall.sgcraftlink.listeners.BreakAnimationModule;
 import xyz.destiall.sgcraftlink.listeners.PML;
 import xyz.destiall.sgcraftlink.listeners.PlayerListener;
 import xyz.destiall.sgcraftlink.listeners.PlaytimeGetter;
@@ -43,7 +43,7 @@ import xyz.destiall.sgcraftlink.modules.hooks.DiscordSRVHook;
 import xyz.destiall.sgcraftlink.modules.hooks.DynmapHook;
 import xyz.destiall.sgcraftlink.modules.hooks.EconomyHook;
 import xyz.destiall.sgcraftlink.modules.hooks.LuckPermsHook;
-import xyz.destiall.sgcraftlink.modules.hooks.PAPIHook;
+import xyz.destiall.sgcraftlink.modules.hooks.PAPIModule;
 import xyz.destiall.sgcraftlink.modules.lobby.LobbyModule;
 import xyz.destiall.sgcraftlink.modules.skyblock.NovaEconomyGUIModule;
 import xyz.destiall.sgcraftlink.modules.skyblock.NovaSkyblockModule;
@@ -78,7 +78,6 @@ import java.util.stream.Collectors;
 public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecutor {
     private final Collection<Module> modules = new ClassSet<>();
     private final Collection<Class<? extends Module>> moduleClazzes = new HashSet<>();
-    private PAPIHook papiHook;
     private Scheduler scheduler;
 
     @Override
@@ -159,6 +158,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         moduleClazzes.add(VanillaAddon.class);
         moduleClazzes.add(PermissionEffects.class);
         moduleClazzes.add(LobbyModule.class);
+        moduleClazzes.add(BreakAnimationModule.class);
 
         // Gamemodes (hehe)
         moduleClazzes.add(OnePersonDeath.class);
@@ -272,12 +272,9 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         }
 
         if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
-            papiHook = new PAPIHook(this);
-            try {
-                papiHook.register();
-            } catch (Throwable e) {
-                PlaceholderAPI.registerExpansion(papiHook);
-            }
+            Module m = new PAPIModule(this);
+            this.modules.add(m);
+            m.enable();
         }
 
         getLogger().info("Registered " + this.modules.size() + " modules " + new JSONArray(this.modules.stream().map(Module::toString).collect(Collectors.toList())).toString().replace("\"", ""));
@@ -295,15 +292,6 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
 
     @SuppressWarnings("all")
     public void disable() {
-        if (papiHook != null) {
-            try {
-                papiHook.unregister();
-            } catch (Exception e) {
-                PlaceholderAPI.unregisterExpansion(papiHook);
-            }
-            papiHook = null;
-        }
-
         for (Module module : modules) {
             module.disable();
         }
@@ -311,6 +299,18 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         HandlerList.unregisterAll(this);
         scheduler.cancelTasks();
         modules.removeIf(f -> !(f instanceof WorldGuardModule));
+    }
+
+    private Module getModule(CommandSender sender, String moduleName) {
+        Class<? extends Module> moduleClass = moduleClazzes.stream()
+                .filter(m -> m.getSimpleName().equalsIgnoreCase(moduleName))
+                .findFirst().orElse(null);
+        if (moduleClass == null) {
+            sender.sendMessage(color("&cModule not found!"));
+            return null;
+        }
+
+        return modules.stream().filter(m -> m.getClass().equals(moduleClass)).findFirst().orElse(null);
     }
 
     @SuppressWarnings("all")
@@ -337,16 +337,27 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             return true;
         }
 
-        String moduleName = args[0];
-        Class<? extends Module> moduleClass = moduleClazzes.stream()
-                .filter(m -> m.getSimpleName().equalsIgnoreCase(moduleName))
-                .findFirst().orElse(null);
-        if (moduleClass == null) {
-            sender.sendMessage(color("&cModule not found!"));
-            return false;
+        String moduleName = null;
+        boolean toggled = false;
+        if (args[0].equalsIgnoreCase("toggle") && args.length > 1) {
+            moduleName = args[1];
+            Module module = getModule(sender, moduleName);
+            if (module != null) {
+                module.toggle();
+                module.saveConfig();
+            } else {
+                toggled = true;
+            }
         }
 
-        Module module = modules.stream().filter(m -> m.getClass().equals(moduleClass)).findFirst().orElse(null);
+        if (moduleName == null)
+            moduleName = args[0];
+        final String finalModuleName = moduleName;
+        Class<? extends Module> moduleClass = moduleClazzes.stream()
+                .filter(m -> m.getSimpleName().equalsIgnoreCase(finalModuleName))
+                .findFirst().orElse(null);
+
+        Module module = getModule(sender, moduleName);
         if (module != null) {
             if (module.isPersistent()) {
                 sender.sendMessage(color("&cPersistent modules cannot be reloaded!"));
@@ -381,7 +392,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         }
 
         module.initConfig();
-        if (!module.isEnabled()) {
+        if (!module.isEnabled() && !toggled) {
             modules.remove(module);
             if (wasEnabled) {
                 sender.sendMessage(color("&aDisabled " + module));
@@ -389,6 +400,10 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
                 sender.sendMessage(color("&aReloaded " + module + " but is now &cdisabled"));
             }
         } else {
+            if (toggled) {
+                module.toggle();
+                module.saveConfig();
+            }
             module.enable();
             if (module instanceof Listener) {
                 try {
@@ -400,18 +415,10 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             sender.sendMessage(color("&aReloaded " + module));
         }
 
+        Module papiHook = getModule(PAPIModule.class);
         if (papiHook != null) {
-            try {
-                papiHook.unregister();
-            } catch (Exception e) {
-                PlaceholderAPI.unregisterExpansion(papiHook);
-            }
-            papiHook = new PAPIHook(this);
-            try {
-                papiHook.register();
-            } catch (Exception e) {
-                PlaceholderAPI.registerExpansion(papiHook);
-            }
+            papiHook.disable();
+            papiHook.enable();
         }
 
         return false;
@@ -419,7 +426,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
 
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
-        if (args.length == 1) {
+        if (args.length > 0) {
             return moduleClazzes.stream()
                     .map(Class::getSimpleName)
                     .filter(m -> m.toLowerCase().startsWith(args[0].toLowerCase()))

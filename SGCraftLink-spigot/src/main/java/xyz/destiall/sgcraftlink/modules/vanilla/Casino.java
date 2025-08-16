@@ -161,7 +161,7 @@ public class Casino extends Module implements Listener, CommandExecutor, TabExec
             }
         }
 
-        plugin.getLogger().info("Registered " + slots.size() + " casino slots " + new JSONArray(slots.stream().map(CasinoSlot::getId).collect(Collectors.toList())).toString().replace("\"", ""));
+        log("Registered " + slots.size() + " casino slots " + new JSONArray(slots.stream().map(CasinoSlot::getId).collect(Collectors.toList())).toString().replace("\"", ""));
 
     }
 

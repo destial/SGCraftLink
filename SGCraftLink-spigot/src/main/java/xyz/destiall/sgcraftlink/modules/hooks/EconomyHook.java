@@ -50,9 +50,6 @@ public class EconomyHook extends Module {
     }
 
     @Override
-    public void loadDefaultConfig() {}
-
-    @Override
     public void disable() {}
 
     @Override

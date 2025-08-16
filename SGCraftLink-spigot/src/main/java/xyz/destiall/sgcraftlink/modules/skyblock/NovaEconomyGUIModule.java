@@ -60,7 +60,7 @@ public class NovaEconomyGUIModule extends Module {
             for (String key : keys) {
                 NovaItem novaItem = Nova.getNova().getItemRegistry().getOrNull(key);
                 if (novaItem == null) {
-                    plugin.getLogger().warning("Nova item " + key + " does not exist anymore! Removing as shop item...");
+                    warn("Nova item " + key + " does not exist anymore! Removing as shop item...");
                     config.set(key, null);
                     continue;
                 }
@@ -84,7 +84,7 @@ public class NovaEconomyGUIModule extends Module {
                 saveConfig();
                 NovaExtendedShopItem shopItem = new NovaExtendedShopItem(matchShopItem(new ItemStack(Material.STONE)));
                 shopItem.init(novaItem);
-                plugin.getLogger().warning("Creating NovaShopItem = " + key);
+                warn("Creating NovaShopItem = " + key);
                 return shopItem;
             });
 
@@ -104,7 +104,7 @@ public class NovaEconomyGUIModule extends Module {
                 saveConfig();
                 NovaExtendedShopItem shopItem = new NovaExtendedShopItem(matchShopItem(new ItemStack(Material.STONE)));
                 shopItem.init(novaItem);
-                plugin.getLogger().warning("Creating NovaShopItem = " + key);
+                warn("Creating NovaShopItem = " + key);
                 return shopItem;
             });
 
@@ -176,7 +176,7 @@ public class NovaEconomyGUIModule extends Module {
     }
 
     public void inject() {
-        plugin.getLogger().warning("Injecting Nova into EconomyGUIShop!");
+        warn("Injecting Nova into EconomyGUIShop!");
         EconomyShopGUI economyShopGUI = EconomyShopGUI.getInstance();
         previousCreateItem = economyShopGUI.createItem;
         overrideCreateItem = new NovaExtendedCreateItem(economyShopGUI);
@@ -191,7 +191,7 @@ public class NovaEconomyGUIModule extends Module {
     }
 
     public void revert() {
-        plugin.getLogger().warning("Reverting Nova from EconomyGUIShop!");
+        warn("Reverting Nova from EconomyGUIShop!");
         EconomyShopGUI economyShopGUI = EconomyShopGUI.getInstance();
         Class<?> economyShopGUIClazz = economyShopGUI.getClass();
         try {

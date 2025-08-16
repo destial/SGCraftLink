@@ -57,7 +57,7 @@ public class TriggerModule extends Module implements Listener {
             triggers.put(p, target);
         }
 
-        plugin.getLogger().info("Registered " + triggers.size() + " triggers " + new JSONArray(triggers.values()).toString().replace("\"", ""));
+        log("Registered " + triggers.size() + " triggers " + new JSONArray(triggers.values()).toString().replace("\"", ""));
     }
 
     @Override

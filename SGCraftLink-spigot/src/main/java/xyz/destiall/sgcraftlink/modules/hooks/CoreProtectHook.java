@@ -42,8 +42,8 @@ public class CoreProtectHook extends Module implements Listener {
         List<CoreProtectHook.ChatMessageResult> messages = getChats(player, limit, since);
         if (messages == null) {
             res.put("messages", array);
-            plugin.getLogger().warning("No messages found!");
-            plugin.getLogger().info("Sending back to proxy");
+            warn("No messages found!");
+            log("Sending back to proxy");
             e.setReply(res);
             return;
         }
@@ -58,7 +58,7 @@ public class CoreProtectHook extends Module implements Listener {
         }
 
         res.put("messages", array);
-        plugin.getLogger().info("Sending back " + array.length() + " messages to proxy");
+        log("Sending back " + array.length() + " messages to proxy");
         e.setReply(res);
     }
 
@@ -132,9 +132,6 @@ public class CoreProtectHook extends Module implements Listener {
             return username;
         }
     }
-
-    @Override
-    public void loadDefaultConfig() {}
 
     @Override
     public void disable() {}

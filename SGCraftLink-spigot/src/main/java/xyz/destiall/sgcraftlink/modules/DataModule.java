@@ -125,7 +125,7 @@ public class DataModule extends Module implements Listener, CommandExecutor {
     private void tryRegisterServer(Map<String, Object> data) {
         sendProxyData(SGCraftLinkCommon.DATA_SERVER_REGISTER, data, (result) -> {
             if (!result.isSuccess()) {
-                plugin.getLogger().warning("Failed! Trying to register server with proxy again...");
+                warn("Failed! Trying to register server with proxy again...");
                 if (currentRegistrationTask != null) {
                     currentRegistrationTask.cancel();
                 }
@@ -135,17 +135,17 @@ public class DataModule extends Module implements Listener, CommandExecutor {
             if (currentRegistrationTask != null) {
                 currentRegistrationTask.cancel();
             }
-            plugin.getLogger().info("Registered server with proxy");
+            log("Registered server with proxy");
         });
     }
 
     private void tryUnregisterServer(Map<String, Object> data) {
         sendProxyData(SGCraftLinkCommon.DATA_SERVER_UNREGISTER, data, (result) -> {
             if (!result.isSuccess()) {
-                plugin.getLogger().warning("Failed trying to unregister with proxy!");
+                warn("Failed trying to unregister with proxy!");
                 return;
             }
-            plugin.getLogger().info("Unregistered server with proxy");
+            log("Unregistered server with proxy");
         }, true);
     }
 
@@ -177,7 +177,7 @@ public class DataModule extends Module implements Listener, CommandExecutor {
         Map<String, String> headers = SGCraftLinkCommon.createStringMap("X-Authorization", config.getString("authentication-key"));
         Runnable runnable = () -> {
             try {
-                plugin.getLogger().warning("Sending " + type + " to proxy");
+                warn("Sending " + type + " to proxy");
                 CompletableFuture<DataResult> response = manager.fetch("http://" + config.getString("proxy-ip", "172.18.0.1"), config.getInt("proxy-port", 1035), HTTPManager.Method.POST, headers, object);
                 response.whenComplete((res, err) -> {
                     if (err != null) {
@@ -186,7 +186,7 @@ public class DataModule extends Module implements Listener, CommandExecutor {
                             result.accept(new DataResult(404, null));
                         return;
                     }
-                    plugin.getLogger().warning("Responded back with " + res.getStatus());
+                    warn("Responded back with " + res.getStatus());
                     if (result != null)
                         result.accept(res);
                 });
@@ -249,11 +249,11 @@ public class DataModule extends Module implements Listener, CommandExecutor {
         express.post("/", (request, response) -> {
             try {
                 String body = SGCraftLinkCommon.convertStreamToString(request.getBody()).trim();
-                plugin.getLogger().warning("Received data " + body);
+                warn("Received data " + body);
                 JSONObject json = new JSONObject(body);
 
                 if (!json.has("data-type")) {
-                    plugin.getLogger().warning("Request does not have any data-type!");
+                    warn("Request does not have any data-type!");
                     response.sendStatus(Status._500);
                     return;
                 }
@@ -300,8 +300,8 @@ public class DataModule extends Module implements Listener, CommandExecutor {
                             }, 1L);
                             break;
                         }
-                        plugin.getLogger().warning("Proxy has unregistered this server! This is probably due to a proxy plugin reload!");
-                        plugin.getLogger().warning("We will try to register this server again!");
+                        warn("Proxy has unregistered this server! This is probably due to a proxy plugin reload!");
+                        warn("We will try to register this server again!");
                         response.sendStatus(Status._200);
 
                         plugin.getScheduler().runTaskLaterAsync(this::registerServer, 20L * 15L);
@@ -317,7 +317,7 @@ public class DataModule extends Module implements Listener, CommandExecutor {
                     default: {
                         // Intellisense is probably highlighting this to be removed, but in 1.8, this is still possible!
                         if (DataReceiveEvent.handlers.getRegisteredListeners() == null || DataReceiveEvent.handlers.getRegisteredListeners().length == 0) {
-                            plugin.getLogger().warning("Received data " + datatype + " but have no implementation!");
+                            warn("Received data " + datatype + " but have no implementation!");
                             response.sendStatus(Status._201);
                         } else {
                             DataReceiveEvent event = new DataReceiveEvent(json);
@@ -330,7 +330,7 @@ public class DataModule extends Module implements Listener, CommandExecutor {
                                 if (event.getReply() == null) {
                                     response.sendStatus(event.getStatus());
                                 } else {
-                                    plugin.getLogger().warning("Replied to " + datatype);
+                                    warn("Replied to " + datatype);
                                     response.send(event.getReply().toString());
                                 }
                             }, 1L);
