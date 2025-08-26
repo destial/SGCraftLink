@@ -53,6 +53,10 @@ public abstract class Module {
         plugin.getLogger().warning(this + ": " + warn);
     }
 
+    public void error(String error) {
+        plugin.getLogger().severe(this + ": " + error);
+    }
+
     public boolean isEnabled() {
         return config == null || config.getBoolean("enabled", true);
     }

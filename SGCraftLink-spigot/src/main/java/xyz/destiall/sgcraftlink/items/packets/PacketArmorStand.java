@@ -1,6 +1,5 @@
 package xyz.destiall.sgcraftlink.items.packets;
 
-import com.Zrips.CMI.commands.list.world;
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.utility.MinecraftVersion;
 import org.bukkit.Bukkit;
@@ -82,7 +81,7 @@ public abstract class PacketArmorStand {
         }
         else if (Bukkit.getServer().getPluginManager().isPluginEnabled("packetevents"))
             return new PacketEventsArmorStand(world, x, y, z);
-        else
-            return new ProtocolLibArmorStand_1_20_3(world, x, y, z);
+
+        return new ProtocolLibArmorStand_1_20_3(world, x, y, z);
     }
 }

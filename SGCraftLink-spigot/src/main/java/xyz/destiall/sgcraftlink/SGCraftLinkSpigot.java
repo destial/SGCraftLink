@@ -13,6 +13,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.plugin.messaging.Messenger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
@@ -69,6 +70,7 @@ import xyz.destiall.sgcraftlink.utils.ClassSet;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -80,34 +82,41 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
     private final Collection<Module> modules = new ClassSet<>();
     private final Collection<Class<? extends Module>> moduleClazzes = new HashSet<>();
     private Scheduler scheduler;
+    private Messenger pluginMessenger;
 
     @Override
     public void onLoad() {
         scheduler = new Scheduler(this);
-        if (getServer().getPluginManager().isPluginEnabled("WorldGuard")) {
+        if (hasPlugin("WorldGuard")) {
             try {
                 modules.add(new WorldGuardHook(this));
             } catch (Exception e) {
-                getLogger().warning("This version cannot run WorldGuard!");
+                getLogger().warning("This version cannot run WorldGuardHook!");
                 e.printStackTrace();
             }
         }
-        if (getServer().getPluginManager().isPluginEnabled("packetevents")) {
-            modules.add(new PacketEventsHook(this));
+        if (hasPlugin("packetevents")) {
+            try {
+                modules.add(new PacketEventsHook(this));
+            } catch (Exception e) {
+                getLogger().warning("This version cannot run PacketEventsHook!");
+                e.printStackTrace();
+            }
         }
         SGCraftLinkCommon.LOGGER = new SpigotLogger(this);
     }
 
     @Override
     public void onEnable() {
-        getServer().getMessenger().registerOutgoingPluginChannel(this, SGCraftLinkCommon.CHANNEL);
-        getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
+        pluginMessenger = getServer().getMessenger();
+        pluginMessenger.registerOutgoingPluginChannel(this, SGCraftLinkCommon.CHANNEL);
+        pluginMessenger.registerOutgoingPluginChannel(this, "BungeeCord");
 
         PML pml = new PML(this);
-        if (getServer().getMessenger().registerIncomingPluginChannel(this, SGCraftLinkCommon.CHANNEL, pml).isValid()) {
+        if (pluginMessenger.registerIncomingPluginChannel(this, SGCraftLinkCommon.CHANNEL, pml).isValid()) {
             getLogger().info("Registered incoming plugin channel " + SGCraftLinkCommon.CHANNEL);
         }
-        if (getServer().getMessenger().registerIncomingPluginChannel(this, "BungeeCord", pml).isValid()) {
+        if (pluginMessenger.registerIncomingPluginChannel(this, "BungeeCord", pml).isValid()) {
             getLogger().info("Registered incoming plugin channel BungeeCord");
         }
 
@@ -132,11 +141,11 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         }
         moduleClazzes.clear();
         Module.COMMANDS.clear();
-        if (getServer().getPluginManager().isPluginEnabled("Vault")) {
+        if (hasPlugin("Vault")) {
             moduleClazzes.add(EconomyHook.class);
         }
 
-        if (getServer().getPluginManager().isPluginEnabled("LuckPerms")) {
+        if (hasPlugin("LuckPerms")) {
             moduleClazzes.add(LuckPermsHook.class);
         }
 
@@ -168,12 +177,16 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         moduleClazzes.add(OnePersonDeath.class);
         moduleClazzes.add(MoveIfGay.class);
 
-        if (getServer().getPluginManager().isPluginEnabled("ProtocolLib")) {
+        if (hasPlugin("ProtocolLib") ||
+            hasPlugin("packetevents")) {
             moduleClazzes.add(ChatBubble.class);
+        }
+
+        if (hasPlugin("ProtocolLib")) {
             moduleClazzes.add(Fonter.class);
         }
 
-        if (getServer().getPluginManager().isPluginEnabled("CMI")) {
+        if (hasPlugin("CMI")) {
             moduleClazzes.add(CMIHook.class);
         }
 
@@ -183,52 +196,52 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
          * getLogger().warning("This version cannot run TryMeModule!"); } }
          **/
 
-        if (getServer().getPluginManager().isPluginEnabled("PiggyBank")) {
+        if (hasPlugin("PiggyBank")) {
             moduleClazzes.add(PiggyBankModule.class);
         }
 
-        if (getServer().getPluginManager().isPluginEnabled("DiscordSRV")) {
+        if (hasPlugin("DiscordSRV")) {
             moduleClazzes.add(DiscordSRVHook.class);
         }
 
-        if (getServer().getPluginManager().isPluginEnabled("CoreProtect")) {
+        if (hasPlugin("CoreProtect")) {
             moduleClazzes.add(CoreProtectHook.class);
         }
 
-        if (getServer().getPluginManager().isPluginEnabled("dynmap")) {
+        if (hasPlugin("dynmap")) {
             moduleClazzes.add(DynmapHook.class);
         }
 
-        if (getServer().getPluginManager().isPluginEnabled("Nova")) {
-            if (getServer().getPluginManager().isPluginEnabled("SuperiorSkyblock2")) {
+        if (hasPlugin("Nova")) {
+            if (hasPlugin("SuperiorSkyblock2")) {
                 moduleClazzes.add(NovaSkyblockModule.class);
             }
-            if (getServer().getPluginManager().isPluginEnabled("EconomyShopGUI")) {
+            if (hasPlugin("EconomyShopGUI")) {
                 moduleClazzes.add(NovaEconomyGUIModule.class);
             }
         }
 
-        if (getServer().getPluginManager().isPluginEnabled("AuraSkills")) {
+        if (hasPlugin("AuraSkills")) {
             moduleClazzes.add(AuraSkillsHook.class);
         }
 
-        if (getServer().getPluginManager().isPluginEnabled("MythicMobs")) {
+        if (hasPlugin("MythicMobs")) {
             moduleClazzes.add(MythicHook.class);
         }
 
-        if (getServer().getPluginManager().isPluginEnabled("MythicCrucible")) {
+        if (hasPlugin("MythicCrucible")) {
             moduleClazzes.add(MythicRecipes.class);
         }
 
-        if (getServer().getPluginManager().isPluginEnabled("ProtectionStones")) {
+        if (hasPlugin("ProtectionStones")) {
             moduleClazzes.add(ProtectionStonesModule.class);
         }
 
-        if (getServer().getPluginManager().isPluginEnabled("NoteBlockMusicPlayer")) {
+        if (hasPlugin("NoteBlockMusicPlayer")) {
             moduleClazzes.add(MusicHook.class);
         }
 
-        if (getServer().getPluginManager().isPluginEnabled("Citizens")) {
+        if (hasPlugin("Citizens")) {
             moduleClazzes.add(HoverMessages.class);
         }
 
@@ -241,7 +254,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         for (Class<? extends Module> clazz : moduleClazzes) {
             Module module;
             try {
-                module = clazz.getDeclaredConstructor(SGCraftLinkSpigot.class).newInstance(this);
+                module = createModule(clazz);
             } catch (Throwable e) {
                 getLogger().warning("This version cannot run " + clazz.getSimpleName());
                 getLogger().severe(e.getLocalizedMessage());
@@ -268,20 +281,26 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             module.enable();
             if (module instanceof Listener) {
                 try {
-                    getServer().getPluginManager().registerEvents((Listener) module, this);
+                    registerListener((Listener) module);
                 } catch (Throwable e) {
                     e.printStackTrace();
                 }
             }
         }
 
-        if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+        if (hasPlugin("PlaceholderAPI")) {
             Module m = new PAPIModule(this);
             this.modules.add(m);
             m.enable();
         }
 
-        getLogger().info("Registered " + this.modules.size() + " modules " + new JSONArray(this.modules.stream().map(Module::toString).collect(Collectors.toList())).toString().replace("\"", ""));
+        getLogger().info("Registered " +
+                this.modules.size() + " modules " +
+                new JSONArray(
+                        this.modules.stream()
+                                .map(Module::toString)
+                                .collect(Collectors.toList())
+                ).toString().replace("\"", ""));
     }
 
     @Override
@@ -290,8 +309,8 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
 
         getCommand("sgcreload").setExecutor(null);
 
-        getServer().getMessenger().unregisterIncomingPluginChannel(this);
-        getServer().getMessenger().unregisterOutgoingPluginChannel(this);
+        pluginMessenger.unregisterIncomingPluginChannel(this);
+        pluginMessenger.unregisterOutgoingPluginChannel(this);
     }
 
     @SuppressWarnings("all")
@@ -382,7 +401,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         boolean wasEnabled = module != null ? module.isEnabled() : false;
 
         try {
-            module = moduleClass.getDeclaredConstructor(SGCraftLinkSpigot.class).newInstance(this);
+            module = createModule(moduleClass);
         } catch (Throwable e) {
             sender.sendMessage(color("&cThis server version cannot run " + moduleClass.getSimpleName()));
             e.printStackTrace();
@@ -416,7 +435,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             module.enable();
             if (module instanceof Listener) {
                 try {
-                    getServer().getPluginManager().registerEvents((Listener) module, this);
+                    registerListener((Listener) module);
                 } catch (Throwable e) {
                     e.printStackTrace();
                 }
@@ -455,6 +474,18 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
 
     public Scheduler getScheduler() {
         return scheduler;
+    }
+
+    public <M extends Module> M createModule(Class<M> clazz) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        return clazz.getDeclaredConstructor(SGCraftLinkSpigot.class).newInstance(this);
+    }
+
+    public boolean hasPlugin(String pluginName) {
+        return getServer().getPluginManager().isPluginEnabled(pluginName);
+    }
+
+    public void registerListener(Listener listener) {
+        getServer().getPluginManager().registerEvents(listener, this);
     }
 
     public void dispatchCommand(String command) {
