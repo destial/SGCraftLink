@@ -1,4 +1,4 @@
-package xyz.destiall.sgcraftlink.modules.common;
+package xyz.destiall.sgcraftlink.modules.hooks;
 
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldguard.WorldGuard;
@@ -11,8 +11,8 @@ import org.bukkit.entity.Player;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.modules.Module;
 
-public class WorldGuardModule extends Module {
-    public WorldGuardModule(SGCraftLinkSpigot plugin) {
+public class WorldGuardHook extends Module {
+    public WorldGuardHook(SGCraftLinkSpigot plugin) {
         super(plugin);
     }
 

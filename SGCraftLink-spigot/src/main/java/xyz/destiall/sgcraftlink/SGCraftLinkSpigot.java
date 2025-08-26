@@ -27,17 +27,18 @@ import xyz.destiall.sgcraftlink.listeners.PlaytimeGetter;
 import xyz.destiall.sgcraftlink.modules.DataModule;
 import xyz.destiall.sgcraftlink.modules.Module;
 import xyz.destiall.sgcraftlink.modules.common.BirthdayModule;
-import xyz.destiall.sgcraftlink.modules.common.CMIModule;
+import xyz.destiall.sgcraftlink.modules.hooks.CMIHook;
 import xyz.destiall.sgcraftlink.modules.common.ChatBubble;
 import xyz.destiall.sgcraftlink.modules.common.Fonter;
 import xyz.destiall.sgcraftlink.modules.common.HeadHunt;
 import xyz.destiall.sgcraftlink.modules.common.HoverMessages;
 import xyz.destiall.sgcraftlink.modules.common.MigrationModule;
+import xyz.destiall.sgcraftlink.modules.hooks.PacketEventsHook;
 import xyz.destiall.sgcraftlink.modules.common.Redeemables;
 import xyz.destiall.sgcraftlink.modules.common.ScheduledCommands;
 import xyz.destiall.sgcraftlink.modules.common.TagModule;
 import xyz.destiall.sgcraftlink.modules.common.TriggerModule;
-import xyz.destiall.sgcraftlink.modules.common.WorldGuardModule;
+import xyz.destiall.sgcraftlink.modules.hooks.WorldGuardHook;
 import xyz.destiall.sgcraftlink.modules.hooks.CoreProtectHook;
 import xyz.destiall.sgcraftlink.modules.hooks.DiscordSRVHook;
 import xyz.destiall.sgcraftlink.modules.hooks.DynmapHook;
@@ -85,11 +86,14 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         scheduler = new Scheduler(this);
         if (getServer().getPluginManager().isPluginEnabled("WorldGuard")) {
             try {
-                modules.add(new WorldGuardModule(this));
+                modules.add(new WorldGuardHook(this));
             } catch (Exception e) {
                 getLogger().warning("This version cannot run WorldGuard!");
                 e.printStackTrace();
             }
+        }
+        if (getServer().getPluginManager().isPluginEnabled("packetevents")) {
+            modules.add(new PacketEventsHook(this));
         }
         SGCraftLinkCommon.LOGGER = new SpigotLogger(this);
     }
@@ -170,7 +174,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         }
 
         if (getServer().getPluginManager().isPluginEnabled("CMI")) {
-            moduleClazzes.add(CMIModule.class);
+            moduleClazzes.add(CMIHook.class);
         }
 
         /**
@@ -298,7 +302,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
 
         HandlerList.unregisterAll(this);
         scheduler.cancelTasks();
-        modules.removeIf(f -> !(f instanceof WorldGuardModule));
+        modules.removeIf(f -> !(f instanceof WorldGuardHook));
     }
 
     private Module getModule(CommandSender sender, String moduleName) {
@@ -343,6 +347,11 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             moduleName = args[1];
             Module module = getModule(sender, moduleName);
             if (module != null) {
+                if (module.isPersistent()) {
+                    sender.sendMessage(color("&cPersistent modules cannot be toggled!"));
+                    return false;
+                }
+
                 module.toggle();
                 module.saveConfig();
             } else {

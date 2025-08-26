@@ -26,7 +26,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import xyz.destiall.sgcraftlink.SGCraftLinkSpigot;
 import xyz.destiall.sgcraftlink.modules.Module;
-import xyz.destiall.sgcraftlink.modules.common.WorldGuardModule;
+import xyz.destiall.sgcraftlink.modules.hooks.WorldGuardHook;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -34,7 +34,7 @@ import java.util.UUID;
 
 public class MusicHook extends Module implements Listener {
     private final Set<RegionRadio> radios;
-    private WorldGuardModule wg;
+    private WorldGuardHook wg;
 
     public MusicHook(SGCraftLinkSpigot plugin) {
         super(plugin, "region-radio.yml");
@@ -78,7 +78,7 @@ public class MusicHook extends Module implements Listener {
     public void onMove(PlayerMoveEvent e) {
         Location to = e.getTo();
         Location from = e.getFrom();
-        WorldGuardModule wg = getWg();
+        WorldGuardHook wg = getWg();
         if (wg == null)
             return;
 
@@ -116,7 +116,7 @@ public class MusicHook extends Module implements Listener {
         }
         plugin.getScheduler().runTaskLater(() -> {
             Location loc = e.getPlayer().getLocation();
-            WorldGuardModule wg = getWg();
+            WorldGuardHook wg = getWg();
             if (wg == null)
                 return;
 
@@ -137,7 +137,7 @@ public class MusicHook extends Module implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent e) {
         Location loc = e.getPlayer().getLocation();
-        WorldGuardModule wg = getWg();
+        WorldGuardHook wg = getWg();
         if (wg == null)
             return;
 
@@ -246,9 +246,9 @@ public class MusicHook extends Module implements Listener {
         }
     }
 
-    public WorldGuardModule getWg() {
+    public WorldGuardHook getWg() {
         if (wg == null)
-            wg = plugin.getModule(WorldGuardModule.class);
+            wg = plugin.getModule(WorldGuardHook.class);
         return wg;
     }
 

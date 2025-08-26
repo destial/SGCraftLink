@@ -1,4 +1,4 @@
-package xyz.destiall.sgcraftlink.modules.common;
+package xyz.destiall.sgcraftlink.modules.hooks;
 
 import com.Zrips.CMI.CMI;
 import com.Zrips.CMI.Containers.CMIUser;
@@ -29,11 +29,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import static xyz.destiall.sgcraftlink.SGCraftLinkCommon.createDataMap;
 import static xyz.destiall.sgcraftlink.SGCraftLinkSpigot.color;
 
-public class CMIModule extends Module implements Listener, CommandExecutor {
+public class CMIHook extends Module implements Listener, CommandExecutor {
     private final Map<Player, Long> afkTime = new ConcurrentHashMap<>();
     private final Map<Player, List<Long>> repetitiveAfk = new ConcurrentHashMap<>();
 
-    public CMIModule(SGCraftLinkSpigot plugin) {
+    public CMIHook(SGCraftLinkSpigot plugin) {
         super(plugin);
 
         setCommandExecutor("sgcwake");
