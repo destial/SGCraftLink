@@ -4,17 +4,17 @@
   "version": "${version}",
 
   "name": "sgcraftlink",
-  "description": "",
-  "authors": [],
+  "description": "SGCraftLink",
+  "authors": ["destiall"],
   "contact": {},
 
   "license": "All-Rights-Reserved",
-  "icon": "assets/sgcraftlink/icon.png",
 
   "environment": "server",
   "entrypoints": {
     "fabric-datagen": ["xyz.destiall.sgcraftlink.client.SGCraftLinkFabricDataGenerator"],
-    "main": ["xyz.destiall.sgcraftlink.SGCraftLinkFabric"]
+    "main": ["xyz.destiall.sgcraftlink.SGCraftLinkFabric"],
+    "server": ["xyz.destiall.sgcraftlink.SGCraftLinkFabric"]
   },
 
   "mixins": [

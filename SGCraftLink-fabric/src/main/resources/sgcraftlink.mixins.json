@@ -4,6 +4,7 @@
   "package": "xyz.destiall.sgcraftlink.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "SGCraftLinkMixin"
   ],
   "injectors": {
     "defaultRequire": 1
