@@ -1,17 +1,13 @@
 package xyz.destiall.sgcraftlink.modules;
 
-import org.apache.logging.log4j.core.config.yaml.YamlConfiguration;
-import org.apache.logging.log4j.core.config.yaml.YamlConfigurationFactory;
 import org.json.JSONObject;
 import xyz.destiall.sgcraftlink.SGCraftLinkFabric;
 
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.nio.charset.StandardCharsets;
+import java.io.FileReader;
+import java.io.FileWriter;
 
 public abstract class Module {
     protected final SGCraftLinkFabric mod;
@@ -28,7 +24,7 @@ public abstract class Module {
         this.configName = configName;
         this.config = new JSONObject();
         if (configName != null) {
-            configFile = new File(mod.getDataFolder(), configName + ".json");
+            configFile = new File(mod.getDataFolder(), configName);
             if (!configFile.exists()) {
                 try {
                     configFile.createNewFile();
@@ -63,22 +59,23 @@ public abstract class Module {
     }
 
     public void save() {
-        try (FileOutputStream stream = new FileOutputStream(configFile)) {
-            try (DataOutputStream out = new DataOutputStream(stream)) {
-                out.writeUTF(config.toString(4));
-            }
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(configFile))) {
+            writer.write(config.toString(4));
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     public void load() {
-        try (FileInputStream stream = new FileInputStream(configFile)) {
-            try (DataInputStream in = new DataInputStream(stream)) {
-                String data = in.readUTF();
-
-                config = new JSONObject(data);
+        try (BufferedReader reader = new BufferedReader(new FileReader(configFile))) {
+            String line;
+            StringBuilder builder = new StringBuilder();
+            while ((line = reader.readLine()) != null) {
+                builder.append(line);
             }
+            String data = builder.toString();
+            mod.getLogger().info("Loaded {} from {}", data, configName);
+            config = new JSONObject(data);
         } catch (Exception e) {
             e.printStackTrace();
         }
