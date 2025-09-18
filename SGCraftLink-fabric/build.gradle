@@ -1,3 +1,5 @@
+import java.lang.ref.Cleaner
+
 plugins {
     id 'fabric-loom' version '1.10.5'
     id 'maven-publish'
@@ -78,6 +80,10 @@ tasks.withType(JavaCompile).configureEach {
     }
 }
 
+tasks.named('clean') {
+    delete file("target/")
+}
+
 java {
     def javaVersion = JavaVersion.toVersion(targetJavaVersion)
     if (JavaVersion.current() < javaVersion) {
@@ -93,6 +99,7 @@ jar {
     from("LICENSE") {
         rename { "${it}_${project.archivesBaseName}"}
     }
+    destinationDirectory.set(file("target/"))
 }
 
 // configure the maven publication
