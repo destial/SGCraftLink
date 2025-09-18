@@ -25,51 +25,11 @@
         </snapshotRepository>
     </distributionManagement>
 
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.8.1</version>
-                    <configuration>
-                        <source>${java.version}</source>
-                        <target>${java.version}</target>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-shade-plugin</artifactId>
-                    <version>3.2.4</version>
-                    <executions>
-                        <execution>
-                            <phase>package</phase>
-                            <goals>
-                                <goal>shade</goal>
-                            </goals>
-                            <configuration>
-                                <minimizeJar>true</minimizeJar>
-                                <filters>
-                                    <filter>
-                                        <artifact>com.fasterxml.jackson.core:jackson-databind</artifact>
-                                        <includes>
-                                            <include>**</include>
-                                        </includes>
-                                    </filter>
-                                </filters>
-                                <createDependencyReducedPom>false</createDependencyReducedPom>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-    </build>
-
     <modules>
         <module>SGCraftLink-common</module>
         <module>SGCraftLink-spigot</module>
         <module>SGCraftLink-waterfall</module>
         <module>SGCraftLink-velocity</module>
+        <module>SGCraftLink-fabric</module>
     </modules>
 </project>
