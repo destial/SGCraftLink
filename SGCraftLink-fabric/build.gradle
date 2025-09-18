@@ -48,8 +48,8 @@ dependencies {
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-    implementation "xyz.destiall:SGCraftLink-common:1.1-SNAPSHOT"
-    include("xyz.destiall:SGCraftLink-common:1.1-SNAPSHOT")
+    implementation "xyz.destiall:SGCraftLink-common:${project.mod_version}"
+    include("xyz.destiall:SGCraftLink-common:${project.mod_version}")
 }
 
 processResources {
@@ -98,16 +98,25 @@ jar {
 publishing {
     publications {
         create("mavenJava", MavenPublication) {
+            groupId = "xyz.destiall"
             artifactId = project.archives_base_name
+            version = "${project.mod_version}"
             from components.java
         }
     }
 
     // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
     repositories {
-        // Add repositories to publish to here.
-        // Notice: This block does NOT have the same function as the block in the top level.
-        // The repositories here will be used for publishing your artifact, not for
-        // retrieving dependencies.
+        maven {
+            def releasesRepoUrl = 'https://repo.destial.xyz/releases'
+            def snapshotsRepoUrl = 'https://repo.destial.xyz/snapshots'
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+
+            credentials {
+                username = "${selfRepositoryId}"
+                password = "${selfRepositoryPassword}"
+            }
+        }
     }
 }
+
