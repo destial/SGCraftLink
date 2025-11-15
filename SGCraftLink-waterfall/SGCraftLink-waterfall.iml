@@ -6,6 +6,7 @@
         <autoDetectTypes>
           <platformType>WATERFALL</platformType>
         </autoDetectTypes>
+        <projectReimportVersion>1</projectReimportVersion>
       </configuration>
     </facet>
   </component>

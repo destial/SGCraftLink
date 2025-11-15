@@ -4,8 +4,11 @@
     <facet type="minecraft" name="Minecraft">
       <configuration>
         <autoDetectTypes>
+          <platformType>ADVENTURE</platformType>
+          <platformType>BUKKIT</platformType>
           <platformType>SPIGOT</platformType>
         </autoDetectTypes>
+        <projectReimportVersion>1</projectReimportVersion>
       </configuration>
     </facet>
   </component>
