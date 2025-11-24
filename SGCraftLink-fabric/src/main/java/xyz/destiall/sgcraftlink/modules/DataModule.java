@@ -76,6 +76,19 @@ public class DataModule extends Module implements ServerPlayerEvents.Join {
                         response.sendStatus(Status._200);
                         break;
                     }
+                    case SGCraftLinkCommon.DATA_GET_HEADHUNT: {
+                        JSONObject res = new JSONObject();
+                        res.put("remaining", 0);
+                        JSONObject players = new JSONObject();
+                        res.put("score", players);
+                        response.send(res.toString());
+                        break;
+                    }
+                    case SGCraftLinkCommon.DATA_LUCKPERMS_SERVICE: {
+                        warn("Received Luckperms service but have no implementation!");
+                        response.sendStatus(Status._200);
+                        break;
+                    }
                     case SGCraftLinkCommon.DATA_SERVER_UNREGISTER: {
                         warn("Proxy has unregistered this server! This is probably due to a proxy plugin reload!");
                         warn("We will try to register this server again!");
@@ -83,6 +96,9 @@ public class DataModule extends Module implements ServerPlayerEvents.Join {
 
                         mod.getScheduler().schedule(this::registerServer, 15L * 1000L);
                         break;
+                    }
+                    case SGCraftLinkCommon.DATA_GET_RESOURCES: {
+
                     }
                 }
             } catch (Exception e) {
