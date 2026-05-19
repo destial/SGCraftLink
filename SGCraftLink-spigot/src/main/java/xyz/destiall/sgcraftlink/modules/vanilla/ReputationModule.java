@@ -20,8 +20,10 @@ import xyz.destiall.sgcraftlink.modules.Module;
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
@@ -69,8 +71,10 @@ public class ReputationModule extends Module implements Listener, CommandExecuto
     }
 
     public List<PlayerReputation> getOrderedReputations() {
+        Optional<PlayerReputation> mostRated = reputations.stream().reduce((a, b) -> a.getTotalRatings() > b.getTotalRatings() ? a : b);
+        final long mostRatings = mostRated.isPresent() ? mostRated.get().getTotalRatings() : 1L;
         reputations.sort((a, b) -> {
-            int compare = Float.compare(b.getRating(), a.getRating());
+            int compare = Float.compare(b.getRating() * ((float) b.getTotalRatings() / mostRatings), a.getRating() * ((float) a.getTotalRatings() / mostRatings));
             if (compare == 0) {
                 return Integer.compare(b.getTotalRatings(), a.getTotalRatings());
             }

@@ -30,6 +30,6 @@
         <module>SGCraftLink-spigot</module>
         <module>SGCraftLink-waterfall</module>
         <module>SGCraftLink-velocity</module>
-        <module>SGCraftLink-fabric</module>
+        <!-- <module>SGCraftLink-fabric</module> -->
     </modules>
 </project>

@@ -32,6 +32,7 @@ softdepend:
   - Citizens
   - EasyWhitelist
   - UhcCore
+  - Multiverse-Core
 commands:
   hovermessages:
     permission: sgc.hovermessages

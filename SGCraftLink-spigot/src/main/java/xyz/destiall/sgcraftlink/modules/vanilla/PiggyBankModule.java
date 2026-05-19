@@ -115,7 +115,12 @@ public class PiggyBankModule extends Module implements Listener {
 
     @Override
     public void enable() {
-        cache();
+        try {
+            cache();
+        } catch (Exception e) {
+            // on 26+ servers, the world data folder was changed, so we need to change how piggy bank
+            // reads from player data
+        }
         plugin.getScheduler().runTaskTimerAsync(this::recacheOnline, 0L, 20L);
     }
 }

@@ -63,6 +63,7 @@ import xyz.destiall.sgcraftlink.modules.survival.TrashModule;
 import xyz.destiall.sgcraftlink.modules.survival.VanillaAddon;
 import xyz.destiall.sgcraftlink.modules.vanilla.Casino;
 import xyz.destiall.sgcraftlink.modules.vanilla.LastLocation;
+import xyz.destiall.sgcraftlink.modules.vanilla.MVModule;
 import xyz.destiall.sgcraftlink.modules.vanilla.PiggyBankModule;
 import xyz.destiall.sgcraftlink.modules.vanilla.ReputationModule;
 import xyz.destiall.sgcraftlink.utils.ClassSet;
@@ -190,12 +191,6 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             moduleClazzes.add(CMIHook.class);
         }
 
-        /**
-         * if (getServer().getPluginManager().getPlugin("TryMe") != null) { try {
-         * modules.add(new TryMeModule(this)); } catch (Exception e) {
-         * getLogger().warning("This version cannot run TryMeModule!"); } }
-         **/
-
         if (hasPlugin("PiggyBank")) {
             moduleClazzes.add(PiggyBankModule.class);
         }
@@ -243,6 +238,10 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
 
         if (hasPlugin("Citizens")) {
             moduleClazzes.add(HoverMessages.class);
+        }
+
+        if (hasPlugin("Multiverse-Core")) {
+            moduleClazzes.add(MVModule.class);
         }
 
         if (NBT.preloadApi()) {

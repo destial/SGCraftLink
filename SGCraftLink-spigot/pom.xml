@@ -160,6 +160,10 @@
             <id>alessiodp-repo</id>
             <url>https://repo.alessiodp.com/releases</url>
         </repository>
+        <repository>
+            <id>onarandombox</id>
+            <url>https://repo.onarandombox.com/content/groups/public/</url>
+        </repository>
         <!-- <repository>
             <id>md_5-repository</id>
             <url>https://repo.md-5.net/content/repositories/snapshots/</url>
@@ -411,6 +415,12 @@
             <groupId>de.maxhenkel.voicechat</groupId>
             <artifactId>voicechat-api</artifactId>
             <version>2.5.27</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mvplugins.multiverse.core</groupId> <!-- Replace for other sub-modules -->
+            <artifactId>multiverse-core</artifactId> <!-- Replace for other sub-modules -->
+            <version>5.6.1</version> <!-- Replace with the version you need -->
             <scope>provided</scope>
         </dependency>
     </dependencies>
