@@ -2,6 +2,7 @@ package xyz.destiall.sgcraftlink.modules.common;
 
 import com.google.common.util.concurrent.AtomicDouble;
 import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -97,13 +98,16 @@ public class ChatBubble extends Module implements Listener, CommandExecutor {
         playerBubbles.clear();
     }
 
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onChat(AsyncPlayerChatEvent e) {
         chatMessage(e.getPlayer(), e.getMessage());
     }
 
     public void chatMessage(Player player, String message) {
         if (!config.getBoolean("bubble.enabled", false))
+            return;
+
+        if (player.getGameMode() == GameMode.SPECTATOR)
             return;
 
         plugin.getScheduler().runTask(() -> {

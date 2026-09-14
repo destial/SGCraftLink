@@ -3,9 +3,6 @@ package xyz.destiall.sgcraftlink.bungeeproviders;
 import xyz.destiall.sgcraftlink.providers.ColorProvider;
 
 public class BungeeColor extends ColorProvider {
-    public BungeeColor() {
-        ColorProvider.setProvider(this);
-    }
 
     @Override
     public String color(String s) {

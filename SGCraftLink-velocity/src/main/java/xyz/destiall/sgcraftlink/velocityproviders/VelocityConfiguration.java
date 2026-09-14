@@ -19,50 +19,50 @@ public class VelocityConfiguration extends ConfigSectionProvider<ConfigurationNo
 
     @Override
     public int getInt(String key) {
-        return config.node((Object[]) key.split("\\.")).getInt();
+        return config.node(asPath(key)).getInt();
     }
 
     @Override
     public int getInt(String key, int def) {
-        return config.node((Object[]) key.split("\\.")).getInt(def);
+        return config.node(asPath(key)).getInt(def);
     }
 
     @Override
     public float getFloat(String key) {
-        return config.node((Object[]) key.split("\\.")).getFloat();
+        return config.node(asPath(key)).getFloat();
     }
 
     @Override
     public float getFloat(String key, float def) {
-        return config.node((Object[]) key.split("\\.")).getFloat(def);
+        return config.node(asPath(key)).getFloat(def);
     }
 
     @Override
     public long getLong(String key) {
-        return config.node((Object[]) key.split("\\.")).getLong();
+        return config.node(asPath(key)).getLong();
     }
 
     @Override
     public long getLong(String key, long def) {
-        return config.node((Object[]) key.split("\\.")).getLong(def);
+        return config.node(asPath(key)).getLong(def);
     }
 
     @Override
     public String getString(String key) {
-        return config.node((Object[]) key.split("\\.")).getString();
+        return config.node(asPath(key)).getString();
     }
 
     @Override
     public String getString(String key, String def) {
         if (def == null)
             return getString(key);
-        return config.node((Object[]) key.split("\\.")).getString(def);
+        return config.node(asPath(key)).getString(def);
     }
 
     @Override
     public List<String> getStringList(String key) {
         try {
-            return config.node((Object[]) key.split("\\.")).getList(TypeToken.get(String.class));
+            return config.node(asPath(key)).getList(TypeToken.get(String.class));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -71,22 +71,22 @@ public class VelocityConfiguration extends ConfigSectionProvider<ConfigurationNo
 
     @Override
     public double getDouble(String key) {
-        return config.node((Object[]) key.split("\\.")).getDouble();
+        return config.node(asPath(key)).getDouble();
     }
 
     @Override
     public double getDouble(String key, double def) {
-        return config.node((Object[]) key.split("\\.")).getDouble(def);
+        return config.node(asPath(key)).getDouble(def);
     }
 
     @Override
     public boolean getBoolean(String key) {
-        return config.node((Object[]) key.split("\\.")).getBoolean();
+        return config.node(asPath(key)).getBoolean();
     }
 
     @Override
     public boolean getBoolean(String key, boolean def) {
-        return config.node((Object[]) key.split("\\.")).getBoolean(def);
+        return config.node(asPath(key)).getBoolean(def);
     }
 
     @Override
@@ -96,22 +96,32 @@ public class VelocityConfiguration extends ConfigSectionProvider<ConfigurationNo
 
     @Override
     public VelocityConfiguration getSection(String key) {
-        return new VelocityConfiguration(config.node((Object[]) key.split("\\.")));
+        return new VelocityConfiguration(config.node(asPath(key)));
     }
 
     @Override
     public void set(String key, Object obj) {
         try {
-            config.node((Object[]) key.split("\\.")).set(obj);
+            ConfigurationNode node = config.node(asPath(key));
+            if (obj instanceof VelocityConfiguration) {
+                node.set(((VelocityConfiguration) obj).config);
+            } else {
+                node.set(obj);
+            }
         } catch (SerializationException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
+    public void remove(String key) {
+        set(key, null);
+    }
+
+    @Override
     public Object get(String key) {
         try {
-            return config.node((Object[]) key.split("\\.")).get(Object.class);
+            return config.node(asPath(key)).get(Object.class);
         } catch (SerializationException e) {
             throw new RuntimeException(e);
         }
@@ -122,7 +132,7 @@ public class VelocityConfiguration extends ConfigSectionProvider<ConfigurationNo
         try {
             if (def == null)
                 return get(key);
-            return config.node((Object[]) key.split("\\.")).get(Object.class, def);
+            return config.node(asPath(key)).get(Object.class, def);
         } catch (SerializationException e) {
             throw new RuntimeException(e);
         }
@@ -130,11 +140,15 @@ public class VelocityConfiguration extends ConfigSectionProvider<ConfigurationNo
 
     @Override
     public boolean contains(String key) {
-        return !config.node((Object[]) key.split("\\.")).virtual();
+        return !config.node(asPath(key)).virtual();
     }
 
     @Override
     public ConfigurationNode getBase() {
         return config;
+    }
+
+    private Object[] asPath(String key) {
+        return key.split("\\.");
     }
 }

@@ -51,14 +51,17 @@ public class ReportButtonListener extends ListenerAdapter {
         }
 
         User user = event.getUser();
-        String staff = plugin.getLinkProvider().getUsername(user);
-        if (staff == null) {
+        List<String> staffs = plugin.getLinkProvider().getUsernames(user);
+        String staff;
+        if (staffs.isEmpty()) {
             Member member = event.getMember();
             if (member != null) {
                 staff = member.getEffectiveName();
             } else {
                 staff = user.getName();
             }
+        } else {
+            staff = staffs.get(0);
         }
 
         String reported = embed.getTitle();
@@ -72,7 +75,7 @@ public class ReportButtonListener extends ListenerAdapter {
                         .editMessage(user.getAsMention() + " will look into this")
                         .setActionRows(event.getMessage().getActionRows().stream().map(ActionRow::asDisabled).collect(Collectors.toList()))
                         .queue();
-                if (player != null) {
+                if (player.isOnline()) {
                     player.sendMessage(ColorProvider.of("&6&l[REPORT]&e " + staff + " has &aacknowledged&e your report!"));
                 }
                 User reporterUser = plugin.getLinkProvider().getUser(reporter);
@@ -90,7 +93,7 @@ public class ReportButtonListener extends ListenerAdapter {
                         .editMessage(user.getAsMention() + " denied this")
                         .setActionRows(event.getMessage().getActionRows().stream().map(ActionRow::asDisabled).collect(Collectors.toList()))
                         .queue();
-                if (player != null) {
+                if (player.isOnline()) {
                     player.sendMessage(ColorProvider.of("&6&l[REPORT]&e " + staff + " has &cdenied&e your report!"));
                 }
                 User reporterUser = plugin.getLinkProvider().getUser(reporter);

@@ -64,7 +64,7 @@ public class BungeePlayer extends PlayerProvider {
 
     @Override
     public void kick(String reason) {
-        player.disconnect(TextComponent.fromLegacyText(reason));
+        player.disconnect(TextComponent.fromLegacy(ChatColor.translateAlternateColorCodes('&', reason)));
     }
 
     @Override

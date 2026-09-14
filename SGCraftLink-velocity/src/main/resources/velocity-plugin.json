@@ -1,0 +1,7 @@
+{
+  "id": "sgcraftlink",
+  "name": "SGCraftLink",
+  "version": "${version}",
+  "main": "xyz.destiall.sgcraftlink.SGCraftLinkVelocity",
+  "dependencies": [{"id":"skinsrestorer"}]
+}

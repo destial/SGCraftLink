@@ -194,7 +194,7 @@ public class StaffAppListener extends ListenerAdapter {
                 return;
             }
             PlayerProvider player = plugin.getPlayer(username);
-            if (player == null) {
+            if (!player.isOnline()) {
                 awaitingPromotion.put(username, track);
                 event.reply(username + " is not online! Waiting for player to be online to be promoted!").queue();
                 return;

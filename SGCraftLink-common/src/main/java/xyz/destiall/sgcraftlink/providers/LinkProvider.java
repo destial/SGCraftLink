@@ -10,7 +10,9 @@ import xyz.destiall.sgcraftlink.providers.component.ComponentProvider;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -47,63 +49,72 @@ public abstract class LinkProvider {
 
     public String getId(String name) {
         ConfigSectionProvider<?> data = getData(name);
-        if (data == null) return null;
+        if (data == null)
+            return null;
+        if (!data.contains("id"))
+            return null;
         return data.getString("id");
     }
 
     public User getUser(String name) {
         String id = getId(name);
-        if (id == null) return null;
+        if (id == null)
+            return null;
         return plugin.getDiscordProvider().getJda().retrieveUserById(id).complete();
     }
 
     public boolean link(String name, User user) {
-        PlayerProvider player = plugin.getPlayer(name);
-        if (player == null)
-            return false;
-
         ConfigSectionProvider<?> map = plugin.getConfigProvider().createSection();
         map.set("id", user.getId());
         map.set("messages", 0);
         database.set(name, map);
+        plugin.getConfigProvider().save();
 
         plugin.getPlaytimeProvider().link(name);
-        plugin.getDiscordProvider().link(player, user);
-
-        ComponentProvider<?> message = ComponentProvider.of("You have linked your account to " + user.getAsTag());
-        message.setColor(ColorProvider.ChatColor.AQUA);
-        player.sendMessageComponent(message);
+        PlayerProvider player = plugin.getPlayer(name);
+        if (player.isOnline()) {
+            plugin.getDiscordProvider().link(player, user);
+            ComponentProvider<?> message = ComponentProvider.of("You have linked your account to " + user.getAsTag());
+            message.setColor(ColorProvider.ChatColor.AQUA);
+            player.sendMessageComponent(message);
+        }
         return true;
     }
 
-    public void unlinkId(String id) {
-        String keyToRemove = null;
+    public void unlinkAllId(String id) {
+        List<String> keysToRemove = new ArrayList<>();
         for (String key : database.getKeys()) {
             String id2 = getId(key);
             if (id2.equals(id)) {
-                keyToRemove = key;
+                keysToRemove.add(key);
                 break;
             }
         }
-        if (keyToRemove != null) {
-            database.set(keyToRemove, null);
+        for (String key : keysToRemove) {
+            database.remove(key);
         }
+        save();
     }
 
     public boolean isLinked(String name) {
         return database.contains(name);
     }
 
-    public String getUsername(User user) {
+    public List<String> getUsernames(User user) {
+        List<String> usernames = new ArrayList<>();
         for (String key : database.getKeys()) {
             String id = getId(key);
-            if (user.getId().equals(id)) return key;
+            if (user.getId().equals(id)) {
+                usernames.add(key);
+            }
         }
-        return null;
+        return usernames;
     }
 
     public int getMessages(String name) {
-        return getData(name).getInt("messages", 0);
+        ConfigSectionProvider<?> data = getData(name);
+        if (data == null) return 0;
+        return data.getInt("messages", 0);
     }
 
     public boolean invalidate(int code) {
@@ -121,7 +132,8 @@ public abstract class LinkProvider {
         if (member == null)
             return;
 
-        database.set(name, null);
+        database.remove(name);
+        save();
 
         plugin.getDiscordProvider().unlink(member, false);
         plugin.getPlaytimeProvider().unlink(member.getId());
@@ -133,19 +145,21 @@ public abstract class LinkProvider {
         String name = player.getName();
         unlink(name);
 
-        plugin.getLuckPermsManager().getApi().getUserManager().modifyUser(player.getUUID(), u -> {
-            Node node = InheritanceNode.builder("booster").build();
-            if (u.data().contains(node, NodeEqualityPredicate.ONLY_KEY) == Tristate.TRUE) {
-                u.data().remove(node);
-                plugin.getLoggerProvider().info(name + " is unlinking his Nitro! Removing rank...");
-            }
+        if (player.isOnline()) {
+            plugin.getLuckPermsManager().getApi().getUserManager().modifyUser(player.getUUID(), u -> {
+                Node node = InheritanceNode.builder("booster").build();
+                if (u.data().contains(node, NodeEqualityPredicate.ONLY_KEY) == Tristate.TRUE) {
+                    u.data().remove(node);
+                    plugin.getLoggerProvider().info(name + " is unlinking his Nitro! Removing rank...");
+                }
 
-            Node linked = InheritanceNode.builder("dclinked").build();
-            if (u.data().contains(linked, NodeEqualityPredicate.ONLY_KEY) == Tristate.TRUE) {
-                u.data().remove(linked);
-                plugin.getLoggerProvider().info(name + " is unlinking! Removing rank...");
-            }
-        });
+                Node linked = InheritanceNode.builder("dclinked").build();
+                if (u.data().contains(linked, NodeEqualityPredicate.ONLY_KEY) == Tristate.TRUE) {
+                    u.data().remove(linked);
+                    plugin.getLoggerProvider().info(name + " is unlinking! Removing rank...");
+                }
+            });
+        }
     }
 
     public Collection<String> getDatabase() {

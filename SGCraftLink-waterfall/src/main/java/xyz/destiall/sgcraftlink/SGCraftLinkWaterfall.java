@@ -2,12 +2,14 @@ package xyz.destiall.sgcraftlink;
 
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Plugin;
+import org.jetbrains.annotations.NotNull;
 import xyz.destiall.sgcraftlink.bungeeproviders.BungeeClickEvent;
 import xyz.destiall.sgcraftlink.bungeeproviders.BungeeColor;
 import xyz.destiall.sgcraftlink.bungeeproviders.BungeeConnectedServer;
 import xyz.destiall.sgcraftlink.bungeeproviders.BungeeConsolePlayer;
 import xyz.destiall.sgcraftlink.bungeeproviders.BungeeHoverEvent;
 import xyz.destiall.sgcraftlink.bungeeproviders.BungeeLogger;
+import xyz.destiall.sgcraftlink.bungeeproviders.BungeeOfflinePlayer;
 import xyz.destiall.sgcraftlink.bungeeproviders.BungeePerServerSkin;
 import xyz.destiall.sgcraftlink.bungeeproviders.BungeePlayer;
 import xyz.destiall.sgcraftlink.bungeeproviders.BungeeScheduler;
@@ -20,10 +22,14 @@ import xyz.destiall.sgcraftlink.managers.BungeeConfigProvider;
 import xyz.destiall.sgcraftlink.managers.BungeeLinkProvider;
 import xyz.destiall.sgcraftlink.managers.BungeePlaytimeProvider;
 import xyz.destiall.sgcraftlink.managers.BungeePluginMessager;
+import xyz.destiall.sgcraftlink.providers.ColorProvider;
 import xyz.destiall.sgcraftlink.providers.PlayerProvider;
 import xyz.destiall.sgcraftlink.providers.PluginMessageProvider;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
 import xyz.destiall.sgcraftlink.providers.ServerProvider;
+import xyz.destiall.sgcraftlink.providers.component.ComponentClickProvider;
+import xyz.destiall.sgcraftlink.providers.component.ComponentHoverProvider;
+import xyz.destiall.sgcraftlink.providers.component.ComponentProvider;
 import xyz.destiall.sgcraftlink.proxy.commands.BirthdayCommand;
 import xyz.destiall.sgcraftlink.proxy.commands.DiscordCommand;
 import xyz.destiall.sgcraftlink.proxy.commands.StaffCommand;
@@ -53,10 +59,17 @@ public final class SGCraftLinkWaterfall extends Plugin implements PluginProvider
 
     @Override
     public void onEnable() {
-        new BungeeColor();
-        new BungeeTextComponent();
-        new BungeeClickEvent();
-        new BungeeHoverEvent();
+        SGCraftLinkCommon.PROXY = this;
+        try {
+            logger = new BungeeLogger(getLogger());
+            SGCraftLinkCommon.LOGGER = logger;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        ColorProvider.setProvider(new BungeeColor());
+        ComponentProvider.setProvider(BungeeTextComponent::new);
+        ComponentClickProvider.setProvider(BungeeClickEvent::new);
+        ComponentHoverProvider.setProvider(BungeeHoverEvent::new);
         scheduler = new BungeeScheduler(this);
         shuttingDown = false;
         enable();
@@ -93,16 +106,11 @@ public final class SGCraftLinkWaterfall extends Plugin implements PluginProvider
         getProxy().getPluginManager().unregisterCommands(this);
         getProxy().getPluginManager().unregisterListeners(this);
         getProxy().unregisterChannel(SGCraftLinkCommon.CHANNEL);
+        getConfigProvider().save();
     }
 
     @Override
     public void enable() {
-        try {
-            logger = new BungeeLogger(getLogger());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        SGCraftLinkCommon.LOGGER = this.logger;
         try {
             pluginMessager = new BungeePluginMessager(this);
         } catch (Exception e) {
@@ -165,19 +173,19 @@ public final class SGCraftLinkWaterfall extends Plugin implements PluginProvider
     }
 
     @Override
-    public BungeePlayer getPlayer(String name) {
+    public @NotNull PlayerProvider getPlayer(String name) {
         ProxiedPlayer player = getProxy().getPlayer(name);
-        return player != null ? new BungeePlayer(player) : null;
+        return player != null ? new BungeePlayer(player) : new BungeeOfflinePlayer(name);
     }
 
     @Override
-    public BungeePlayer getPlayer(UUID uuid) {
+    public PlayerProvider getPlayer(UUID uuid) {
         ProxiedPlayer player = getProxy().getPlayer(uuid);
         return player != null ? new BungeePlayer(player) : null;
     }
 
     @Override
-    public PlayerProvider getConsole() {
+    public BungeeConsolePlayer getConsole() {
         return new BungeeConsolePlayer(getProxy());
     }
 

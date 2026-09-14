@@ -45,7 +45,7 @@ public class ReportCommand implements CommandProvider, TabProvider {
 
         String playerName = args[0];
         PlayerProvider target = plugin.getPlayer(playerName);
-        if (target == null) {
+        if (!target.isOnline()) {
             player.sendMessage(ColorProvider.of("&cPlayer not found!"));
             return;
         }

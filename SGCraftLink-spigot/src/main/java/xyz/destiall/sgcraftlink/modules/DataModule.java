@@ -27,6 +27,7 @@ import xyz.destiall.sgcraftlink.utils.HTTPManager;
 
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -41,10 +42,10 @@ public class DataModule extends Module implements Listener, CommandExecutor {
     private final Base64.Encoder base64Encoder = Base64.getUrlEncoder(); //threadsafe
     private final Express express;
     private final HTTPManager manager;
-    private Scheduler.Task currentRegistrationTask = null;
     private final List<LuckPermsHook.BackendRestMessenger> messengers;
     private long maxMemory;
     private long usedMemory;
+    private boolean registered;
 
     public DataModule(SGCraftLinkSpigot plugin) {
         super(plugin, "comms.yml");
@@ -52,6 +53,7 @@ public class DataModule extends Module implements Listener, CommandExecutor {
         manager = new HTTPManager();
         messengers = new ArrayList<>();
         setCommandExecutor("datacomm");
+        registered = false;
         startHeartbeat();
     }
 
@@ -126,16 +128,11 @@ public class DataModule extends Module implements Listener, CommandExecutor {
         sendProxyData(SGCraftLinkCommon.DATA_SERVER_REGISTER, data, (result) -> {
             if (!result.isSuccess()) {
                 warn("Failed! Trying to register server with proxy again...");
-                if (currentRegistrationTask != null) {
-                    currentRegistrationTask.cancel();
-                }
-                currentRegistrationTask = plugin.getScheduler().runTaskLaterAsync(() -> tryRegisterServer(data), 20L * 15L);
+                plugin.getScheduler().runTaskLaterAsync(() -> tryRegisterServer(data), 20L * 15L);
                 return;
             }
-            if (currentRegistrationTask != null) {
-                currentRegistrationTask.cancel();
-            }
             log("Registered server with proxy");
+            registered = true;
         });
     }
 
@@ -146,6 +143,7 @@ public class DataModule extends Module implements Listener, CommandExecutor {
                 return;
             }
             log("Unregistered server with proxy");
+            registered = false;
         }, true);
     }
 
@@ -303,7 +301,7 @@ public class DataModule extends Module implements Listener, CommandExecutor {
                         warn("Proxy has unregistered this server! This is probably due to a proxy plugin reload!");
                         warn("We will try to register this server again!");
                         response.sendStatus(Status._200);
-
+                        registered = false;
                         plugin.getScheduler().runTaskLaterAsync(this::registerServer, 20L * 15L);
                         break;
                     }
@@ -350,6 +348,10 @@ public class DataModule extends Module implements Listener, CommandExecutor {
     private void startHeartbeat() {
         plugin.getScheduler().runTaskTimer(() ->
             sendProxyData(SGCraftLinkCommon.DATA_GET_RESOURCES, (r) -> {
+                if (!r.isSuccess() || !registered) {
+                    registerServer();
+                    return;
+                }
                 JSONObject obj = r.getJSON();
                 if (obj == null)
                     return;
@@ -387,7 +389,7 @@ public class DataModule extends Module implements Listener, CommandExecutor {
         }
 
         if (args.length == 0) {
-            sender.sendMessage(color("&cUsage: /datacomms [reg/unreg]"));
+            sender.sendMessage(color("&cUsage: /datacomm [reg/unreg/cmd]"));
             return false;
         }
 
@@ -401,6 +403,17 @@ public class DataModule extends Module implements Listener, CommandExecutor {
             case "unreg": {
                 unregisterServer();
                 sender.sendMessage(color("&6Trying to unregister server... Check console for details!"));
+                break;
+            }
+
+            case "cmd": {
+                if (args.length < 2) {
+                    sender.sendMessage(color("&cAdd a command to send to the proxy!"));
+                    break;
+                }
+                String cmd = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
+                Map<String, Object> obj = SGCraftLinkCommon.createCommandsData(cmd);
+                sendProxyData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, obj);
                 break;
             }
 
@@ -419,6 +432,8 @@ public class DataModule extends Module implements Listener, CommandExecutor {
                         plugin.sendFirstJoin(e.getPlayer());
                         return;
                     }
+
+                    registerServer();
 
                     plugin.getScheduler().runTask(() -> {
                         if (e.getPlayer().isOnline()) {

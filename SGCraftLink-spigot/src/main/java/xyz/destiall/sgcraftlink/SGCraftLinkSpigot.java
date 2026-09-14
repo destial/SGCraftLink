@@ -2,6 +2,7 @@ package xyz.destiall.sgcraftlink;
 
 import de.tr7zw.changeme.nbtapi.NBT;
 import net.md_5.bungee.api.ChatColor;
+import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -21,13 +22,13 @@ import xyz.destiall.sgcraftlink.gamemode.MoveIfGay;
 import xyz.destiall.sgcraftlink.gamemode.OnePersonDeath;
 import xyz.destiall.sgcraftlink.items.SpigotLogger;
 import xyz.destiall.sgcraftlink.listeners.AirBlockPlaceListener;
-import xyz.destiall.sgcraftlink.listeners.BreakAnimationModule;
 import xyz.destiall.sgcraftlink.listeners.PML;
 import xyz.destiall.sgcraftlink.listeners.PlayerListener;
 import xyz.destiall.sgcraftlink.listeners.PlaytimeGetter;
 import xyz.destiall.sgcraftlink.modules.DataModule;
 import xyz.destiall.sgcraftlink.modules.Module;
 import xyz.destiall.sgcraftlink.modules.common.BirthdayModule;
+import xyz.destiall.sgcraftlink.modules.common.BluemapGriefPrevention;
 import xyz.destiall.sgcraftlink.modules.common.ChatBubble;
 import xyz.destiall.sgcraftlink.modules.common.Fonter;
 import xyz.destiall.sgcraftlink.modules.common.HeadHunt;
@@ -35,6 +36,7 @@ import xyz.destiall.sgcraftlink.modules.common.HoverMessages;
 import xyz.destiall.sgcraftlink.modules.common.MigrationModule;
 import xyz.destiall.sgcraftlink.modules.common.Redeemables;
 import xyz.destiall.sgcraftlink.modules.common.ScheduledCommands;
+import xyz.destiall.sgcraftlink.modules.common.SuffixesModule;
 import xyz.destiall.sgcraftlink.modules.common.TagModule;
 import xyz.destiall.sgcraftlink.modules.common.TriggerModule;
 import xyz.destiall.sgcraftlink.modules.hooks.CMIHook;
@@ -172,7 +174,8 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         moduleClazzes.add(VanillaAddon.class);
         moduleClazzes.add(PermissionEffects.class);
         moduleClazzes.add(LobbyModule.class);
-        moduleClazzes.add(BreakAnimationModule.class);
+        //moduleClazzes.add(BreakAnimationModule.class);
+        moduleClazzes.add(SuffixesModule.class);
 
         // Gamemodes (hehe)
         moduleClazzes.add(OnePersonDeath.class);
@@ -242,6 +245,10 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
 
         if (hasPlugin("Multiverse-Core")) {
             moduleClazzes.add(MVModule.class);
+        }
+
+        if (hasPlugin("GriefPrevention") && hasPlugin("BlueMap")) {
+            moduleClazzes.add(BluemapGriefPrevention.class);
         }
 
         if (NBT.preloadApi()) {
@@ -353,8 +360,14 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
                 TextComponent component = new TextComponent(" - " + clazz.getSimpleName());
                 component.setColor(module != null ? ChatColor.GREEN : ChatColor.RED);
                 component.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "sgcreload " + clazz.getSimpleName()));
-                component.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(ChatColor.YELLOW + "Click to reload " + clazz.getSimpleName())));
-                sender.sendMessage(component);
+                String hoverValue = ChatColor.YELLOW + "Click to reload " + clazz.getSimpleName();
+                try {
+                    component.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(hoverValue)));
+                    sender.sendMessage(component);
+                } catch (NoClassDefFoundError _1_8) {
+                    component.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new BaseComponent[]{new TextComponent(hoverValue)}));
+                    sender.sendMessage(component);
+                }
             }
             return true;
         }

@@ -269,6 +269,8 @@ public final class DiscordManager {
     }
 
     public CompletableFuture<Void> updateRankStatus(PlayerProvider player, Member member) {
+        if (!player.isOnline())
+            return CompletableFuture.completedFuture(null);
         Map<String, Object> body = createDataMap("uuid", player.getUUID().toString());
         Set<String> ranks = ConcurrentHashMap.newKeySet();
         return plugin.getDataManager().sendDataToAll(null, SGCraftLinkCommon.DATA_GET_RANKS, body).thenAccept((mappings) -> {
@@ -314,20 +316,24 @@ public final class DiscordManager {
 
     public void link(PlayerProvider player, User user) {
         linkedRole.getGuild().retrieveMember(user).queue(m -> {
-            getLinkListener().setAuthorizedCache(player);
-            getLinkListener().cancelRepeatMessage(player);
+            if (player.isOnline()) {
+                getLinkListener().setAuthorizedCache(player);
+                getLinkListener().cancelRepeatMessage(player);
+            }
 
             updateRankStatus(player, m).whenComplete((v, err) -> sendLinkedToDiscordSRV(player.getName(), user.getId()));
             player.sendPluginMessage(SGCraftLinkCommon.GET_FIRSTJOIN);
 
-            plugin.getLuckPermsManager().getApi().getUserManager().modifyUser(player.getUUID(), u -> {
-                u.data().add(InheritanceNode.builder("dclinked").build());
-                plugin.getLoggerProvider().info(player.getName() + " is a newly linked member! Adding rank...");
-                if (m.isBoosting()) {
-                    u.data().add(InheritanceNode.builder("booster").build());
-                    plugin.getLoggerProvider().info(player.getName() + " is a newly linked Nitro Booster! Adding rank...");
-                }
-            });
+            if (player.isOnline()) {
+                plugin.getLuckPermsManager().getApi().getUserManager().modifyUser(player.getUUID(), u -> {
+                    u.data().add(InheritanceNode.builder("dclinked").build());
+                    plugin.getLoggerProvider().info(player.getName() + " is a newly linked member! Adding rank...");
+                    if (m.isBoosting()) {
+                        u.data().add(InheritanceNode.builder("booster").build());
+                        plugin.getLoggerProvider().info(player.getName() + " is a newly linked Nitro Booster! Adding rank...");
+                    }
+                });
+            }
             m.getGuild().addRoleToMember(m, linkedRole).queue();
 
             updateNickname(m, player);
@@ -335,7 +341,8 @@ public final class DiscordManager {
     }
 
     public void updateNickname(Member member, PlayerProvider player) {
-        updateNickname(member, player.getName(), player.getSuffix());
+        if (player.isOnline())
+            updateNickname(member, player.getName(), player.getSuffix());
     }
 
     public void updateNickname(Member member, String nickname, String suffix) {
@@ -372,6 +379,9 @@ public final class DiscordManager {
         SortedSnowflakeCacheView<TextChannel> view = guild.getTextChannelCache();
         Set<TextChannel> set = new HashSet<>(view.asSet());
         Member member = getMember(user.getId());
+        if (member == null)
+            return;
+
         set.removeIf(t -> !t.canTalk(member));
         int size = set.size();
         final boolean[] complete = new boolean[size];
@@ -407,12 +417,14 @@ public final class DiscordManager {
                         if (c) {
                             int a = integer.get();
                             amount.accept(a);
-                            String username = plugin.getLinkProvider().getUsername(user);
-                            if (username != null) {
-                                ConfigSectionProvider<?> data = plugin.getLinkProvider().getData(username);
-                                data.set("messages", a);
-                                plugin.getLinkProvider().updateUser(username, data);
-                                plugin.getLoggerProvider().info("Updated " + username + " with " + integer.get() + " messages.");
+                            List<String> names = plugin.getLinkProvider().getUsernames(user);
+                            if (!names.isEmpty()) {
+                                for (String username : names) {
+                                    ConfigSectionProvider<?> data = plugin.getLinkProvider().getData(username);
+                                    data.set("messages", a);
+                                    plugin.getLinkProvider().updateUser(username, data);
+                                    plugin.getLoggerProvider().info("Updated " + username + " with " + integer.get() + " messages.");
+                                }
                             }
                             needed.set(false);
                         }

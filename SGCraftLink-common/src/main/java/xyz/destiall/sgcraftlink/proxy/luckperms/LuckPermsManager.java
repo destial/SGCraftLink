@@ -129,15 +129,20 @@ public class LuckPermsManager {
                         if (holder instanceof User) {
                             User user = (User) holder;
                             ConfigSectionProvider<?> data = plugin.getLinkProvider().getData(user.getUsername());
-                            if (data != null) {
-                                List<String> perms = new ArrayList<>();
-                                if (data.contains("perms")) {
-                                    perms.addAll(data.getStringList("perms"));
+                            if (data == null) {
+                                data = plugin.getConfigProvider().createSection();
+                                PlayerProvider player = plugin.getPlayer(user.getUniqueId());
+                                if (player != null) {
+                                    data.set("ip", player.getIP());
                                 }
-                                perms.add(node.getKey());
-                                data.set("perms", perms);
-                                plugin.getLinkProvider().updateUser(user.getUsername(), data);
                             }
+                            List<String> perms = new ArrayList<>();
+                            if (data.contains("perms")) {
+                                perms.addAll(data.getStringList("perms"));
+                            }
+                            perms.add(node.getKey());
+                            data.set("perms", perms);
+                            plugin.getLinkProvider().updateUser(user.getUsername(), data);
                         }
                         Action action = api.getActionLogger().actionBuilder()
                                 .description("accepted to get " + node.getKey())
@@ -182,6 +187,9 @@ public class LuckPermsManager {
     }
 
     public CompletableFuture<LuckPermsTrackResult> promote(PlayerProvider player, String trackName) {
+        if (!player.isOnline()) {
+            return CompletableFuture.supplyAsync(() -> { throw new RuntimeException("Player is not online!"); });
+        }
         final Track track = api.getTrackManager().getTrack(trackName);
         if (track == null)
             return null;
@@ -191,6 +199,9 @@ public class LuckPermsManager {
     }
 
     public CompletableFuture<LuckPermsTrackResult> demote(PlayerProvider player, String trackName) {
+        if (!player.isOnline()) {
+            return CompletableFuture.supplyAsync(() -> { throw new RuntimeException("Player is not online!"); });
+        }
         final Track track = api.getTrackManager().getTrack(trackName);
         if (track == null)
             return null;

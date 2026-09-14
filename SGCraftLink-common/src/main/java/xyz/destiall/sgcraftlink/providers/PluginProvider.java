@@ -1,5 +1,6 @@
 package xyz.destiall.sgcraftlink.providers;
 
+import org.jetbrains.annotations.NotNull;
 import xyz.destiall.sgcraftlink.proxy.luckperms.LuckPermsManager;
 import xyz.destiall.sgcraftlink.proxy.misc.BirthdayManager;
 import xyz.destiall.sgcraftlink.proxy.misc.DataManager;
@@ -24,7 +25,7 @@ public interface PluginProvider {
     DataManager getDataManager();
     PerServerSkin getPerServerSkin();
 
-    PlayerProvider getPlayer(String name);
+    @NotNull PlayerProvider getPlayer(String name);
     PlayerProvider getPlayer(UUID uuid);
     PlayerProvider getConsole();
 

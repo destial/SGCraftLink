@@ -1,7 +1,7 @@
 package xyz.destiall.sgcraftlink.managers;
 
-import org.spongepowered.configurate.BasicConfigurationNode;
 import org.spongepowered.configurate.ConfigurationNode;
+import org.spongepowered.configurate.serialize.SerializationException;
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader;
 import xyz.destiall.sgcraftlink.providers.LinkProvider;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
@@ -11,6 +11,7 @@ import java.util.Map;
 
 public class VelocityLinkProvider extends LinkProvider {
     private final YamlConfigurationLoader provider;
+
     public VelocityLinkProvider(PluginProvider plugin) {
         super(plugin);
         provider = YamlConfigurationLoader.builder().path(databaseFile.toPath()).build();
@@ -33,11 +34,12 @@ public class VelocityLinkProvider extends LinkProvider {
     @Override
     public VelocityConfiguration getData(String user) {
         Object data = database.get(user);
-        if (data == null) return null;
+        if (data == null)
+            return null;
         ConfigurationNode map;
         if (data instanceof String) {
             String id = (String) data;
-            map = BasicConfigurationNode.root();
+            map = ((VelocityConfigProvider)plugin.getConfigProvider()).getFactory().createNode();
             try {
                 map.node("id").set(id);
                 map.node("messages").set(0);
@@ -47,16 +49,15 @@ public class VelocityLinkProvider extends LinkProvider {
             database.set(user, map);
             save();
         } else {
-            map = BasicConfigurationNode.factory().createNode();
+            map = ((VelocityConfigProvider)plugin.getConfigProvider()).getFactory().createNode();
             Map<String, Object> hashMap = (Map<String, Object>) data;
-            try {
-                map.node("id").set(hashMap.get("id"));
-                map.node("messages").set(hashMap.get("messages"));
-                map.node("ip").set(hashMap.get("ip"));
-                map.node("perms").set(hashMap.get("perms"));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            hashMap.forEach((key, value) -> {
+                try {
+                    map.node(key).set(value);
+                } catch (SerializationException e) {
+                    throw new RuntimeException(e);
+                }
+            });
         }
         return new VelocityConfiguration(map);
     }

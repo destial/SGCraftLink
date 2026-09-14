@@ -50,8 +50,8 @@ public class DiscordCommand implements CommandProvider, TabProvider {
         }
 
         if (args[0].equalsIgnoreCase("link")) {
-            if (plugin.getLinkProvider().isLinked(player.getName())) {
-                User user = plugin.getLinkProvider().getUser(player.getName());
+            User user = plugin.getLinkProvider().getUser(player.getName());
+            if (user != null) {
                 ComponentProvider<?> message = ComponentProvider.of("You are already linked to " + user.getName() + " (Id:" + user.getId() + ")");
                 message.setColor(ColorProvider.ChatColor.RED);
                 player.sendMessageComponent(message);
@@ -81,7 +81,8 @@ public class DiscordCommand implements CommandProvider, TabProvider {
             }, 5, TimeUnit.MINUTES);
 
         } else if (args[0].equalsIgnoreCase("unlink")) {
-            if (!plugin.getLinkProvider().isLinked(player.getName())) {
+            User user = plugin.getLinkProvider().getUser(player.getName());
+            if (user == null) {
                 ComponentProvider<?> message = ComponentProvider.of("You are not linked!");
                 message.setColor(ColorProvider.ChatColor.RED);
                 player.sendMessageComponent(message);

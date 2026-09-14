@@ -67,7 +67,7 @@ public class StaffCommand implements CommandProvider, TabProvider {
 
             PlayerProvider player = plugin.getPlayer(playerName);
             if (type.equalsIgnoreCase("promote")) {
-                if (player != null) {
+                if (player.isOnline()) {
                     String track = args[2];
                     try {
                         LuckPermsTrackResult b = plugin.getLuckPermsManager().promote(player, track).get();
@@ -91,7 +91,7 @@ public class StaffCommand implements CommandProvider, TabProvider {
                     }
                 }
             } else if (type.equalsIgnoreCase("demote")) {
-                if (player != null) {
+                if (player.isOnline()) {
                     String track = args[2];
                     try {
                         LuckPermsTrackResult b = plugin.getLuckPermsManager().demote(player, track).get();

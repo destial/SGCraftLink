@@ -11,17 +11,15 @@ import xyz.destiall.sgcraftlink.providers.component.ComponentHoverProvider;
 import xyz.destiall.sgcraftlink.providers.component.ComponentProvider;
 
 public class VelocityTextComponent extends ComponentProvider<Component> {
-    static {
-        ComponentProvider.setProvider(VelocityTextComponent::new);
+
+    public VelocityTextComponent() {
+        this(Component.text(""));
     }
 
     public VelocityTextComponent(Component component) {
         super(component);
     }
 
-    public VelocityTextComponent() {
-        super(Component.text(""));
-    }
 
     @Override
     public void setMessage(String message) {

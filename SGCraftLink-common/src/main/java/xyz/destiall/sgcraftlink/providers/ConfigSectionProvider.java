@@ -30,6 +30,8 @@ public abstract class ConfigSectionProvider<T> {
 
     public abstract void set(String key, Object obj);
 
+    public abstract void remove(String key);
+
     public abstract Object get(String key);
     public abstract Object get(String key, Object def);
 

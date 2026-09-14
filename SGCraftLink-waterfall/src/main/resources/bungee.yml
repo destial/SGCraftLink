@@ -4,3 +4,4 @@ main: xyz.destiall.sgcraftlink.SGCraftLinkWaterfall
 softDepends:
   - LuckPerms
   - LiteBans
+  - SkinsRestorer

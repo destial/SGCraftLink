@@ -1,6 +1,7 @@
 package xyz.destiall.sgcraftlink;
 
 import xyz.destiall.sgcraftlink.providers.LoggerProvider;
+import xyz.destiall.sgcraftlink.providers.PluginProvider;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -42,10 +43,12 @@ public class SGCraftLinkCommon {
     public static final String DATA_SET_WHITELISTED_PERMS = "SGC_SET_WHITELISTED_PERMS";
     public static final String DATA_GET_RESOURCES = "SGC_GET_RESOURCES";
     public static final String DATA_GET_PLAYTIME = "SGC_GET_PLAYTIME";
+    public static final String DATA_SYNC_TAGS = "SGC_SYNC_TAGS";
 
     public static final String[] BLACKLISTED_PERMISSIONS = {"*", "luckperms", "owner", "admin", "director"};
 
     public static LoggerProvider LOGGER;
+    public static PluginProvider PROXY;
 
     public static Map<String, Object> createCommandsData(String... commands) {
         Map<String, Object> data = new HashMap<>();

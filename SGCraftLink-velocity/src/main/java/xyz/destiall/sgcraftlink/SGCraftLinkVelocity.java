@@ -11,6 +11,7 @@ import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.messages.ChannelIdentifier;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import xyz.destiall.sgcraftlink.commands.GList;
 import xyz.destiall.sgcraftlink.commands.VelocityCommand;
@@ -21,9 +22,13 @@ import xyz.destiall.sgcraftlink.managers.VelocityConfigProvider;
 import xyz.destiall.sgcraftlink.managers.VelocityLinkProvider;
 import xyz.destiall.sgcraftlink.managers.VelocityPlaytimeProvider;
 import xyz.destiall.sgcraftlink.managers.VelocityPluginMessager;
+import xyz.destiall.sgcraftlink.providers.ColorProvider;
 import xyz.destiall.sgcraftlink.providers.PlayerProvider;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
 import xyz.destiall.sgcraftlink.providers.ServerProvider;
+import xyz.destiall.sgcraftlink.providers.component.ComponentClickProvider;
+import xyz.destiall.sgcraftlink.providers.component.ComponentHoverProvider;
+import xyz.destiall.sgcraftlink.providers.component.ComponentProvider;
 import xyz.destiall.sgcraftlink.proxy.commands.BirthdayCommand;
 import xyz.destiall.sgcraftlink.proxy.commands.DiscordCommand;
 import xyz.destiall.sgcraftlink.proxy.commands.StaffCommand;
@@ -37,6 +42,7 @@ import xyz.destiall.sgcraftlink.velocityproviders.VelocityConnectedServer;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityConsolePlayer;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityHoverEvent;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityLogger;
+import xyz.destiall.sgcraftlink.velocityproviders.VelocityOfflinePlayer;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityPerServerSkin;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityPlayer;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityScheduler;
@@ -89,11 +95,12 @@ public class SGCraftLinkVelocity implements PluginProvider {
 
     @Subscribe
     public void onProxyInitialization(ProxyInitializeEvent ignored) {
+        SGCraftLinkCommon.PROXY = this;
         SGCraftLinkCommon.LOGGER = this.logger;
-        new VelocityColor();
-        new VelocityTextComponent();
-        new VelocityClickEvent();
-        new VelocityHoverEvent();
+        ColorProvider.setProvider(new VelocityColor());
+        ComponentProvider.setProvider(VelocityTextComponent::new);
+        ComponentClickProvider.setProvider(VelocityClickEvent::new);
+        ComponentHoverProvider.setProvider(VelocityHoverEvent::new);
         scheduler = new VelocityScheduler(this);
         shuttingDown = false;
         enable();
@@ -166,19 +173,19 @@ public class SGCraftLinkVelocity implements PluginProvider {
     }
 
     @Override
-    public VelocityPlayer getPlayer(String name) {
+    public @NotNull PlayerProvider getPlayer(String name) {
         Player player = server.getPlayer(name).orElse(null);
-        return player != null ? new VelocityPlayer(player) : null;
+        return player != null ? new VelocityPlayer(player) : new VelocityOfflinePlayer(name);
     }
 
     @Override
-    public VelocityPlayer getPlayer(UUID uuid) {
+    public PlayerProvider getPlayer(UUID uuid) {
         Player player = server.getPlayer(uuid).orElse(null);
         return player != null ? new VelocityPlayer(player) : null;
     }
 
     @Override
-    public PlayerProvider getConsole() {
+    public VelocityConsolePlayer getConsole() {
         return new VelocityConsolePlayer(server);
     }
 
@@ -214,6 +221,7 @@ public class SGCraftLinkVelocity implements PluginProvider {
         }
         commands.clear();
         server.getChannelRegistrar().unregister(CHANNEL);
+        getConfigProvider().save();
     }
 
     @Override

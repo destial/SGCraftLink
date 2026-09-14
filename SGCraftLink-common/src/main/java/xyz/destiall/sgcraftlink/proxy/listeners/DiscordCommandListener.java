@@ -97,9 +97,13 @@ public class DiscordCommandListener extends ListenerAdapter {
                 .addOption(OptionType.STRING, "from", "The player username to transfer from", true)
                 .addOption(OptionType.STRING, "to", "The player username to transfer to", true);
 
+        SlashCommandData forcelink = Commands.slash("forcemclink", "Force link discord")
+                .addOption(OptionType.STRING, "username", "The player username to link", true)
+                .addOption(OptionType.USER, "discord", "The player's discord user", true);
+
         SlashCommandData globalList = Commands.slash("globallist", "View the current players online on all servers");
 
-        slashCommands.addAll(Arrays.asList(chatHistory, history, alts, firstjoin, ipwhitelist, changepw, server, globalList, mclink, transfer));
+        slashCommands.addAll(Arrays.asList(chatHistory, history, alts, firstjoin, ipwhitelist, changepw, server, globalList, mclink, transfer, forcelink));
 
         jda.updateCommands().addCommands(slashCommands).queue(commands::addAll);
 
@@ -174,16 +178,16 @@ public class DiscordCommandListener extends ListenerAdapter {
                 return;
             }
             User user = e.getUser();
-            String name = plugin.getLinkProvider().getUsername(user);
-            if (name != null) {
-                e.reply("You are already linked to " + name).setEphemeral(true).queue();
-                return;
-            }
+            List<String> names = plugin.getLinkProvider().getUsernames(user);
             try {
                 int code = Integer.parseInt(content);
-                name = plugin.getLinkProvider().getName(code);
+                String name = plugin.getLinkProvider().getName(code);
                 if (name == null) {
                     e.reply("That is not a valid code!").setEphemeral(true).queue();
+                    return;
+                }
+                if (names.contains(name)) {
+                    e.reply("You are already linked to " + name).setEphemeral(true).queue();
                     return;
                 }
                 if (plugin.getLinkProvider().link(name, user)) {
@@ -318,6 +322,7 @@ public class DiscordCommandListener extends ListenerAdapter {
                     plugin.getLuckPermsManager().getApi().getUserManager().lookupUniqueId(to).whenComplete((uuidTo, ex2) -> {
                         if (ex2 != null) {
                             e.reply(to + " not found!").setEphemeral(true).queue();
+                            return;
                         }
 
                         try {
@@ -340,6 +345,17 @@ public class DiscordCommandListener extends ListenerAdapter {
                         }
                     });
                 });
+                break;
+            }
+            case "forcemclink": {
+                String username = e.getOption("username", OptionMapping::getAsString);
+                User account = e.getOption("discord", OptionMapping::getAsUser);
+                if (account == null || username == null) {
+                    e.reply("Unable to link discord `" + account + "` to `" + username + "`").setEphemeral(true).queue();
+                    break;
+                }
+                plugin.getLinkProvider().link(username, account);
+                e.reply("Linked " + account.getAsMention() + " to `" + username + "`").setEphemeral(true).queue();
                 break;
             }
             default: {

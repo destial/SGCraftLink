@@ -94,7 +94,16 @@ public class BungeeConfiguration extends ConfigSectionProvider<Configuration> {
 
     @Override
     public void set(String key, Object obj) {
+        if (obj instanceof BungeeConfiguration) {
+            config.set(key, ((BungeeConfiguration) obj).config);
+            return;
+        }
         config.set(key, obj);
+    }
+
+    @Override
+    public void remove(String key) {
+        set(key, null);
     }
 
     @Override

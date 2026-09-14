@@ -4,6 +4,7 @@ import net.dv8tion.jda.api.entities.GuildMessageChannel;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.PrivateChannel;
+import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -159,9 +160,19 @@ public class AppealListener extends ListenerAdapter {
                 pm = member.getUser().openPrivateChannel().complete();
         } catch (Exception ignored) {}
 
-        String executor = plugin.getLinkProvider().getUsername(event.getUser());
-        if (executor == null)
-            executor = event.getUser().getName();
+        User user = event.getUser();
+        List<String> staffs = plugin.getLinkProvider().getUsernames(user);
+        String executor;
+        if (staffs.isEmpty()) {
+            Member member = event.getMember();
+            if (member != null) {
+                executor = member.getEffectiveName();
+            } else {
+                executor = user.getName();
+            }
+        } else {
+            executor = staffs.get(0);
+        }
 
         switch (args[0]) {
             case "unban":

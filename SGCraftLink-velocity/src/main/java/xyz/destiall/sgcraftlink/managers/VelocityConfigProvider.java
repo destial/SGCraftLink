@@ -1,7 +1,9 @@
 package xyz.destiall.sgcraftlink.managers;
 
 import com.google.common.io.ByteStreams;
+import org.jetbrains.annotations.NotNull;
 import org.spongepowered.configurate.BasicConfigurationNode;
+import org.spongepowered.configurate.ConfigurationNodeFactory;
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader;
 import xyz.destiall.sgcraftlink.SGCraftLinkVelocity;
 import xyz.destiall.sgcraftlink.providers.ConfigProvider;
@@ -17,11 +19,13 @@ import java.nio.file.Files;
 public class VelocityConfigProvider extends ConfigProvider<VelocityConfiguration> {
     private final SGCraftLinkVelocity plugin;
     private VelocityConfiguration config;
+    private final ConfigurationNodeFactory<@NotNull BasicConfigurationNode> factory;
 
     public VelocityConfigProvider(SGCraftLinkVelocity plugin, String name) {
         super(name);
         this.plugin = plugin;
         create();
+        factory = BasicConfigurationNode.factory();
     }
 
     @Override
@@ -31,7 +35,7 @@ public class VelocityConfigProvider extends ConfigProvider<VelocityConfiguration
 
     @Override
     public ConfigSectionProvider<?> createSection() {
-        return new VelocityConfiguration(BasicConfigurationNode.root());
+        return new VelocityConfiguration(factory.createNode());
     }
 
     @Override
@@ -86,5 +90,9 @@ public class VelocityConfigProvider extends ConfigProvider<VelocityConfiguration
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public ConfigurationNodeFactory<@NotNull BasicConfigurationNode> getFactory() {
+        return factory;
     }
 }

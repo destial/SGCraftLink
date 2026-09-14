@@ -33,7 +33,12 @@ softdepend:
   - EasyWhitelist
   - UhcCore
   - Multiverse-Core
+  - BlueMap
 commands:
+  suffixes:
+    permission: sgc.suffixes
+    aliases:
+      - suffix
   hovermessages:
     permission: sgc.hovermessages
     aliases:

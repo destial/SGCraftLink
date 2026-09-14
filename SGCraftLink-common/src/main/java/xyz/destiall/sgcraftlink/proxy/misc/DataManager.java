@@ -262,7 +262,7 @@ public final class DataManager {
                             plugin.getLinkProvider().link(json.getString("new_name"), sourceUser);
                         }
 
-                        if (sourcePlayer != null) {
+                        if (sourcePlayer.isOnline()) {
                             plugin.getLinkProvider().unlink(sourcePlayer);
                         } else {
                             plugin.getLinkProvider().unlink(json.getString("old_name"));

@@ -6,6 +6,8 @@ import org.bukkit.configuration.ConfigurationSection;
 import java.util.HashMap;
 import java.util.Map;
 
+import static xyz.destiall.sgcraftlink.SGCraftLinkSpigot.color;
+
 public class Font {
     private static final String ALPHABET_LOWER = "abcdefghijklmnopqrstuvwxyz";
     private static final String ALPHABET_UPPER = ALPHABET_LOWER.toUpperCase();
@@ -65,7 +67,7 @@ public class Font {
     }
 
     public String format(String text, boolean checkChar) {
-        String t = ignoreCase ? text.toLowerCase() : text;
+        String t = color(ignoreCase ? text.toLowerCase() : text);
         checkChar = checkChar || text.contains(String.valueOf(ChatColor.COLOR_CHAR));
         for (Map.Entry<String, String> entry : lexicons.entrySet()) {
             if (ChatColor.getByChar(entry.getKey()) != null && checkChar) {

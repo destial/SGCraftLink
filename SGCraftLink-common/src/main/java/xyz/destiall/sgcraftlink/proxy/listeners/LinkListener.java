@@ -31,6 +31,7 @@ import java.awt.*;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -53,7 +54,7 @@ public class LinkListener extends ListenerAdapter {
                 return;
 
             PlayerProvider player = plugin.getPlayer(event.getTarget().getFriendlyName());
-            String playerName = player != null ? player.getName() : event.getTarget().getFriendlyName();
+            String playerName = player.isOnline() ? player.getName() : event.getTarget().getFriendlyName();
             User user = plugin.getLinkProvider().getUser(playerName);
             if (user == null)
                 return;
@@ -70,7 +71,7 @@ public class LinkListener extends ListenerAdapter {
 
             plugin.getScheduler().schedule(() -> {
                 String name = playerName;
-                if (player != null) {
+                if (player.isOnline()) {
                     String suffix = player.getSuffix();
                     if (suffix != null) {
                         name += " " + suffix;
@@ -104,6 +105,9 @@ public class LinkListener extends ListenerAdapter {
     }
 
     public void setAuthorizedCache(PlayerProvider player) {
+        if (!player.isOnline())
+            return;
+
         authorizedCache.put(player.getUUID(), plugin.getScheduler().schedule(() -> {
             if (!player.isOnline()) {
                 authorizedCache.remove(player.getUUID());
@@ -114,6 +118,9 @@ public class LinkListener extends ListenerAdapter {
     }
 
     public void cancelRepeatMessage(PlayerProvider player) {
+        if (!player.isOnline())
+            return;
+
         Task r = repeatingTasks.remove(player.getUUID());
         if (r != null) {
             r.cancel();
@@ -121,6 +128,8 @@ public class LinkListener extends ListenerAdapter {
     }
 
     public boolean authorize(PlayerProvider player) {
+        if (!player.isOnline())
+            return false;
         boolean isStaff = player.hasPermission("sgc.report.bypass");
 
         String id = plugin.getLinkProvider().getId(player.getName());
@@ -271,26 +280,28 @@ public class LinkListener extends ListenerAdapter {
         if (member.getUser().isBot() || member.getId().equals(plugin.getDiscordProvider().getJda().getSelfUser().getId()))
             return;
 
-        String name = plugin.getLinkProvider().getUsername(member.getUser());
-        if (name == null)
+        List<String> names = plugin.getLinkProvider().getUsernames(member.getUser());
+        if (names.isEmpty())
             return;
 
-        PlayerProvider player = plugin.getPlayer(name);
-        if (player == null)
-            return;
+        for (String name : names) {
+            PlayerProvider player = plugin.getPlayer(name);
+            if (!player.isOnline())
+                return;
 
-        if (event.getNewTimeBoosted() == null) {
-            plugin.getLuckPermsManager().getApi().getUserManager().modifyUser(player.getUUID(), u -> {
-                Node node = InheritanceNode.builder("booster").build();
-                u.data().remove(node);
-                plugin.getLoggerProvider().info(player.getName() + " stopped boosting! Removing rank...");
-            });
-        } else if (event.getOldTimeBoosted() == null) {
-            plugin.getLuckPermsManager().getApi().getUserManager().modifyUser(player.getUUID(), u -> {
-                Node node = InheritanceNode.builder("booster").build();
-                u.data().add(node);
-                plugin.getLoggerProvider().info(player.getName() + " just boosted! Adding rank...");
-            });
+            if (event.getNewTimeBoosted() == null) {
+                plugin.getLuckPermsManager().getApi().getUserManager().modifyUser(player.getUUID(), u -> {
+                    Node node = InheritanceNode.builder("booster").build();
+                    u.data().remove(node);
+                    plugin.getLoggerProvider().info(player.getName() + " stopped boosting! Removing rank...");
+                });
+            } else if (event.getOldTimeBoosted() == null) {
+                plugin.getLuckPermsManager().getApi().getUserManager().modifyUser(player.getUUID(), u -> {
+                    Node node = InheritanceNode.builder("booster").build();
+                    u.data().add(node);
+                    plugin.getLoggerProvider().info(player.getName() + " just boosted! Adding rank...");
+                });
+            }
         }
     }
 
@@ -303,12 +314,6 @@ public class LinkListener extends ListenerAdapter {
             Message message = event.getMessage();
             String content = message.getContentRaw().trim();
 
-            String name = plugin.getLinkProvider().getUsername(user);
-            if (name != null) {
-                message.reply("You are already linked to " + name).queue();
-                return;
-            }
-
             int code;
             try {
                 code = Integer.parseInt(content);
@@ -317,11 +322,18 @@ public class LinkListener extends ListenerAdapter {
                 return;
             }
 
-            name = plugin.getLinkProvider().getName(code);
+            String name = plugin.getLinkProvider().getName(code);
             if (name == null) {
                 message.reply("That is not a valid code!").queue();
                 return;
             }
+
+            List<String> names = plugin.getLinkProvider().getUsernames(user);
+            if (names.contains(name)) {
+                message.reply("You are already linked to " + name).queue();
+                return;
+            }
+
 
             if (!plugin.getLinkProvider().link(name, user)) {
                 message.reply("Player " + name + " is not online!").queue();
@@ -337,24 +349,25 @@ public class LinkListener extends ListenerAdapter {
     public void onGuildMemberUpdateNickname(@NotNull GuildMemberUpdateNicknameEvent event) {
         Member member = event.getMember();
         if (member.getUser().isBot() || member.getId().equals(plugin.getDiscordProvider().getJda().getSelfUser().getId())) return;
-        String name = plugin.getLinkProvider().getUsername(member.getUser());
-        if (name == null)
+        List<String> names = plugin.getLinkProvider().getUsernames(member.getUser());
+        if (names.isEmpty())
             return;
 
-        PlayerProvider player = plugin.getPlayer(name);
-        if (player != null) {
+        String first = names.get(0);
+        PlayerProvider player = plugin.getPlayer(first);
+        if (player.isOnline()) {
             String suffix = player.getSuffix();
             if (suffix != null) {
-                name += " " + suffix;
+                first += " " + suffix;
             }
         }
         try {
-            member.modifyNickname(name).delay(5, TimeUnit.SECONDS).queue(q -> {}, err -> {});
+            member.modifyNickname(first).delay(5, TimeUnit.SECONDS).queue(q -> {}, err -> {});
         } catch (Exception ignored) {}
     }
 
     @Override
     public void onGuildMemberRemove(@NotNull GuildMemberRemoveEvent event) {
-        plugin.getLinkProvider().unlinkId(event.getUser().getId());
+        plugin.getLinkProvider().unlinkAllId(event.getUser().getId());
     }
 }

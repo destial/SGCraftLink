@@ -7,16 +7,13 @@ import xyz.destiall.sgcraftlink.providers.component.ComponentHoverProvider;
 import xyz.destiall.sgcraftlink.providers.component.ComponentProvider;
 
 public class VelocityHoverEvent extends ComponentHoverProvider<HoverEvent<?>> {
-    static {
-        ComponentHoverProvider.setProvider(VelocityHoverEvent::new);
+
+    public VelocityHoverEvent() {
+        this(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text("")));
     }
 
     public VelocityHoverEvent(HoverEvent<?> hover) {
         super(hover);
-    }
-
-    public VelocityHoverEvent() {
-        super(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text("")));
     }
 
     @Override

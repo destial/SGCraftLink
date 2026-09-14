@@ -10,8 +10,7 @@ public abstract class ComponentClickProvider<T> {
 
     public static ComponentClickProvider<?> of(ComponentClickProvider.Action action, String clickText) {
         ComponentClickProvider<?> component = (ComponentClickProvider<?>) provider.get();
-        component.setAction(action);
-        component.setText(clickText);
+        component.setEvent(action, clickText);
         return component;
     }
 
@@ -23,6 +22,10 @@ public abstract class ComponentClickProvider<T> {
 
     public abstract void setAction(Action action);
     public abstract void setText(String text);
+    public void setEvent(Action action, String text) {
+        setAction(action);
+        setText(text);
+    }
 
     public T getClick() {
         return click;
