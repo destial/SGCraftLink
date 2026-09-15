@@ -119,6 +119,12 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>com.lahuca</groupId>
+            <artifactId>botsentry</artifactId>
+            <version>9.6</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>net.skinsrestorer</groupId>
             <artifactId>skinsrestorer-api</artifactId>
             <version>15.2.0</version>

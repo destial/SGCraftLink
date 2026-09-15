@@ -18,6 +18,7 @@ import xyz.destiall.sgcraftlink.commands.VelocityCommand;
 import xyz.destiall.sgcraftlink.listeners.VelocityCommandListener;
 import xyz.destiall.sgcraftlink.listeners.VelocityPMListener;
 import xyz.destiall.sgcraftlink.listeners.VelocityStaffListener;
+import xyz.destiall.sgcraftlink.managers.VelocityBotSentryManager;
 import xyz.destiall.sgcraftlink.managers.VelocityConfigProvider;
 import xyz.destiall.sgcraftlink.managers.VelocityLinkProvider;
 import xyz.destiall.sgcraftlink.managers.VelocityPlaytimeProvider;
@@ -31,6 +32,7 @@ import xyz.destiall.sgcraftlink.providers.component.ComponentHoverProvider;
 import xyz.destiall.sgcraftlink.providers.component.ComponentProvider;
 import xyz.destiall.sgcraftlink.proxy.commands.BirthdayCommand;
 import xyz.destiall.sgcraftlink.proxy.commands.DiscordCommand;
+import xyz.destiall.sgcraftlink.proxy.commands.ReportCommand;
 import xyz.destiall.sgcraftlink.proxy.commands.StaffCommand;
 import xyz.destiall.sgcraftlink.proxy.luckperms.LuckPermsManager;
 import xyz.destiall.sgcraftlink.proxy.misc.BirthdayManager;
@@ -62,7 +64,10 @@ import java.util.stream.Collectors;
         version = "1.0-SNAPSHOT",
         authors = {"destiall"},
         dependencies = {
-            @Dependency(id = "skinsrestorer", optional = true)
+            @Dependency(id = "skinsrestorer", optional = true),
+            @Dependency(id = "luckperms", optional = true),
+            @Dependency(id = "litebans", optional = true),
+            @Dependency(id = "botsentry", optional = true)
         }
 )
 public class SGCraftLinkVelocity implements PluginProvider {
@@ -79,6 +84,7 @@ public class SGCraftLinkVelocity implements PluginProvider {
     private VelocityPluginMessager pluginMessager;
     private VelocityPerServerSkin perServerSkin;
     private LuckPermsManager luckPermsManager;
+    private VelocityBotSentryManager botSentryManager;
     private BirthdayManager birthdayManager;
     private DataManager dataManager;
 
@@ -140,6 +146,11 @@ public class SGCraftLinkVelocity implements PluginProvider {
     @Override
     public LuckPermsManager getLuckPermsManager() {
         return luckPermsManager;
+    }
+
+    @Override
+    public VelocityBotSentryManager getBotSentryManager() {
+        return botSentryManager;
     }
 
     @Override
@@ -271,6 +282,11 @@ public class SGCraftLinkVelocity implements PluginProvider {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        try {
+            botSentryManager = new VelocityBotSentryManager(this);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         server.getChannelRegistrar().register(CHANNEL);
         server.getEventManager().register(this, new VelocityCommandListener(this));
@@ -280,6 +296,7 @@ public class SGCraftLinkVelocity implements PluginProvider {
         commands = new ArrayList<>();
         commands.add(new VelocityCommand(this, "discord", new DiscordCommand(this)));
         commands.add(new VelocityCommand(this, "sgc", new StaffCommand(this)));
+        commands.add(new VelocityCommand(this, "report", new ReportCommand(this)));
         commands.add(new VelocityCommand(this, "birthday", new BirthdayCommand(this)));
 
         // Mimic BungeeCord commands

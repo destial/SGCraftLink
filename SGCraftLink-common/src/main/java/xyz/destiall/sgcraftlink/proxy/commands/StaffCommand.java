@@ -5,6 +5,7 @@ import xyz.destiall.sgcraftlink.providers.ColorProvider;
 import xyz.destiall.sgcraftlink.providers.CommandProvider;
 import xyz.destiall.sgcraftlink.providers.PlayerProvider;
 import xyz.destiall.sgcraftlink.providers.PluginProvider;
+import xyz.destiall.sgcraftlink.providers.ServerProvider;
 import xyz.destiall.sgcraftlink.providers.TabProvider;
 import xyz.destiall.sgcraftlink.providers.component.ComponentProvider;
 import xyz.destiall.sgcraftlink.proxy.luckperms.LuckPermsTrackResult;
@@ -168,24 +169,24 @@ public class StaffCommand implements CommandProvider, TabProvider {
             return Collections.emptyList();
         }
 
-        if (args == null || args[0].isEmpty() || args.length == 1) {
-            return Stream.of("announce", "promote", "demote", "clearinv", "reload").filter(a -> args == null || args[0].isEmpty() || a.startsWith(args[0].toLowerCase())).collect(Collectors.toList());
-        }
-
-        if (args.length == 3 && args[0].equalsIgnoreCase("report")) {
-            return reportCommand.tab(sender, Arrays.copyOfRange(args, 1, args.length));
+        if (args.length == 1) {
+            return Stream.of("announce", "promote", "demote", "clearinv", "reload", "report", "xcatch", "jail").filter(a -> a.startsWith(args[0].toLowerCase())).collect(Collectors.toList());
         }
 
         if (args.length == 2) {
             return plugin.getPlayers().stream().map(PlayerProvider::getName).filter(name -> name.toLowerCase().startsWith(args[1].toLowerCase())).collect(Collectors.toList());
         }
 
+        if (args.length == 3 && args[0].equalsIgnoreCase("report")) {
+            return reportCommand.tab(sender, Arrays.copyOfRange(args, 1, args.length));
+        }
+
         if (args.length == 3 && args[0].equalsIgnoreCase("promote") || args[0].equalsIgnoreCase("demote")) {
             return Stream.of("staff", "vip", "builder").filter(a -> a.startsWith(args[2].toLowerCase())).collect(Collectors.toList());
         }
 
-        if (args.length == 3 && args[0].equalsIgnoreCase("clearinv")) {
-            return Stream.of("vanilla", "skyblock", "survival").filter(a -> a.startsWith(args[2].toLowerCase())).collect(Collectors.toList());
+        if (args.length == 3 && (args[0].equalsIgnoreCase("xcatch") || args[0].equalsIgnoreCase("jail") || args[0].equalsIgnoreCase("clearinv"))) {
+            return plugin.getServers().stream().map(ServerProvider::getName).filter(a -> a.startsWith(args[2].toLowerCase())).collect(Collectors.toList());
         }
 
         return Collections.emptyList();

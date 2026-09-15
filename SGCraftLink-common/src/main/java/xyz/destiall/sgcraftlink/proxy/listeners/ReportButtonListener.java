@@ -38,7 +38,7 @@ public class ReportButtonListener extends ListenerAdapter {
             return;
         }
 
-        if (!event.getChannel().getId().equals(plugin.getConfigProvider().getConfig().getString("report-channel", "1210647775847649360"))) {
+        if (!event.getChannel().getId().equals(plugin.getConfigProvider().getConfig().getString("report-channel", "1210642958982844567"))) {
             return;
         }
 
@@ -80,9 +80,8 @@ public class ReportButtonListener extends ListenerAdapter {
                 }
                 User reporterUser = plugin.getLinkProvider().getUser(reporter);
                 if (reporterUser != null) {
-                    String finalStaff = staff;
                     reporterUser.openPrivateChannel().queue(pm ->
-                        pm.sendMessage(finalStaff + " has acknowledged your report!\n" + MarkdownUtil.monospace(reported + ": " + reason)).queue()
+                        pm.sendMessage(staff + " has acknowledged your report!\n" + MarkdownUtil.monospace(reported + ": " + reason)).queue()
                     , err -> {});
                 }
                 break;
@@ -98,9 +97,8 @@ public class ReportButtonListener extends ListenerAdapter {
                 }
                 User reporterUser = plugin.getLinkProvider().getUser(reporter);
                 if (reporterUser != null) {
-                    String finalStaff = staff;
                     reporterUser.openPrivateChannel().queue(pm ->
-                        pm.sendMessage(finalStaff + " has denied your report!\n" + MarkdownUtil.monospace(reported + ": " + reason)).queue()
+                        pm.sendMessage(staff + " has denied your report!\n" + MarkdownUtil.monospace(reported + ": " + reason)).queue()
                     , err -> {});
                 }
                 break;

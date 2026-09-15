@@ -1,6 +1,7 @@
 package xyz.destiall.sgcraftlink.providers;
 
 import org.jetbrains.annotations.NotNull;
+import xyz.destiall.sgcraftlink.proxy.botsentry.BotSentryManager;
 import xyz.destiall.sgcraftlink.proxy.luckperms.LuckPermsManager;
 import xyz.destiall.sgcraftlink.proxy.misc.BirthdayManager;
 import xyz.destiall.sgcraftlink.proxy.misc.DataManager;
@@ -18,6 +19,7 @@ public interface PluginProvider {
     LinkProvider getLinkProvider();
     PlaytimeProvider getPlaytimeProvider();
     LuckPermsManager getLuckPermsManager();
+    BotSentryManager getBotSentryManager();
     PluginMessageProvider getPluginMessager();
     SchedulerProvider<?> getScheduler();
     BirthdayManager getBirthdayManager();

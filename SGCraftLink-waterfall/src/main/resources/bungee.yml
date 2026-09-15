@@ -5,3 +5,4 @@ softDepends:
   - LuckPerms
   - LiteBans
   - SkinsRestorer
+  - BotSentry

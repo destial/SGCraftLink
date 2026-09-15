@@ -175,7 +175,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         moduleClazzes.add(PermissionEffects.class);
         moduleClazzes.add(LobbyModule.class);
         //moduleClazzes.add(BreakAnimationModule.class);
-        moduleClazzes.add(SuffixesModule.class);
+        //moduleClazzes.add(SuffixesModule.class);
 
         // Gamemodes (hehe)
         moduleClazzes.add(OnePersonDeath.class);
@@ -251,9 +251,9 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             moduleClazzes.add(BluemapGriefPrevention.class);
         }
 
-        if (NBT.preloadApi()) {
+        //if (NBT.preloadApi()) {
             moduleClazzes.add(PlaytimeGetter.class);
-        }
+        //}
 
         // -=-=-=-=-=-=-=-=-=-=-=-=-=- Add all your modules before this line! -=-=-=-=-=-=-=-=-=-=-=-=-=-
 

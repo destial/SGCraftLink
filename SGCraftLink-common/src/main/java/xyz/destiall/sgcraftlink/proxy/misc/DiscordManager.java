@@ -4,13 +4,17 @@ import me.scarsz.jdaappender.ChannelLoggingHandler;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
+import net.dv8tion.jda.api.interactions.components.ItemComponent;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.interactions.components.buttons.ButtonStyle;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
@@ -31,17 +35,21 @@ import xyz.destiall.sgcraftlink.proxy.listeners.LinkListener;
 import xyz.destiall.sgcraftlink.proxy.listeners.ReportButtonListener;
 import xyz.destiall.sgcraftlink.proxy.listeners.StaffAppListener;
 import xyz.destiall.sgcraftlink.proxy.litebans.PunishmentListener;
+import xyz.destiall.sgcraftlink.utils.ButtonCollector;
 import xyz.destiall.sgcraftlink.utils.DataResult;
+import xyz.destiall.sgcraftlink.utils.Pair;
 
 import javax.security.auth.login.LoginException;
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -63,6 +71,7 @@ public final class DiscordManager {
     private DiscordCommandListener dcl;
     private LinkListener linkListener;
     private PunishmentListener punishmentListener;
+    private AdminChannel adminChannel;
 
     public DiscordManager(PluginProvider plugin) {
         this.plugin = plugin;
@@ -99,6 +108,7 @@ public final class DiscordManager {
 
         hookConsole();
         hookPunishmentListener();
+        hookAdminChannel();
     }
 
     private void hookPunishmentListener() {
@@ -145,6 +155,17 @@ public final class DiscordManager {
 
     public TextChannel getConsoleChannel() {
         return consoleChannel;
+    }
+
+    public void hookAdminChannel() {
+        if (jda == null)
+            return;
+
+        adminChannel = new AdminChannel(this);
+    }
+
+    public AdminChannel getAdminChannel() {
+        return adminChannel;
     }
 
     public void setup(ConfigProvider<?> configManager) {
@@ -212,7 +233,7 @@ public final class DiscordManager {
     }
 
     public void sendReport(PlayerProvider player, PlayerProvider target, String message) {
-        TextChannel channel = jda.getTextChannelById("1097754814223487037");
+        TextChannel channel = jda.getTextChannelById("1210642958982844567");
         if (channel == null)
             return;
 
@@ -433,6 +454,61 @@ public final class DiscordManager {
                         System.gc();
                         return true;
                     });
+        }
+    }
+
+    public static class AdminChannel {
+        private final TextChannel channel;
+        private AdminChannel(DiscordManager discordManager) {
+            channel = discordManager.getJda().getTextChannelById("1210643175069450251");
+        }
+
+        public TextChannel getChannel() {
+            return channel;
+        }
+
+        public void sendResponseNotification(String notification, Consumer<Pair<Boolean, Message>> consumer) {
+            EmbedBuilder embed = new EmbedBuilder();
+            embed.setDescription(notification);
+            sendResponseNotification(embed, consumer);
+        }
+
+        public void sendResponseNotification(EmbedBuilder embed, Consumer<Pair<Boolean, Message>> consumer) {
+            if (channel == null) {
+                consumer.accept(new Pair<>(false, null));
+                return;
+            }
+
+            final UUID uuid = UUID.randomUUID();
+            final String acceptId = "accept-" + uuid;
+            final String rejectId = "reject-" + uuid;
+            List<ItemComponent> components = new ArrayList<>();
+            components.add(Button.of(ButtonStyle.DANGER, acceptId, "Yes"));
+            components.add(Button.of(ButtonStyle.SUCCESS, acceptId, "No"));
+
+            channel.sendMessageEmbeds(embed.build()).setActionRow(components).queue(m -> {
+                ButtonCollector collector = new ButtonCollector(m);
+                collector.setTime(60000L);
+                collector.setFilter(e -> e.getMember().hasPermission(Permission.KICK_MEMBERS));
+                collector.onCollect(button -> {
+                    button.deferEdit().queue();
+                    String id = button.getButton().getId();
+                    if (id == null)
+                        return;
+
+                    if (id.equalsIgnoreCase(acceptId)) {
+                        consumer.accept(new Pair<>(true, m));
+                    } else if (id.equalsIgnoreCase(rejectId)) {
+                        consumer.accept(new Pair<>(false, m));
+                    }
+
+                    collector.stop();
+                });
+
+                collector.onEnd(l -> m.editMessageComponents(Collections.emptyList()).setEmbeds(embed.build()).queue());
+
+                collector.start();
+            });
         }
     }
 }

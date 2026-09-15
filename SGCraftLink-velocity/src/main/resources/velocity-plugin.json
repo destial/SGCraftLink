@@ -3,5 +3,5 @@
   "name": "SGCraftLink",
   "version": "${version}",
   "main": "xyz.destiall.sgcraftlink.SGCraftLinkVelocity",
-  "dependencies": [{"id":"skinsrestorer"}]
+  "dependencies": [{"id":"skinsrestorer"}, {"id":"botsentry"}, {"id": "luckperms"}, {"id": "litebans"}]
 }

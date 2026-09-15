@@ -18,6 +18,7 @@ import xyz.destiall.sgcraftlink.commands.BungeeCommand;
 import xyz.destiall.sgcraftlink.listeners.BungeeCommandListener;
 import xyz.destiall.sgcraftlink.listeners.BungeePMListener;
 import xyz.destiall.sgcraftlink.listeners.BungeeStaffListener;
+import xyz.destiall.sgcraftlink.managers.BungeeBotSentryManager;
 import xyz.destiall.sgcraftlink.managers.BungeeConfigProvider;
 import xyz.destiall.sgcraftlink.managers.BungeeLinkProvider;
 import xyz.destiall.sgcraftlink.managers.BungeePlaytimeProvider;
@@ -52,6 +53,7 @@ public final class SGCraftLinkWaterfall extends Plugin implements PluginProvider
     private BungeePluginMessager pluginMessager;
     private BungeeLogger logger;
     private LuckPermsManager luckPermsManager;
+    private BungeeBotSentryManager botSentryManager;
     private BirthdayManager birthdayManager;
     private DataManager dataManager;
     private BungeePerServerSkin perServerSkin;
@@ -156,6 +158,11 @@ public final class SGCraftLinkWaterfall extends Plugin implements PluginProvider
         } catch (Exception e) {
             e.printStackTrace();
         }
+        try {
+            botSentryManager = new BungeeBotSentryManager(this);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         getProxy().registerChannel(SGCraftLinkCommon.CHANNEL);
         getProxy().getPluginManager().registerListener(this, new BungeePMListener(this));
@@ -242,5 +249,10 @@ public final class SGCraftLinkWaterfall extends Plugin implements PluginProvider
     @Override
     public PerServerSkin getPerServerSkin() {
         return perServerSkin;
+    }
+
+    @Override
+    public BungeeBotSentryManager getBotSentryManager() {
+        return botSentryManager;
     }
 }
