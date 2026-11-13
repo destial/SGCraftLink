@@ -125,4 +125,8 @@ public abstract class Module {
         }
         config.set("enabled", !isEnabled());
     }
+
+    protected final boolean hasPlugin(String pl) {
+        return plugin.hasPlugin(pl);
+    }
 }

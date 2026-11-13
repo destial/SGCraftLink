@@ -67,7 +67,7 @@ public class LobbyModule extends Module implements Listener {
         plugin.getScheduler().runTaskTimer(() -> {
             if (!commandQueue.isEmpty()) {
                 String cmd = commandQueue.remove(0);
-                plugin.dispatchCommand(cmd);
+                plugin.dispatchCommand(cmd, false);
             }
         }, 0L, 10L);
     }
@@ -92,6 +92,20 @@ public class LobbyModule extends Module implements Listener {
             commandQueue.add(select);
             commandQueue.add(color);
             commandQueue.add(glow);
+
+            if (e.getJson().has("lowest_ver") && !server.equalsIgnoreCase("pgm")) {
+
+                String rename = "&" + pair.getColor().getChar() + server.substring(0, 1).toUpperCase() + server.substring(1) + " &7(&f";
+
+                if (e.getJson().getString("lowest_ver").equalsIgnoreCase(e.getJson().getString("highest_ver"))) {
+                    rename += e.getJson().getString("lowest_ver");
+                } else {
+                    rename += e.getJson().getString("lowest_ver") + " - " + e.getJson().getString("highest_ver");
+                }
+                rename += "&7)";
+
+                commandQueue.add("npc rename " + rename);
+            }
         } else if (e.getDataType().equalsIgnoreCase(SGCraftLinkCommon.DATA_SERVER_UNREGISTER)) {
             String server = e.getJson().getString("server");
             NPCGlow pair = npcMap.get(server);

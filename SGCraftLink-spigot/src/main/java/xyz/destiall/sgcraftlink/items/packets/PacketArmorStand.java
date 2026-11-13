@@ -15,7 +15,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class PacketArmorStand {
     protected static final AtomicInteger entityId = new AtomicInteger(-6969);
-    protected static final MinecraftVersion v1_21_2 = new MinecraftVersion("1.21.2");
     protected final UUID uuid;
     protected int id;
     protected Location location;
@@ -71,17 +70,13 @@ public abstract class PacketArmorStand {
         if (Bukkit.getServer().getPluginManager().isPluginEnabled("PacketWrapper"))
             return new PacketWrapperArmorStand(world, x, y, z);
 
-        else if (Bukkit.getServer().getPluginManager().isPluginEnabled("ProtocolLib")) {
-            if (ProtocolLibrary.getProtocolManager().getMinecraftVersion().isAtLeast(v1_21_2)) {
-                return new ProtocolLibArmorStand_1_21_2(world, x, y, z);
-
-            }
-            return new ProtocolLibArmorStand_1_20_3(world, x, y, z);
-
-        }
         else if (Bukkit.getServer().getPluginManager().isPluginEnabled("packetevents"))
             return new PacketEventsArmorStand(world, x, y, z);
 
+        else if (Bukkit.getServer().getPluginManager().isPluginEnabled("ProtocolLib")) {
+            if (ProtocolLibrary.getProtocolManager().getMinecraftVersion().isAtLeast(new MinecraftVersion("1.21.2")))
+                return new ProtocolLibArmorStand_1_21_2(world, x, y, z);
+        }
         return new ProtocolLibArmorStand_1_20_3(world, x, y, z);
     }
 }

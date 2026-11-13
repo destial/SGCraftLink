@@ -87,6 +87,10 @@
             <id>codemc</id>
             <url>https://repo.codemc.org/repository/maven-public/</url>
         </repository>
+        <repository>
+            <id>codeberg</id>
+            <url>https://codeberg.org/api/packages/Andre601/maven/</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -118,6 +122,12 @@
             <groupId>com.gitlab.ruany</groupId>
             <artifactId>LiteBansAPI</artifactId>
             <version>0.3.5</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.andre601.asl-api</groupId>
+            <artifactId>platform-bungeecord</artifactId>
+            <version>4.1.1</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

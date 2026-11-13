@@ -184,7 +184,7 @@ public class LinkListener extends ListenerAdapter {
                     ActionRow row = ActionRow.of(
                             Button.of(ButtonStyle.PRIMARY, "yes-" + player.getName(), "Yes"),
                             Button.of(ButtonStyle.DANGER, "no-" + player.getName(), "No"),
-                            Button.of(ButtonStyle.UNKNOWN, "ipban-" + player.getName(), "IP Ban")
+                            Button.of(ButtonStyle.SECONDARY, "ipban-" + player.getName(), "IP Ban")
                     );
                     player.sendMessage(ColorProvider.of("&c&lCheck your discord direct messages for authorization!"));
                     pm.sendMessageEmbeds(embed.build()).setActionRows(row).onErrorMap((ex) -> null).queue(m -> {
@@ -348,7 +348,8 @@ public class LinkListener extends ListenerAdapter {
     @Override
     public void onGuildMemberUpdateNickname(@NotNull GuildMemberUpdateNicknameEvent event) {
         Member member = event.getMember();
-        if (member.getUser().isBot() || member.getId().equals(plugin.getDiscordProvider().getJda().getSelfUser().getId())) return;
+        if (member.getUser().isBot() || member.getId().equals(plugin.getDiscordProvider().getJda().getSelfUser().getId()))
+            return;
         List<String> names = plugin.getLinkProvider().getUsernames(member.getUser());
         if (names.isEmpty())
             return;

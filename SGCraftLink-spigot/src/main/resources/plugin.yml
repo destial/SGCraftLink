@@ -34,11 +34,11 @@ softdepend:
   - UhcCore
   - Multiverse-Core
   - BlueMap
+  - ViaVersion
+  - ViaBackwards
+  - Shopkeepers
+  - Oraxen
 commands:
-  suffixes:
-    permission: sgc.suffixes
-    aliases:
-      - suffix
   hovermessages:
     permission: sgc.hovermessages
     aliases:

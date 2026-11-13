@@ -3,5 +3,11 @@
   "name": "SGCraftLink",
   "version": "${version}",
   "main": "xyz.destiall.sgcraftlink.SGCraftLinkVelocity",
-  "dependencies": [{"id":"skinsrestorer"}, {"id":"botsentry"}, {"id": "luckperms"}, {"id": "litebans"}]
+  "dependencies": [
+    {"id":"skinsrestorer", "optional": true},
+    {"id":"botsentry", "optional": true},
+    {"id": "luckperms", "optional": true},
+    {"id": "litebans", "optional": true},
+    {"id": "advancedserverlist", "optional": true}
+  ]
 }

@@ -110,6 +110,13 @@ public class DiscordSRVHook extends Module implements Listener, CommandExecutor 
         return DiscordSRV.getPlugin().getJda().getTextChannelById(id);
     }
 
+    public void sendMessageToChannel(String id, String message) {
+        TextChannel channel = getTextChannel(id);
+        if (channel == null)
+            return;
+        channel.sendMessage(message).queue();
+    }
+
     private TextComponent format(Message message, String s) {
         return color(s.replace("{message}", message.getContentStripped())
                 .replace("{channel}", message.getChannel().getName()));

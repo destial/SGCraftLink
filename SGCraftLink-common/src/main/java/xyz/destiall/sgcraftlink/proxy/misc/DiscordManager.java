@@ -489,7 +489,7 @@ public final class DiscordManager {
             channel.sendMessageEmbeds(embed.build()).setActionRow(components).queue(m -> {
                 ButtonCollector collector = new ButtonCollector(m);
                 collector.setTime(60000L);
-                collector.setFilter(e -> e.getMember().hasPermission(Permission.KICK_MEMBERS));
+                collector.setFilter(e -> e.getMember() == null || e.getMember().hasPermission(Permission.KICK_MEMBERS));
                 collector.onCollect(button -> {
                     button.deferEdit().queue();
                     String id = button.getButton().getId();

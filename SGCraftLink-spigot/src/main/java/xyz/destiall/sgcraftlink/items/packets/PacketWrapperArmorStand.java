@@ -93,6 +93,7 @@ public class PacketWrapperArmorStand extends PacketArmorStand {
             return;
         }
         dataWatcher.setObject(new WrappedDataWatcher.WrappedDataWatcherObject(index, serializer), value);
+        update();
     }
 
     @Override
@@ -147,7 +148,6 @@ public class PacketWrapperArmorStand extends PacketArmorStand {
     @Override
     public void setGravity(boolean gravity) {
         setDataWatcherObject(5, !gravity);
-        update();
     }
 
     @Override
@@ -157,8 +157,6 @@ public class PacketWrapperArmorStand extends PacketArmorStand {
         } else {
             setDataWatcherObject(15, (byte) (0x4 | 0x08 | 0x10));
         }
-
-        update();
     }
 
     @Override
@@ -168,21 +166,15 @@ public class PacketWrapperArmorStand extends PacketArmorStand {
         } else {
             setDataWatcherObject(0, (byte) 0);
         }
-
-        update();
     }
 
     @Override
     public void setCustomNameVisible(boolean visible) {
         setDataWatcherObject(3, visible);
-
-        update();
     }
 
     @Override
     public void setCustomName(String name) {
         setDataWatcherObject(2, WrappedChatComponent.fromChatMessage(name)[0]);
-
-        update();
     }
 }

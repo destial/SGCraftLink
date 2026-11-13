@@ -28,7 +28,7 @@ public abstract class BotSentryManager {
             builder.setDescription("Added to the IP whitelist of user " + player.getName());
             pair.getValue().editMessageEmbeds(builder.build()).queue();
 
-            plugin.dispatchCommand("bs whitelist ");
+            plugin.dispatchCommand("bs whitelist usernames add " + player.getName());
         });
     }
 }

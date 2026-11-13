@@ -1,8 +1,10 @@
 package xyz.destiall.sgcraftlink;
 
+import ch.andre601.advancedserverlist.api.AdvancedServerListAPI;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
+import xyz.destiall.sgcraftlink.addons.BungeeASLPlaceholder;
 import xyz.destiall.sgcraftlink.bungeeproviders.BungeeClickEvent;
 import xyz.destiall.sgcraftlink.bungeeproviders.BungeeColor;
 import xyz.destiall.sgcraftlink.bungeeproviders.BungeeConnectedServer;
@@ -161,6 +163,14 @@ public final class SGCraftLinkWaterfall extends Plugin implements PluginProvider
         try {
             botSentryManager = new BungeeBotSentryManager(this);
         } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        try {
+            BungeeASLPlaceholder pl = new BungeeASLPlaceholder(this);
+            AdvancedServerListAPI.get().addPlaceholderProvider(pl);
+            getProxy().getPluginManager().registerListener(this, pl);
+        } catch (Throwable e) {
             e.printStackTrace();
         }
 

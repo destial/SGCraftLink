@@ -8,6 +8,9 @@ import xyz.destiall.sgcraftlink.SGCraftLinkVelocity;
 import xyz.destiall.sgcraftlink.proxy.botsentry.BotSentryManager;
 import xyz.destiall.sgcraftlink.velocityproviders.VelocityPlayer;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class VelocityBotSentryManager extends BotSentryManager {
     public VelocityBotSentryManager(SGCraftLinkVelocity plugin) {
         super(plugin);
@@ -20,26 +23,30 @@ public class VelocityBotSentryManager extends BotSentryManager {
             return;
 
         Component kickMessage = event.getServerKickReason().orElse(null);
-        TextComponent text = getAsTextComponent(kickMessage);
-        if (text == null)
+        if (kickMessage == null)
             return;
 
-        if (text.content().toLowerCase().contains("blacklist")) {
-            onIpBlacklisted(new VelocityPlayer(event.getPlayer()));
+        Set<TextComponent> text = getAsTextComponent(kickMessage);
+        if (text.isEmpty())
+            return;
+
+        for (TextComponent component : text) {
+            if (component.content().toLowerCase().contains("blacklist")) {
+                onIpBlacklisted(new VelocityPlayer(event.getPlayer()));
+                return;
+            }
         }
     }
 
-    private TextComponent getAsTextComponent(Component parent) {
+    private Set<TextComponent> getAsTextComponent(Component parent) {
+        Set<TextComponent> set = new HashSet<>();
         if (parent instanceof TextComponent) {
-            return (TextComponent) parent;
-        } else {
-            for (Component children : parent.children()) {
-                TextComponent text = getAsTextComponent(children);
-                if (text != null) {
-                    return text;
-                }
-            }
+            set.add((TextComponent) parent);
         }
-        return null;
+        for (Component children : parent.children()) {
+            Set<TextComponent> deep = getAsTextComponent(children);
+            set.addAll(deep);
+        }
+        return set;
     }
 }

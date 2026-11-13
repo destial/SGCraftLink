@@ -41,22 +41,22 @@ public interface PluginProvider {
         getScheduler().cancelAll();
         try {
             getPlaytimeProvider().save();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             e.printStackTrace();
         }
         try {
             getLinkProvider().save();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             e.printStackTrace();
         }
         try {
             getDiscordProvider().shutdown();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             e.printStackTrace();
         }
         try {
             getDataManager().shutdown().get();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             e.printStackTrace();
         }
     }

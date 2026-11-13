@@ -1,5 +1,6 @@
 package xyz.destiall.sgcraftlink;
 
+import ch.andre601.advancedserverlist.api.AdvancedServerListAPI;
 import com.google.inject.Inject;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
@@ -13,6 +14,7 @@ import com.velocitypowered.api.proxy.messages.ChannelIdentifier;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
+import xyz.destiall.sgcraftlink.addons.VelocityASLPlaceholder;
 import xyz.destiall.sgcraftlink.commands.GList;
 import xyz.destiall.sgcraftlink.commands.VelocityCommand;
 import xyz.destiall.sgcraftlink.listeners.VelocityCommandListener;
@@ -32,7 +34,6 @@ import xyz.destiall.sgcraftlink.providers.component.ComponentHoverProvider;
 import xyz.destiall.sgcraftlink.providers.component.ComponentProvider;
 import xyz.destiall.sgcraftlink.proxy.commands.BirthdayCommand;
 import xyz.destiall.sgcraftlink.proxy.commands.DiscordCommand;
-import xyz.destiall.sgcraftlink.proxy.commands.ReportCommand;
 import xyz.destiall.sgcraftlink.proxy.commands.StaffCommand;
 import xyz.destiall.sgcraftlink.proxy.luckperms.LuckPermsManager;
 import xyz.destiall.sgcraftlink.proxy.misc.BirthdayManager;
@@ -67,7 +68,8 @@ import java.util.stream.Collectors;
             @Dependency(id = "skinsrestorer", optional = true),
             @Dependency(id = "luckperms", optional = true),
             @Dependency(id = "litebans", optional = true),
-            @Dependency(id = "botsentry", optional = true)
+            @Dependency(id = "botsentry", optional = true),
+            @Dependency(id = "advancedserverlist", optional = true)
         }
 )
 public class SGCraftLinkVelocity implements PluginProvider {
@@ -239,52 +241,52 @@ public class SGCraftLinkVelocity implements PluginProvider {
     public void enable() {
         try {
             pluginMessager = new VelocityPluginMessager(this);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             e.printStackTrace();
         }
         try {
             configManager = new VelocityConfigProvider(this, "config.yml");
-        } catch (Exception e) {
+        } catch (Throwable e) {
             e.printStackTrace();
         }
         try {
             dataManager = new DataManager(this);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             e.printStackTrace();
         }
         try {
             luckPermsManager = new LuckPermsManager(this);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             e.printStackTrace();
         }
         try {
             linkManager = new VelocityLinkProvider(this);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             e.printStackTrace();
         }
         try {
             discordManager = new DiscordManager(this);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             e.printStackTrace();
         }
         try {
             playtimeManager = new VelocityPlaytimeProvider(this);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             e.printStackTrace();
         }
         try {
             birthdayManager = new BirthdayManager(this);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             e.printStackTrace();
         }
         try {
             perServerSkin = new VelocityPerServerSkin(this);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             e.printStackTrace();
         }
         try {
             botSentryManager = new VelocityBotSentryManager(this);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             e.printStackTrace();
         }
 
@@ -296,12 +298,19 @@ public class SGCraftLinkVelocity implements PluginProvider {
         commands = new ArrayList<>();
         commands.add(new VelocityCommand(this, "discord", new DiscordCommand(this)));
         commands.add(new VelocityCommand(this, "sgc", new StaffCommand(this)));
-        commands.add(new VelocityCommand(this, "report", new ReportCommand(this)));
         commands.add(new VelocityCommand(this, "birthday", new BirthdayCommand(this)));
 
         // Mimic BungeeCord commands
         commands.add(new VelocityCommand(this, "glist", new GList(this)));
         //commands.add(new VelocityCommand(this, "send", new Send(this)));
+
+        try {
+            VelocityASLPlaceholder pl = new VelocityASLPlaceholder(this);
+            AdvancedServerListAPI.get().addPlaceholderProvider(pl);
+            server.getEventManager().register(this, pl);
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

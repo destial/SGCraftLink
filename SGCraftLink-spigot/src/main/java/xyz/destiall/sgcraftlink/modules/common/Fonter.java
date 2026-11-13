@@ -221,173 +221,187 @@ public class Fonter extends Module implements CommandExecutor, TabExecutor {
             dirty = false;
         }
 
-        ProtocolLibrary.getProtocolManager().addPacketListener(new PacketAdapter(plugin,
-                PacketType.Play.Server.SYSTEM_CHAT,
-                PacketType.Play.Server.DISGUISED_CHAT,
-                PacketType.Play.Server.CHAT,
-                PacketType.Play.Server.SET_ACTION_BAR_TEXT,
-                PacketType.Play.Server.SET_TITLE_TEXT,
-                PacketType.Play.Server.SET_SUBTITLE_TEXT,
-                PacketType.Play.Server.BOSS,
-                PacketType.Play.Server.ENTITY_METADATA
-        ) {
-            @Override
-            public void onPacketSending(PacketEvent event) {
-                FontUserSettings fontUserSettings = getFontUser(event.getPlayer().getUniqueId());
-                Font font = fontUserSettings.getFont();
-                if (font instanceof DefaultFont)
-                    return;
+        try {
+            if (plugin.hasPlugin("ProtocolLib")) {
+                ProtocolLibrary.getProtocolManager().addPacketListener(new PacketAdapter(plugin,
+                        PacketType.Play.Server.SYSTEM_CHAT,
+                        PacketType.Play.Server.DISGUISED_CHAT,
+                        PacketType.Play.Server.CHAT,
+                        PacketType.Play.Server.SET_ACTION_BAR_TEXT,
+                        PacketType.Play.Server.SET_TITLE_TEXT,
+                        PacketType.Play.Server.SET_SUBTITLE_TEXT,
+                        PacketType.Play.Server.BOSS,
+                        PacketType.Play.Server.ENTITY_METADATA
+                ) {
+                    @Override
+                    public void onPacketSending(PacketEvent event) {
+                        FontUserSettings fontUserSettings = getFontUser(event.getPlayer().getUniqueId());
+                        Font font = fontUserSettings.getFont();
+                        if (font instanceof DefaultFont)
+                            return;
 
-                PacketContainer container = event.getPacket();
-                WrappedChatComponent component = null;
-                if (container.getType() == PacketType.Play.Server.ENTITY_METADATA) {
-                    if (!convertEntityMetadata || !fontUserSettings.isConvertEntityMetadata())
-                        return;
-                    try {
-                        Class.forName("com.comphenix.protocol.wrappers.WrappedDataValue");
-                        List<WrappedDataValue> wrappedDataValueList = container.getDataValueCollectionModifier().read(0);
-                        for (WrappedDataValue dv : wrappedDataValueList) {
-                            Object o = dv.getValue();
-                            if (dv.getIndex() == 2) {
-                                boolean optional = false;
+                        PacketContainer container = event.getPacket();
+                        WrappedChatComponent component = null;
+                        if (container.getType() == PacketType.Play.Server.ENTITY_METADATA) {
+                            if (!convertEntityMetadata || !fontUserSettings.isConvertEntityMetadata())
+                                return;
+                            try {
+                                Class.forName("com.comphenix.protocol.wrappers.WrappedDataValue");
+                                List<WrappedDataValue> wrappedDataValueList = container.getDataValueCollectionModifier().read(0);
+                                for (WrappedDataValue dv : wrappedDataValueList) {
+                                    Object o = dv.getValue();
+                                    if (dv.getIndex() == 2) {
+                                        boolean optional = false;
+                                        try {
+                                            component = (WrappedChatComponent) o;
+                                        } catch (Throwable ex) {
+                                            optional = true;
+                                            component = ((Optional<WrappedChatComponent>) o).orElse(null);
+                                        }
+                                        if (component != null) {
+                                            JSONObject object = new JSONObject(component.getJson());
+                                            chatComponent(object, font, false);
+                                            component.setJson(object.toString());
+                                            dv.setValue(optional ? Optional.of(component) : component);
+                                        }
+                                    }
+                                }
+                                container.getDataValueCollectionModifier().write(0, wrappedDataValueList);
+                            } catch (Throwable e) {
                                 try {
-                                    component = (WrappedChatComponent) o;
-                                } catch (Exception ex) {
-                                    optional = true;
-                                    component = ((Optional<WrappedChatComponent>) o).orElse(null);
-                                }
-                                if (component != null) {
-                                    JSONObject object = new JSONObject(component.getJson());
-                                    chatComponent(object, font, false);
-                                    component.setJson(object.toString());
-                                    dv.setValue(optional ? Optional.of(component) : component);
+                                    List<WrappedWatchableObject> wrappedWatchableObjects = container.getWatchableCollectionModifier().read(0);
+                                    for (WrappedWatchableObject wo : wrappedWatchableObjects) {
+                                        Object o = wo.getValue();
+                                        if (wo.getIndex() == 2) {
+                                            boolean optional = false;
+                                            try {
+                                                component = (WrappedChatComponent) o;
+                                            } catch (Exception ex) {
+                                                optional = true;
+                                                component = ((Optional<WrappedChatComponent>) o).orElse(null);
+                                            }
+                                            if (component != null) {
+                                                JSONObject object = new JSONObject(component.getJson());
+                                                chatComponent(object, font, false);
+                                                component.setJson(object.toString());
+                                                wo.setValue(optional ? Optional.of(component) : component);
+                                            }
+                                        }
+                                    }
+                                    container.getWatchableCollectionModifier().write(0, wrappedWatchableObjects);
+                                } catch (Throwable ex) {
+                                    try {
+                                        WrappedDataWatcher dataWatcher = container.getDataWatcherModifier().read(0);
+                                        for (WrappedWatchableObject wo : dataWatcher.getWatchableObjects()) {
+                                            Object o = wo.getValue();
+                                            if (wo.getIndex() == 2) {
+                                                boolean optional = false;
+                                                try {
+                                                    component = (WrappedChatComponent) o;
+                                                } catch (Exception exx) {
+                                                    optional = true;
+                                                    component = ((Optional<WrappedChatComponent>) o).orElse(null);
+                                                }
+                                                if (component != null) {
+                                                    JSONObject object = new JSONObject(component.getJson());
+                                                    chatComponent(object, font, false);
+                                                    component.setJson(object.toString());
+                                                    wo.setValue(optional ? Optional.of(component) : component);
+                                                    dataWatcher.setObject(wo.getIndex(), wo);
+                                                }
+                                            }
+                                        }
+                                        container.getDataWatcherModifier().write(0, dataWatcher);
+                                    } catch (Throwable exx) {
+                                        error("Received packet " + container + " but could not parse!");
+                                        exx.printStackTrace();
+                                    }
                                 }
                             }
+                            return;
                         }
-                        container.getDataValueCollectionModifier().write(0, wrappedDataValueList);
-                    } catch (Exception e) {
+
+                        if (container.getType() == PacketType.Play.Server.BOSS) {
+                            if (!convertBossBar || !fontUserSettings.isConvertBossBar())
+                                return;
+
+                            StructureModifier<?> m = container.getModifier();
+                            for (int i = 0; i < m.size(); i++) {
+                                Object bar = m.readSafely(i);
+                                if (bar != null) {
+                                    if (bar instanceof UUID)
+                                        continue;
+
+                                    for (Field f : FuzzyReflection.fromObject(bar, true).getFields()) {
+                                        if (MinecraftReflection.getIChatBaseComponentClass().equals(f.getType())) {
+                                            try {
+                                                f.setAccessible(true);
+                                                component = WrappedChatComponent.fromHandle(f.get(bar));
+                                                JSONObject object = new JSONObject(component.getJson());
+                                                chatComponent(object, font, false);
+                                                component.setJson(object.toString());
+                                                f.set(bar, BukkitConverters.getWrappedChatComponentConverter().getGeneric(component));
+                                            } catch (IllegalAccessException e) {
+                                                e.printStackTrace();
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            return;
+                        }
+
+                        if (container.getType() == PacketType.Play.Server.SET_ACTION_BAR_TEXT && (!convertActionBar || !fontUserSettings.isConvertActionBar()))
+                            return;
+
+                        if ((container.getType() == PacketType.Play.Server.SET_TITLE_TEXT || container.getType() == PacketType.Play.Server.SET_SUBTITLE_TEXT) && (!convertTitle || !fontUserSettings.isConvertTitle()))
+                            return;
+
+                        if ((container.getType() == PacketType.Play.Server.CHAT || container.getType() == PacketType.Play.Server.SYSTEM_CHAT || container.getType() == PacketType.Play.Server.DISGUISED_CHAT) && (!convertChat || !fontUserSettings.isConvertChat()))
+                            return;
+
                         try {
-                            List<WrappedWatchableObject> wrappedWatchableObjects = container.getWatchableCollectionModifier().read(0);
-                            for (WrappedWatchableObject wo : wrappedWatchableObjects) {
-                                Object o = wo.getValue();
-                                if (wo.getIndex() == 2) {
-                                    boolean optional = false;
-                                    try {
-                                        component = (WrappedChatComponent) o;
-                                    } catch (Exception ex) {
-                                        optional = true;
-                                        component = ((Optional<WrappedChatComponent>) o).orElse(null);
-                                    }
-                                    if (component != null) {
-                                        JSONObject object = new JSONObject(component.getJson());
-                                        chatComponent(object, font, false);
-                                        component.setJson(object.toString());
-                                        wo.setValue(optional ? Optional.of(component) : component);
-                                    }
+                            StructureModifier<Object> adventureModifier = container.getModifier().withType(AdventureComponentConverter.getComponentClass());
+                            if (!adventureModifier.getFields().isEmpty()) { // Only true on Paper
+                                Component comp = (Component) adventureModifier.read(0);
+                                if (comp != null) {
+                                    component = AdventureComponentConverter.fromComponent(comp);
+                                    adventureModifier.write(0, null); // Reset to null - the JSON message will be set instead
                                 }
                             }
-                            container.getWatchableCollectionModifier().write(0, wrappedWatchableObjects);
-                        } catch (Exception ex) {
-                            WrappedDataWatcher dataWatcher = container.getDataWatcherModifier().read(0);
-                            for (WrappedWatchableObject wo : dataWatcher.getWatchableObjects()) {
-                                Object o = wo.getValue();
-                                if (wo.getIndex() == 2) {
-                                    boolean optional = false;
-                                    try {
-                                        component = (WrappedChatComponent) o;
-                                    } catch (Exception exx) {
-                                        optional = true;
-                                        component = ((Optional<WrappedChatComponent>) o).orElse(null);
-                                    }
-                                    if (component != null) {
-                                        JSONObject object = new JSONObject(component.getJson());
-                                        chatComponent(object, font, false);
-                                        component.setJson(object.toString());
-                                        wo.setValue(optional ? Optional.of(component) : component);
-                                        dataWatcher.setObject(wo.getIndex(), wo);
-                                    }
-                                }
+                        } catch (Throwable ignored) {
+                        } // Ignore if paper is unavailable
+
+                        try {
+                            if (component == null) {
+                                component = WrappedChatComponent.fromJson(container.getStrings().read(0));
                             }
-                            container.getDataWatcherModifier().write(0, dataWatcher);
-                        }
-                    }
-                    return;
-                }
 
-                if (container.getType() == PacketType.Play.Server.BOSS) {
-                    if (!convertBossBar || !fontUserSettings.isConvertBossBar())
-                        return;
+                            JSONObject object = new JSONObject(component.getJson());
+                            chatComponent(object, font, container.getType() == PacketType.Play.Server.SET_ACTION_BAR_TEXT);
+                            container.getStrings().write(0, object.toString());
+                            return;
+                        } catch (Throwable ignored) {
+                        } // If using adventure API
 
-                    StructureModifier<?> m = container.getModifier();
-                    for (int i = 0; i < m.size(); i++) {
-                        Object bar = m.readSafely(i);
-                        if (bar != null) {
-                            if (bar instanceof UUID)
-                                continue;
-
-                            for (Field f : FuzzyReflection.fromObject(bar, true).getFields()) {
-                                if (MinecraftReflection.getIChatBaseComponentClass().equals(f.getType())) {
-                                    try {
-                                        f.setAccessible(true);
-                                        component = WrappedChatComponent.fromHandle(f.get(bar));
-                                        JSONObject object = new JSONObject(component.getJson());
-                                        chatComponent(object, font, false);
-                                        component.setJson(object.toString());
-                                        f.set(bar, BukkitConverters.getWrappedChatComponentConverter().getGeneric(component));
-                                    } catch (IllegalAccessException e) {
-                                        e.printStackTrace();
-                                    }
-                                }
+                        try {
+                            if (component == null) {
+                                component = container.getChatComponents().read(0);
                             }
-                        }
+
+                            JSONObject object = new JSONObject(component.getJson());
+                            chatComponent(object, font, container.getType() == PacketType.Play.Server.SET_ACTION_BAR_TEXT);
+                            component.setJson(object.toString());
+                            container.getChatComponents().write(0, component);
+                        } catch (Throwable ex) {
+                            error("Received packet " + container + " but could not parse!");
+                            ex.printStackTrace();
+                        } // If all else fails
                     }
-
-                    return;
-                }
-
-                if (container.getType() == PacketType.Play.Server.SET_ACTION_BAR_TEXT && (!convertActionBar || !fontUserSettings.isConvertActionBar()))
-                    return;
-
-                if ((container.getType() == PacketType.Play.Server.SET_TITLE_TEXT || container.getType() == PacketType.Play.Server.SET_SUBTITLE_TEXT) && (!convertTitle || !fontUserSettings.isConvertTitle()))
-                    return;
-
-                if ((container.getType() == PacketType.Play.Server.CHAT || container.getType() == PacketType.Play.Server.SYSTEM_CHAT || container.getType() == PacketType.Play.Server.DISGUISED_CHAT) && (!convertChat || !fontUserSettings.isConvertChat()))
-                    return;
-
-                try {
-                    StructureModifier<Object> adventureModifier = container.getModifier().withType(AdventureComponentConverter.getComponentClass());
-                    if (!adventureModifier.getFields().isEmpty()) { // Only true on Paper
-                        Component comp = (Component) adventureModifier.read(0);
-                        if (comp != null) {
-                            component = AdventureComponentConverter.fromComponent(comp);
-                            adventureModifier.write(0, null); // Reset to null - the JSON message will be set instead
-                        }
-                    }
-                } catch (Throwable ignored) {} // Ignore if paper is unavailable
-
-                try {
-                    if (component == null) {
-                        component = WrappedChatComponent.fromJson(container.getStrings().read(0));
-                    }
-
-                    JSONObject object = new JSONObject(component.getJson());
-                    chatComponent(object, font, container.getType() == PacketType.Play.Server.SET_ACTION_BAR_TEXT);
-                    container.getStrings().write(0, object.toString());
-                    return;
-                } catch (Throwable ignored) {} // If using adventure API
-
-                try {
-                    if (component == null) {
-                        component = container.getChatComponents().read(0);
-                    }
-
-                    JSONObject object = new JSONObject(component.getJson());
-                    chatComponent(object, font, container.getType() == PacketType.Play.Server.SET_ACTION_BAR_TEXT);
-                    component.setJson(object.toString());
-                    container.getChatComponents().write(0, component);
-                } catch (Throwable ignored) {} // If all else fails
+                });
             }
-        });
+        } catch (Throwable ignored) {}
     }
 
     public void chatComponent(JSONObject object, Font font, boolean checkChar) {
@@ -437,7 +451,10 @@ public class Fonter extends Module implements CommandExecutor, TabExecutor {
             dirty = false;
         }
 
-        ProtocolLibrary.getProtocolManager().removePacketListeners(plugin);
+        try {
+            if (plugin.hasPlugin("ProtocolLib"))
+                ProtocolLibrary.getProtocolManager().removePacketListeners(plugin);
+        } catch (Throwable ignored) {}
     }
 
     @Override

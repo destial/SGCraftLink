@@ -76,17 +76,14 @@ public class MoveIfGay extends Module implements Listener, CommandExecutor {
 
         if (players.remove(player.getName())) {
             player.sendMessage(color("&cYou have moved!"));
-            plugin.getServer().broadcastMessage(color("&c" + plugin.getName() + " has moved and is out!"));
+            plugin.getServer().broadcastMessage(color("&c" + player.getName() + " has moved and is gay!"));
         }
     }
 
     public void start() {
-        if (isEnabled() || currentlyActive)
+        if (!isEnabled() || currentlyActive)
             return;
 
-        EconomyHook economy = plugin.getModule(EconomyHook.class);
-        if (economy == null)
-            return;
 
         plugin.getServer().broadcastMessage(color("&cEnglish or Spanish?"));
         plugin.getServer().broadcastMessage(color("&cWhoever moves, is gay, and the winner(s) at the end will get a prize pool of $" + config.getDouble("prize-pool")));
@@ -100,13 +97,19 @@ public class MoveIfGay extends Module implements Listener, CommandExecutor {
             plugin.getScheduler().runTaskLater(() -> {
                 currentlyActive = false;
                 int winnerSize = players.size();
-                float reward = (float) (config.getDouble("prize-pool") / (float) winnerSize);
+
                 BaseComponent component = new ComponentBuilder()
                         .append("The game is over! We have " + winnerSize + " winner(s)!")
                         .color(ChatColor.AQUA)
                         .build();
                 component.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(String.join(", ", players))));
                 plugin.getServer().broadcast(component);
+
+                EconomyHook economy = plugin.getModule(EconomyHook.class);
+                if (economy == null)
+                    return;
+
+                float reward = (float) (config.getDouble("prize-pool") / (float) winnerSize);
                 for (String name : players) {
                     Player p = plugin.getServer().getPlayer(name);
                     if (p == null)

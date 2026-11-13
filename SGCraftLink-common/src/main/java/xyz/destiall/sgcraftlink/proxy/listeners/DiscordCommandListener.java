@@ -406,7 +406,7 @@ public class DiscordCommandListener extends ListenerAdapter {
             e.getMessage().replyEmbeds(sendIPWhitelist(plugin, ip).build()).queue();
         } else if (command.startsWith("changepw") && args.length > 1) {
             String name = args[1];
-            String pw = "changepassword";
+            String pw = "changepw";
             if (args.length > 2) {
                 pw = args[2];
             }
@@ -429,10 +429,11 @@ public class DiscordCommandListener extends ListenerAdapter {
             return;
         }
         if (pw == null) {
-            pw = "changepassword";
+            pw = "changepw";
         }
         String finalPw = pw;
-        Map<String, Object> data = SGCraftLinkCommon.createCommandsData("authme password " + playerName + " " + finalPw);
+        Map<String, Object> data = SGCraftLinkCommon.createCommandsData("authme changepass " + playerName + " " + finalPw);
+        data.put("clean", false);
         if (!plugin.getDataManager().sendData(SGCraftLinkCommon.DATA_EXECUTE_COMMAND, "lobby", data, (result) -> {
             if (result.isSuccess()) {
                 consumer.accept(new EmbedBuilder().setTitle("Changed password of " + playerName + " to ||" + finalPw + "||").setColor(Color.GREEN));

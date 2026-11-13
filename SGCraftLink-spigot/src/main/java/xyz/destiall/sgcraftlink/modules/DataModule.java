@@ -4,6 +4,8 @@ import com.Zrips.CMI.CMI;
 import com.gmail.jyckosianjaya.easywhitelist.EasyWhiteList;
 import com.gmail.val59000mc.game.GameManager;
 import com.gmail.val59000mc.game.GameState;
+import com.viaversion.viaversion.api.Via;
+import com.viaversion.viaversion.api.protocol.version.ProtocolVersion;
 import express.Express;
 import express.utils.Status;
 import me.clip.placeholderapi.util.Msg;
@@ -54,7 +56,7 @@ public class DataModule extends Module implements Listener, CommandExecutor {
         messengers = new ArrayList<>();
         setCommandExecutor("datacomm");
         registered = false;
-        startHeartbeat();
+
     }
 
     public long getUsedMemory() {
@@ -101,7 +103,26 @@ public class DataModule extends Module implements Listener, CommandExecutor {
                 "ip", config.getString("proxy-ip", "172.18.0.1")
         );
 
-        if (plugin.getServer().getPluginManager().isPluginEnabled("UhcCore")) {
+        try {
+            if (hasPlugin("ViaVersion")) {
+                String lowest = ((ProtocolVersion) Via.getAPI().getSupportedProtocolVersions().first()).getName();
+                String highest = ((ProtocolVersion) Via.getAPI().getSupportedProtocolVersions().last()).getName();
+
+                if (lowest.contains("-")) {
+                    lowest = lowest.split("-")[0];
+                }
+
+                if (highest.contains("-")) {
+                    highest = highest.split("-")[1];
+                }
+                data.put("lowest_ver", lowest);
+                data.put("highest_ver", highest);
+            }
+        } catch (Throwable ex) {
+            ex.printStackTrace();
+        }
+
+        if (hasPlugin("UhcCore")) {
             data.put("announce", false);
             new Scheduler.TaskRunnable() {
                 @Override
@@ -115,6 +136,7 @@ public class DataModule extends Module implements Listener, CommandExecutor {
             }.runTaskTimer(plugin.getScheduler(), 5L, 5L);
             return;
         }
+
         tryRegisterServer(data);
     }
 
@@ -272,11 +294,11 @@ public class DataModule extends Module implements Listener, CommandExecutor {
                         if (commands != null) {
                             for (int i = 0; i < commands.length(); i++) {
                                 String command = commands.getString(i);
-                                plugin.dispatchCommand(command);
+                                plugin.dispatchCommand(command, json.optBoolean("clean", false));
                             }
                         } else {
                             String cmd = json.optString("commands");
-                            plugin.dispatchCommand(cmd);
+                            plugin.dispatchCommand(cmd, json.optBoolean("clean", false));
                         }
                         response.sendStatus(Status._200);
                         break;
@@ -342,7 +364,11 @@ public class DataModule extends Module implements Listener, CommandExecutor {
             }
         });
         express.listen(config.getInt("port"));
-        registerServer();
+
+        plugin.getScheduler().runTaskLater(() -> {
+            registerServer();
+            startHeartbeat();
+        }, 20L * 3);
     }
 
     private void startHeartbeat() {

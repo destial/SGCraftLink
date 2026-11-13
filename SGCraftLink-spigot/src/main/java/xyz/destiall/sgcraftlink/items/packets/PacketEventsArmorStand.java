@@ -34,7 +34,7 @@ public class PacketEventsArmorStand extends PacketArmorStand {
     private WrapperPlayServerSpawnEntity handle;
     private WrapperPlayServerEntityMetadata metadata;
     private Map<Integer, EntityData<?>> dataWatcher;
-    private Collection<User> users;
+    private Collection<UUID> users;
 
     private static final Map<Class<?>, EntityDataType<?>> REGISTRY;
 
@@ -58,10 +58,13 @@ public class PacketEventsArmorStand extends PacketArmorStand {
     public void createFor(Player player) {
         super.createFor(player);
         User user = PacketEvents.getAPI().getPlayerManager().getUser(player);
-        users.add(user);
+        if (user == null) // ignore intellisense
+            return;
+
+        users.add(player.getUniqueId());
         try {
             user.sendPacket(handle);
-            metadata.setEntityMetadata(new ArrayList<>(dataWatcher.values()));
+            update();
             user.sendPacket(metadata);
         } catch (Exception e) {
             e.printStackTrace();
@@ -89,7 +92,8 @@ public class PacketEventsArmorStand extends PacketArmorStand {
                     EntityDataTypes.PARTICLE,
                     new com.github.retrooper.packetevents.protocol.particle.Particle<>(
                             SpigotConversionUtil.fromBukkitParticle((Enum<?>) value))));
-
+        } else if (Double.class.equals(value.getClass())) {
+            dataWatcher.put(index, new EntityData<>(index, EntityDataTypes.FLOAT, ((Number) value).floatValue()));
         } else {
             boolean updated = false;
             for (Class<?> key : REGISTRY.keySet()) {
@@ -109,13 +113,15 @@ public class PacketEventsArmorStand extends PacketArmorStand {
                 }
             }
         }
-
-        //dataWatcher.setObject(new WrappedDataWatcher.WrappedDataWatcherObject(index, serializer), value);
+        update();
     }
 
     @Override
     public void teleport(Location location) {
         setPos(location.getX() + offset.getX(), location.getY() + offset.getY(), location.getZ() + offset.getZ());
+
+        EntityData<?> noGrav = dataWatcher.get(5);
+        boolean onGround = noGrav == null || !Boolean.TRUE.equals(noGrav.getValue());
 
         WrapperPlayServerEntityTeleport teleport = new WrapperPlayServerEntityTeleport(
                 id,
@@ -125,10 +131,12 @@ public class PacketEventsArmorStand extends PacketArmorStand {
                         this.location.getZ(),
                         0f, 0f
                 ),
-                dataWatcher.values().stream().noneMatch((d) -> d.getIndex() == 5 && ((boolean) d.getValue()))
+                onGround
         );
 
-        for (User user : users) {
+        for (UUID uuid : users) {
+            User user = PacketEvents.getAPI().getPlayerManager().getUser(uuid);
+            if (user == null) continue;
             try {
                 user.sendPacket(teleport);
             } catch (Exception e) {
@@ -140,7 +148,9 @@ public class PacketEventsArmorStand extends PacketArmorStand {
     @Override
     public void remove() {
         WrapperPlayServerDestroyEntities remove = new WrapperPlayServerDestroyEntities(id);
-        for (User user : users) {
+        for (UUID uuid : users) {
+            User user = PacketEvents.getAPI().getPlayerManager().getUser(uuid);
+            if (user == null) continue;
             try {
                 user.sendPacket(remove);
             } catch (Exception e) {
@@ -169,42 +179,41 @@ public class PacketEventsArmorStand extends PacketArmorStand {
     @Override
     public void setGravity(boolean gravity) {
         setDataWatcherObject(5, !gravity);
-        update();
     }
 
     @Override
     public void setSmall(boolean small) {
-        if (small) {
-            setDataWatcherObject(15, (byte) (0x1 | 0x4 | 0x08 | 0x10));
-        } else {
-            setDataWatcherObject(15, (byte) (0x4 | 0x08 | 0x10));
-        }
-
-        update();
+        setMask(15, (byte) 0x01, small);
     }
 
     @Override
     public void setInvisible(boolean invis) {
-        if (invis) {
-            setDataWatcherObject(0, (byte) 0x20);
-        } else {
-            setDataWatcherObject(0, (byte) 0);
-        }
-
-        update();
+        setMask(0, (byte) 0x20, invis);
     }
 
     @Override
     public void setCustomNameVisible(boolean visible) {
         setDataWatcherObject(3, visible);
-
-        update();
     }
 
     @Override
     public void setCustomName(String name) {
-        setDataWatcherObject(2, Component.text(name));
+        if (name == null || name.isEmpty()) {
+            dataWatcher.put(2, new EntityData<>(2, EntityDataTypes.OPTIONAL_ADV_COMPONENT, Optional.empty()));
+        } else {
+            dataWatcher.put(2, new EntityData<>(2, EntityDataTypes.OPTIONAL_ADV_COMPONENT, Optional.of(Component.text(name))));
+        }
+        update();
+    }
 
+    private void setMask(int index, byte bit, boolean enable) {
+        byte current = 0;
+        EntityData<?> existing = dataWatcher.get(index);
+        if (existing != null && existing.getValue() instanceof Byte) {
+            current = (Byte) existing.getValue();
+        }
+        byte updated = (byte) (enable ? (current | bit) : (current & ~bit));
+        dataWatcher.put(index, new EntityData<>(index, EntityDataTypes.BYTE, updated));
         update();
     }
 
@@ -214,7 +223,6 @@ public class PacketEventsArmorStand extends PacketArmorStand {
         REGISTRY.put(Boolean.class, EntityDataTypes.BOOLEAN);
         REGISTRY.put(Short.class, EntityDataTypes.SHORT);
         REGISTRY.put(Float.class, EntityDataTypes.FLOAT);
-        REGISTRY.put(Double.class, EntityDataTypes.FLOAT);
         REGISTRY.put(Byte.class, EntityDataTypes.BYTE);
         REGISTRY.put(String.class, EntityDataTypes.STRING);
         REGISTRY.put(Long.class, EntityDataTypes.LONG);

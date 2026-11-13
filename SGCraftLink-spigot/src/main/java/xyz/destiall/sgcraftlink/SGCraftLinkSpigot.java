@@ -29,14 +29,11 @@ import xyz.destiall.sgcraftlink.modules.DataModule;
 import xyz.destiall.sgcraftlink.modules.Module;
 import xyz.destiall.sgcraftlink.modules.common.BirthdayModule;
 import xyz.destiall.sgcraftlink.modules.common.BluemapGriefPrevention;
-import xyz.destiall.sgcraftlink.modules.common.ChatBubble;
 import xyz.destiall.sgcraftlink.modules.common.Fonter;
-import xyz.destiall.sgcraftlink.modules.common.HeadHunt;
 import xyz.destiall.sgcraftlink.modules.common.HoverMessages;
 import xyz.destiall.sgcraftlink.modules.common.MigrationModule;
 import xyz.destiall.sgcraftlink.modules.common.Redeemables;
 import xyz.destiall.sgcraftlink.modules.common.ScheduledCommands;
-import xyz.destiall.sgcraftlink.modules.common.SuffixesModule;
 import xyz.destiall.sgcraftlink.modules.common.TagModule;
 import xyz.destiall.sgcraftlink.modules.common.TriggerModule;
 import xyz.destiall.sgcraftlink.modules.hooks.CMIHook;
@@ -51,6 +48,7 @@ import xyz.destiall.sgcraftlink.modules.hooks.WorldGuardHook;
 import xyz.destiall.sgcraftlink.modules.lobby.LobbyModule;
 import xyz.destiall.sgcraftlink.modules.skyblock.NovaEconomyGUIModule;
 import xyz.destiall.sgcraftlink.modules.skyblock.NovaSkyblockModule;
+import xyz.destiall.sgcraftlink.modules.skyblock.OraxenPackProvider;
 import xyz.destiall.sgcraftlink.modules.survival.AuraSkillsHook;
 import xyz.destiall.sgcraftlink.modules.survival.CustomFood;
 import xyz.destiall.sgcraftlink.modules.survival.HealthBar;
@@ -64,10 +62,12 @@ import xyz.destiall.sgcraftlink.modules.survival.ResourcePackModule;
 import xyz.destiall.sgcraftlink.modules.survival.TrashModule;
 import xyz.destiall.sgcraftlink.modules.survival.VanillaAddon;
 import xyz.destiall.sgcraftlink.modules.vanilla.Casino;
+import xyz.destiall.sgcraftlink.modules.vanilla.EndPortalModule;
 import xyz.destiall.sgcraftlink.modules.vanilla.LastLocation;
 import xyz.destiall.sgcraftlink.modules.vanilla.MVModule;
 import xyz.destiall.sgcraftlink.modules.vanilla.PiggyBankModule;
 import xyz.destiall.sgcraftlink.modules.vanilla.ReputationModule;
+import xyz.destiall.sgcraftlink.modules.vanilla.ShopkeeperLogger;
 import xyz.destiall.sgcraftlink.utils.ClassSet;
 
 import java.io.ByteArrayOutputStream;
@@ -154,7 +154,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
 
         saveDefaultConfig();
         moduleClazzes.add(TagModule.class);
-        moduleClazzes.add(HeadHunt.class);
+        // moduleClazzes.add(HeadHunt.class);
         moduleClazzes.add(LastLocation.class);
         moduleClazzes.add(TriggerModule.class);
         moduleClazzes.add(Redeemables.class);
@@ -174,6 +174,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         moduleClazzes.add(VanillaAddon.class);
         moduleClazzes.add(PermissionEffects.class);
         moduleClazzes.add(LobbyModule.class);
+        moduleClazzes.add(EndPortalModule.class);
         //moduleClazzes.add(BreakAnimationModule.class);
         //moduleClazzes.add(SuffixesModule.class);
 
@@ -181,14 +182,12 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
         moduleClazzes.add(OnePersonDeath.class);
         moduleClazzes.add(MoveIfGay.class);
 
-        if (hasPlugin("ProtocolLib") ||
-            hasPlugin("packetevents")) {
-            moduleClazzes.add(ChatBubble.class);
-        }
+        //if (hasPlugin("ProtocolLib") ||
+        //    hasPlugin("packetevents")) {
+        //    moduleClazzes.add(ChatBubble.class);
+        //}
 
-        if (hasPlugin("ProtocolLib")) {
-            moduleClazzes.add(Fonter.class);
-        }
+        moduleClazzes.add(Fonter.class);
 
         if (hasPlugin("CMI")) {
             moduleClazzes.add(CMIHook.class);
@@ -251,6 +250,14 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
             moduleClazzes.add(BluemapGriefPrevention.class);
         }
 
+        if (hasPlugin("Shopkeepers")) {
+            moduleClazzes.add(ShopkeeperLogger.class);
+        }
+
+        if (hasPlugin("Oraxen")) {
+            new OraxenPackProvider(null); // Ignored, only required for compiling
+        }
+
         //if (NBT.preloadApi()) {
             moduleClazzes.add(PlaytimeGetter.class);
         //}
@@ -267,20 +274,22 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
                 continue;
             }
 
-            this.modules.add(module);
             try {
                 if (!module.isUniversallyCompatible()) {
                     testPaperOr1_8Above();
                 }
             } catch (Throwable e) {
                 getLogger().warning(module + " cannot run here!");
-                this.modules.remove(module);
+                continue;
             }
 
             module.initConfig();
             if (!module.isEnabled()) {
-                this.modules.remove(module);
+                getLogger().info(module + " is disabled!");
+                continue;
             }
+
+            this.modules.add(module);
         }
 
         for (Module module : this.modules) {
@@ -498,6 +507,7 @@ public final class SGCraftLinkSpigot extends JavaPlugin implements CommandExecut
 
     public void registerListener(Listener listener) {
         getServer().getPluginManager().registerEvents(listener, this);
+        getLogger().info("Registered " + listener + " as a listener!");
     }
 
     public void dispatchCommand(String command) {
